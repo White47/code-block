@@ -2,7 +2,7 @@
 
 ## 当前实施前提
 
-Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1 使用实际路径，后续阶段仍用“目标职责路径”描述并在进入时落实。
+Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–2 使用实际路径；Phase 3 以后仍用“目标职责路径”描述并在进入时落实。
 
 ## Phase 0 — Workspace Audit + Docs
 
@@ -28,10 +28,10 @@ Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不�
 
 - Goal：扫描 Python 并产生可解释的语法事实与符号目录。
 - Deliverables：忽略规则、Python AST、文件级错误隔离、SymbolIndexEntry、definition / reference 初稿。
-- Files likely affected：`analysis/discovery`、`analysis/python`、`analysis/symbols`。
-- Dependencies：现有 Python 解析能力；不得先换栈。
+- Files likely affected：`src/codeviz/analysis/discovery.py`、`python.py`、`symbols.py`、`project.py`，`tests/test_discovery.py`、`test_parser.py`、`test_symbols.py`。
+- Dependencies：Phase 1 领域类型与 Python 3.11+ 标准库；不新增运行时依赖。
 - Tests：fixture 覆盖 class/function/import/assignment/if/loop/async 与坏文件。
-- Acceptance Criteria：部分失败不阻断；每个符号有 scope、qualifiedName、anchor。
+- Acceptance Criteria：部分失败不阻断；每个成功解析的符号有 scope、qualifiedName、anchor；raw reference 保持未解析，交 Phase 3 独立 Resolver。
 - Out of Scope：完整跨文件解析、语义命名。
 
 ## Phase 3 — Symbol Resolver + Imports + Definitions/References
