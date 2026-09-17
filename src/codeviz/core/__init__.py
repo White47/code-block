@@ -1,10 +1,21 @@
 """Core, UI-independent domain types."""
 
-from .identity import EntityRole, NodeKind, SourceAnchor, stable_node_id
 from .graph import CodeGraph
+from .identity import EntityRole, NodeKind, SourceAnchor, stable_node_id
 from .model import (
-    CodeEdge, CodeNode, Confidence, DataNode, DataRole, EdgeType, EntryPoint,
-    EntryPointKind, NodeOrigin, SemanticComponent, ViewKind, VisibleEdge, VisibleGraph,
+    CodeEdge,
+    CodeNode,
+    Confidence,
+    DataNode,
+    DataRole,
+    EdgeType,
+    EntryPoint,
+    EntryPointKind,
+    NodeOrigin,
+    SemanticComponent,
+    ViewKind,
+    VisibleEdge,
+    VisibleGraph,
     VisibleNode,
 )
 

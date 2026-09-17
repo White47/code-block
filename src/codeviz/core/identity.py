@@ -1,9 +1,9 @@
 """Stable identities and project-relative source locations."""
 
+import json
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
-import json
 from pathlib import PurePosixPath, PureWindowsPath
 
 
@@ -49,9 +49,9 @@ class SourceAnchor:
         object.__setattr__(self, "file_path", _relative_path(self.file_path))
         if self.start_line < 1:
             raise ValueError("start_line must be at least 1")
-        if self.end_line is None:
-            object.__setattr__(self, "end_line", self.start_line)
-        if self.end_line < self.start_line:
+        end_line = self.end_line if self.end_line is not None else self.start_line
+        object.__setattr__(self, "end_line", end_line)
+        if end_line < self.start_line:
             raise ValueError("end_line precedes start_line")
         if self.start_column is not None and self.start_column < 0:
             raise ValueError("start_column must be nonnegative")

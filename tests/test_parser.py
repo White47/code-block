@@ -1,7 +1,7 @@
 import ast
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from codeviz.analysis.python import parse_python_file

@@ -16,7 +16,7 @@
 
 ## 验证原则
 
-每个阶段运行真实仓库已有的 lint、typecheck、test、build；空仓库阶段不伪造通过结果。失败分为原有失败、环境失败、新增失败。禁止为了测试自动执行被分析项目。
+每个阶段运行真实仓库已有的 lint、typecheck、test、build；空仓库阶段不伪造通过结果。Phase 2 后的质量门禁已配置 Ruff（`src tests`）和 mypy 严格模式（`src/codeviz`），具体命令见 `README.md` 与 `QUALITY_GATES.md`。失败分为原有失败、环境失败、新增失败。禁止为了测试自动执行被分析项目。
 
 ## 验收
 

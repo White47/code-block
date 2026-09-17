@@ -1,6 +1,7 @@
 """Validated Code Graph IR container."""
 
 from dataclasses import asdict
+from typing import Any, cast
 
 from .identity import EntityRole, NodeKind, SourceAnchor
 from .model import CodeEdge, CodeNode, Confidence, EdgeType, NodeOrigin
@@ -31,7 +32,7 @@ class CodeGraph:
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "CodeGraph":
         graph = cls()
-        for raw in payload["nodes"]:
+        for raw in cast(list[dict[str, Any]], payload["nodes"]):
             node = dict(raw)
             node["kind"] = NodeKind(node["kind"])
             node["origin"] = NodeOrigin(node["origin"])
@@ -39,7 +40,7 @@ class CodeGraph:
             node["confidence"] = Confidence(node["confidence"])
             node["source_anchors"] = tuple(SourceAnchor(**anchor) for anchor in node["source_anchors"])
             graph.add_node(CodeNode(**node))
-        for raw in payload["edges"]:
+        for raw in cast(list[dict[str, Any]], payload["edges"]):
             edge = dict(raw)
             edge["type"] = EdgeType(edge["type"])
             edge["confidence"] = Confidence(edge["confidence"])

@@ -8,11 +8,19 @@ Python-first 的代码模块可视化与程序理解项目。目标是从源码�
 
 需要 Python 3.11 或更新版本。项目运行时目前只使用 Python 标准库。分析目标仅支持 `.py`；默认跳过依赖、构建、缓存、权重和数据目录，可传入项目相对的 `ignore_paths`。
 
-PowerShell：
+在仓库根目录首次设置开发环境（PowerShell）：
 
 ```powershell
-$env:PYTHONPATH = (Join-Path (Get-Location) 'src')
-py -B -m unittest discover -s tests -v
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
-产品与技术边界见 `docs/PRD.md`、`docs/ARCHITECTURE.md` 和 `docs/DATA_MODEL.md`。
+之后运行全部质量检查：
+
+```powershell
+.\.venv\Scripts\python.exe -m ruff check src tests
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -v
+```
+
+Ruff 检查源码与测试；mypy 严格检查产品源码。开发工具只在 `dev` 可选依赖中，不会成为运行时依赖。配置与阶段基线见 `docs/QUALITY_GATES.md`。产品与技术边界见 `docs/PRD.md`、`docs/ARCHITECTURE.md` 和 `docs/DATA_MODEL.md`。
