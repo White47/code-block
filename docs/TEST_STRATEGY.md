@@ -3,8 +3,8 @@
 ## 分层
 
 - Model：SourceAnchor、Stable ID、Confidence、序列化。
-- Parser：Python fixture、坏文件隔离、忽略目录。
-- Resolver：scope、imports、definition / reference、unresolved / possible targets。
+- Parser / Phase 2 Index：Python fixture、编码、大小限制、不执行源码、坏文件隔离、忽略目录、词法 scope、稳定 ID、raw reference 与导入别名重绑定。
+- Resolver：imports 的跨文件目标、shadowing、definition / reference 关联、unresolved / possible targets。
 - Graph：边类型、call / control / data、traceability、Visible Graph 查询。
 - Semantic：PyTorch 层、ModuleList、Shared、训练规则、证据。
 - UI：Overview、选择、下钻、Inspector、Split、搜索、源码定位。
