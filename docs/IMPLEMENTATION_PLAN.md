@@ -2,7 +2,7 @@
 
 ## 当前实施前提
 
-Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–2 使用实际路径；Phase 3 以后仍用“目标职责路径”描述并在进入时落实。
+Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–3 使用实际路径；Phase 4 以后仍用“目标职责路径”描述并在进入时落实。
 
 ## Phase 0 — Workspace Audit + Docs
 
@@ -37,12 +37,12 @@ Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不�
 ## Phase 3 — Symbol Resolver + Imports + Definitions/References
 
 - Goal：将名称引用解析为确定、可能或未解析目标。
-- Deliverables：模块 / 相对 import、scope、属性、ExternalSymbol、UnresolvedSymbol、possible targets。
-- Files likely affected：`analysis/resolution`、`analysis/imports`。
-- Dependencies：Phase 1–2。
-- Tests：同名符号、shadowing、循环 import、动态调用、第三方 external node。
-- Acceptance Criteria：dynamic call 不伪造唯一目标；Resolver 不散落在 UI / parser。
-- Out of Scope：运行时导入、执行用户代码。
+- Deliverables：常见项目内绝对 / 相对 import、词法 scope、静态成员、ExternalSymbol、UnresolvedSymbol、possible targets；导入声明即使未被使用也检查，解析结果保留原始 SymbolIndex 的独立副本。
+- Files likely affected：`src/codeviz/analysis/imports.py`、`resolution.py`、`symbols.py`、`project.py`，`tests/test_resolution.py`，相关文档。
+- Dependencies：Phase 1–2、Python 3.11+ 标准库；无新增运行时依赖。
+- Tests：同名符号 / 作用域遮蔽、重复函数体、绝对 / 相对 / `src` 布局导入、包重导出、真实跨模块循环与纯别名循环、动态属性、第三方 external、缺失本地成员、星号导入、未使用导入、`global` / `nonlocal`。
+- Acceptance Criteria：能唯一证明的引用才填 `resolved_definition_id`；其余保留 possible targets 或 Unresolved 与 issue；动态属性不伪造唯一目标；Resolver 独立于 UI / parser；不执行用户代码。
+- Out of Scope：运行时导入、完整 Python import 语义、调用图 / 控制流 / 数据流。
 
 ## Phase 4 — Call Graph + Basic Control Flow + Critical Data Flow
 

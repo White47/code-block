@@ -2,7 +2,7 @@
 
 Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
 
-当前已完成 Phase 2：除源码锚点、稳定 ID、Code Graph IR 与基础语义 / 可视对象外，已有 Python 文件扫描、静态 AST 解析和词法符号索引。可通过 `codeviz.analysis.project.analyze_project(Path(...))` 对本地项目做一次性分析；分析只读，不导入或执行被分析代码。跨文件引用解析、PyTorch 语义、图形界面仍按 [实施计划](docs/IMPLEMENTATION_PLAN.md) 分阶段加入。
+当前已完成 Phase 3：除源码锚点、稳定 ID、Code Graph IR 与基础语义 / 可视对象外，已有 Python 文件扫描、静态 AST 解析、词法符号索引，以及独立的符号解析器。它可解析常见的项目内绝对 / 相对导入、局部作用域与显式成员；外部符号、动态属性和未确定目标会保留相应标记，不伪装为确定关系。可通过 `codeviz.analysis.project.analyze_project(Path(...))` 对本地项目做一次性分析；分析只读，不导入或执行被分析代码。调用 / 控制 / 数据流、PyTorch 语义和图形界面仍按 [实施计划](docs/IMPLEMENTATION_PLAN.md) 分阶段加入。
 
 ## 本地验证
 
