@@ -60,7 +60,7 @@ EntryPoint 至少包含 id、name、kind（Train / Evaluate / Inference / Export
 
 ## 7. SymbolIndexEntry
 
-包含 name、qualifiedName、kind、scope、filePath、range、parentSymbol、definition；逻辑上关联 references[]。Phase 2 的 Python 实现把 `SymbolIndexEntry` 与原始 `SymbolReference` 分开保存于 `SymbolIndex.entries` / `SymbolIndex.references`，以免尚未解析的引用被误附到某个定义上；Phase 3 的独立 Resolver 才填入 `resolved_definition_id` 或可能目标。同名符号按作用域和稳定 ID 消歧，重复定义允许相同 qualifiedName 但不同 ID。
+包含 name、qualifiedName、kind、scope、filePath、range、parentSymbol、definition；逻辑上关联 references[]。Python 实现把 `SymbolIndexEntry` 与 `SymbolReference` 分开保存于 `SymbolIndex.entries` / `SymbolIndex.references`。原始引用保持未解析；独立 Resolver 返回索引副本，按证据填 `resolved_definition_id`（Exact）、`possible_target_ids`（Probable）或 `unresolved_symbol_id`（Unresolved），并保留 `confidence`、`reason`、`scope_symbol_id`。`ResolutionResult` 另存 ExternalSymbol、UnresolvedSymbol 与 issues，`ProjectAnalysis` 同时提供解析后的索引与该结果。同名符号按作用域所有者 ID 消歧，重复定义允许相同 qualifiedName 但不同 ID；嵌套符号 ID 包含父符号结构身份，避免重复函数体的局部符号碰撞。
 
 ## 8. VisibleGraph
 

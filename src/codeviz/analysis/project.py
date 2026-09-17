@@ -7,6 +7,7 @@ from codeviz.core import SourceAnchor
 
 from .discovery import discover_python_files
 from .python import AnalysisIssue, ParsedFile, parse_python_file
+from .resolution import ResolutionResult, resolve_project_symbols
 from .symbols import SymbolIndex, index_parsed_file
 
 
@@ -15,6 +16,7 @@ class ProjectAnalysis:
     files: tuple[ParsedFile, ...]
     symbol_index: SymbolIndex
     issues: tuple[AnalysisIssue, ...]
+    resolution: ResolutionResult | None = None
 
 
 def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> ProjectAnalysis:
@@ -34,4 +36,6 @@ def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> P
                     "INDEX_ERROR", f"{type(error).__name__}: {error}", relative_path,
                     SourceAnchor(relative_path, 1),
                 ))
-    return ProjectAnalysis(tuple(files), index, tuple(issues))
+    resolution = resolve_project_symbols(tuple(files), index)
+    issues.extend(resolution.issues)
+    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues), resolution)

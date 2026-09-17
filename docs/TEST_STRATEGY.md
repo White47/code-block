@@ -4,7 +4,7 @@
 
 - Model：SourceAnchor、Stable ID、Confidence、序列化。
 - Parser / Phase 2 Index：Python fixture、编码、大小限制、不执行源码、坏文件隔离、忽略目录、词法 scope、稳定 ID、raw reference 与导入别名重绑定。
-- Resolver：imports 的跨文件目标、shadowing、definition / reference 关联、unresolved / possible targets。
+- Resolver / Phase 3：绝对与相对 import、`src` 布局、包重导出、真实跨模块循环与纯别名循环、scope shadowing、`global` / `nonlocal`、重复定义及重复函数体、静态成员、第三方 ExternalSymbol、动态属性、缺失本地成员、星号导入、未使用导入、unresolved / possible targets；不得导入或执行被分析项目。
 - Graph：边类型、call / control / data、traceability、Visible Graph 查询。
 - Semantic：PyTorch 层、ModuleList、Shared、训练规则、证据。
 - UI：Overview、选择、下钻、Inspector、Split、搜索、源码定位。

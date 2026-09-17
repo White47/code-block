@@ -7,7 +7,7 @@ reference is evidence of syntax, not a claim about its runtime target.
 import ast
 from dataclasses import dataclass, field
 
-from codeviz.core import NodeKind, SourceAnchor, stable_node_id
+from codeviz.core import Confidence, NodeKind, SourceAnchor, stable_node_id
 
 from .python import ParsedFile
 
@@ -33,12 +33,18 @@ class SymbolReference:
     source_anchor: SourceAnchor
     qualifier: str | None = None
     resolved_definition_id: str | None = None
+    scope_symbol_id: str | None = None
+    possible_target_ids: tuple[str, ...] = ()
+    confidence: Confidence = Confidence.UNRESOLVED
+    unresolved_symbol_id: str | None = None
+    reason: str | None = None
 
 
 class SymbolIndex:
     def __init__(self) -> None:
         self.entries: dict[str, SymbolIndexEntry] = {}
         self.references: list[SymbolReference] = []
+        self.scope_declarations: dict[str, dict[str, str]] = {}
 
     def add_entry(self, entry: SymbolIndexEntry) -> None:
         if entry.id in self.entries:
@@ -49,6 +55,7 @@ class SymbolIndex:
         for entry in other.entries.values():
             self.add_entry(entry)
         self.references.extend(other.references)
+        self.scope_declarations.update(other.scope_declarations)
 
     def find_definitions(self, name: str) -> tuple[SymbolIndexEntry, ...]:
         return tuple(entry for entry in self.entries.values() if entry.definition and entry.name == name)
@@ -82,6 +89,20 @@ class _SymbolCollector(ast.NodeVisitor):
         start = getattr(node, "lineno", 1)
         return SourceAnchor(self.parsed.relative_path, start, end_line=getattr(node, "end_lineno", start))
 
+    def _binding_owner(self, name: str) -> _Scope:
+        declaration = self.index.scope_declarations.get(self.scope.owner_id, {}).get(name)
+        if declaration == "global":
+            return self.scopes[0]
+        if declaration == "nonlocal":
+            enclosing = [frame for frame in reversed(self.scopes[:-1])
+                         if frame.kind in (NodeKind.FUNCTION, NodeKind.METHOD)]
+            for frame in enclosing:
+                if any(key[0] == frame.owner_id and key[2] == name for key in self.bindings):
+                    return frame
+            if enclosing:
+                return enclosing[0]
+        return self.scope
+
     def _entry(
         self,
         name: str,
@@ -92,8 +113,8 @@ class _SymbolCollector(ast.NodeVisitor):
         reuse_binding: bool = False,
         metadata: dict[str, str] | None = None,
     ) -> SymbolIndexEntry:
-        owner = scope or self.scope
-        key = (owner.name, kind, name)
+        owner = scope or self._binding_owner(name)
+        key = (owner.owner_id, kind, name)
         if reuse_binding and key in self.bindings:
             previous = self.bindings[key]
             # An import alias followed by another assignment (or import) is a
@@ -103,10 +124,13 @@ class _SymbolCollector(ast.NodeVisitor):
         occurrence = self.occurrences.get(key, 0)
         self.occurrences[key] = occurrence + 1
         qualified_name = f"{owner.name}.{name}"
+        occurrence_key = (
+            f"parent:{owner.owner_id}:duplicate:{occurrence}" if occurrence else f"parent:{owner.owner_id}"
+        ) if owner.kind != NodeKind.MODULE else (f"duplicate:{occurrence}" if occurrence else None)
         entry = SymbolIndexEntry(
             id=stable_node_id(
                 self.parsed.relative_path, qualified_name, kind, owner.name,
-                occurrence_key=f"duplicate:{occurrence}" if occurrence else None,
+                occurrence_key=occurrence_key,
             ),
             name=name,
             qualified_name=qualified_name,
@@ -123,7 +147,18 @@ class _SymbolCollector(ast.NodeVisitor):
         return entry
 
     def _reference(self, name: str, node: ast.AST, qualifier: str | None = None) -> None:
-        self.index.references.append(SymbolReference(name, self.scope.name, self._anchor(node), qualifier))
+        self.index.references.append(SymbolReference(
+            name, self.scope.name, self._anchor(node), qualifier,
+            scope_symbol_id=self.scope.owner_id,
+        ))
+
+    def visit_Global(self, node: ast.Global) -> None:
+        declarations = self.index.scope_declarations.setdefault(self.scope.owner_id, {})
+        declarations.update({name: "global" for name in node.names})
+
+    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
+        declarations = self.index.scope_declarations.setdefault(self.scope.owner_id, {})
+        declarations.update({name: "nonlocal" for name in node.names})
 
     def _bind_target(self, target: ast.AST, kind: NodeKind = NodeKind.VARIABLE) -> None:
         if isinstance(target, ast.Name):
@@ -192,7 +227,8 @@ class _SymbolCollector(ast.NodeVisitor):
         for alias in node.names:
             bound = alias.asname or alias.name.split(".")[0]
             self._entry(bound, NodeKind.VARIABLE, node, reuse_binding=True,
-                        metadata={"imported_from": alias.name})
+                        metadata={"imported_from": alias.name, "import_form": "import",
+                                  "binds_root": "true" if alias.asname is None else "false"})
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         prefix = "." * node.level + (node.module or "")
@@ -200,7 +236,8 @@ class _SymbolCollector(ast.NodeVisitor):
             if alias.name != "*":
                 imported = f"{prefix}.{alias.name}" if node.module else f"{prefix}{alias.name}"
                 self._entry(alias.asname or alias.name, NodeKind.VARIABLE, node,
-                            reuse_binding=True, metadata={"imported_from": imported})
+                            reuse_binding=True, metadata={"imported_from": imported,
+                                                          "import_form": "from"})
 
     def visit_Assign(self, node: ast.Assign) -> None:
         self.visit(node.value)
