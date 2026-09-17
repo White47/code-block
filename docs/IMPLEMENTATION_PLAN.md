@@ -2,7 +2,7 @@
 
 ## 当前实施前提
 
-Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–4 使用实际路径；Phase 5 以后仍用“目标职责路径”描述并在进入时落实。
+Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–5 使用实际路径；Phase 6 以后仍用“目标职责路径”描述并在进入时落实。
 
 ## Phase 0 — Workspace Audit + Docs
 
@@ -58,9 +58,9 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 
 - Goal：识别 Module、子模块、容器和常见层，恢复自定义模块结构。
 - Deliverables：模型实体、Definition / Instance / Invocation、ModuleList ×N、Shared 标记。
-- Files likely affected：`semantic/pytorch`、`analysis/model`。
-- Dependencies：Phase 1–4、规则插件接口。
-- Tests：常见层、自定义 Module、Sequential、ModuleList / Dict、共享实例、未知模块。
+- Files likely affected：`src/codeviz/semantic/rules.py`、`semantic/pytorch.py`、`analysis/model.py`、`analysis/project.py`、`tests/test_model.py`。
+- Dependencies：Phase 1–4、Python 3.11+ 标准库；`ModelRule` 插件协议由本阶段建立，无新增运行时依赖。
+- Tests：torch 导入别名 / 遮蔽、常见层、自定义 Module / 子类、Sequential、ModuleList / Dict、同构折叠与动态次数、共享实例及链式赋值、forward CallSite、未知模块、稳定 ID、坏文件。
 - Acceptance Criteria：模型组件均有 evidence 与源码锚点；重复结构与共享权重不混淆。
 - Out of Scope：执行 forward、真实 shape、分布式框架。
 

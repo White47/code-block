@@ -20,6 +20,8 @@
 
 ModuleList 中结构相同的实例可在 Visible Graph 折叠为 `×N`；这与 Shared 共享实例必须区分。
 
+Phase 5 已实现 `ModelRule` 协议和 `PyTorchModelRule`。只有显式 `torch` / `torch.nn` 导入可追溯的名称才认作框架；项目内存在同名 `torch` 路径或别名被文件 / 函数局部绑定遮蔽时不继续认定，包括顶层条件、循环、`with` 中的绑定。规则只报告有限内建层、容器和 Module 基类，用户自定义类通过独立 Resolver 已证实的项目类继承链识别。`self` 子模块读取 `__init__` 中直接及常见条件 / 循环 / try 语句的赋值；有条件或重复执行风险时标 Probable，不能当作唯一 forward 目标。`forward` 的直接 `self.child(...)`、已知容器静态索引、动态索引和简单容器循环调用与已有 CallSite 关联；动态选择保留候选。Sequential 成员保留顺序与未知成员槽位；ModuleList 同构且成员来源不共享时记录折叠倍数，`range(常量)` 推导式倍数仍为 Probable，共享实例推导式不计作独立 ×N；ModuleDict 成员保留键名。未知构造器若在 forward 中被调用，则保留 Unresolved 候选，不冒充 PyTorch 层；动态或部分容器发 issue。`shared_with_id` 只记录明确的 `self.b = self.a`、链式赋值或容器中的同一对象别名，不把相同类的两次构造当共享。
+
 ## 4. 训练规则
 
 | 证据 | 语义 |
