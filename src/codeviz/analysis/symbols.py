@@ -87,7 +87,10 @@ class _SymbolCollector(ast.NodeVisitor):
 
     def _anchor(self, node: ast.AST) -> SourceAnchor:
         start = getattr(node, "lineno", 1)
-        return SourceAnchor(self.parsed.relative_path, start, end_line=getattr(node, "end_lineno", start))
+        return SourceAnchor(self.parsed.relative_path, start,
+                            start_column=getattr(node, "col_offset", None),
+                            end_line=getattr(node, "end_lineno", start),
+                            end_column=getattr(node, "end_col_offset", None))
 
     def _binding_owner(self, name: str) -> _Scope:
         declaration = self.index.scope_declarations.get(self.scope.owner_id, {}).get(name)
