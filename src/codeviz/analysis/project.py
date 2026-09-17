@@ -6,6 +6,7 @@ from pathlib import Path
 from codeviz.core import SourceAnchor
 
 from .discovery import discover_python_files
+from .flow import FlowAnalysis, build_project_flow
 from .python import AnalysisIssue, ParsedFile, parse_python_file
 from .resolution import ResolutionResult, resolve_project_symbols
 from .symbols import SymbolIndex, index_parsed_file
@@ -17,6 +18,7 @@ class ProjectAnalysis:
     symbol_index: SymbolIndex
     issues: tuple[AnalysisIssue, ...]
     resolution: ResolutionResult | None = None
+    flow: FlowAnalysis | None = None
 
 
 def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> ProjectAnalysis:
@@ -38,4 +40,6 @@ def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> P
                 ))
     resolution = resolve_project_symbols(tuple(files), index)
     issues.extend(resolution.issues)
-    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues), resolution)
+    flow = build_project_flow(tuple(files), resolution)
+    issues.extend(flow.issues)
+    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues), resolution, flow)

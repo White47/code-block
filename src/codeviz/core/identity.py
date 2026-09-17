@@ -25,6 +25,10 @@ class NodeKind(StrEnum):
     ATTRIBUTE = "Attribute"
     EXTERNAL_SYMBOL = "ExternalSymbol"
     UNRESOLVED_SYMBOL = "UnresolvedSymbol"
+    CALL_SITE = "CallSite"
+    FLOW_STEP = "FlowStep"
+    CONTROL_BLOCK = "ControlBlock"
+    DATA = "Data"
 
 
 def _relative_path(value: str, *, allow_root: bool = False) -> str:

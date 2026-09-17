@@ -29,6 +29,8 @@ CodeNode {
 
 `kind` 至少支持 Project、Module、File、Class、Function、Method、Variable、Parameter、Attribute、ExternalSymbol、UnresolvedSymbol。Definition、Instance、Invocation 必须区分。
 
+Phase 4 增加 `CallSite`、`FlowStep`、`ControlBlock`、`Data`。CallSite 使用 Invocation role 和独立稳定 ID；调用位置与函数定义不是同一个节点。控制块记录条件摘要和 SourceAnchor，关键数据节点保留对应符号 ID 与名称规则依据。
+
 Definition 的 Stable ID 优先由 `relativePath + qualifiedName + kind + scope` 生成；同一作用域内确有重复定义时可额外加入结构发生点标识。Instance / Invocation 可以在同一作用域出现多次，必须加入可复算的发生点标识（例如词法父节点、结构位置 / 表达式指纹和同级序号），保证重复调用不碰撞。ID 不能随机生成，也不能只依赖行号。源码重排可能改变发生点 ID，缓存与 Annotation 迁移应尽力匹配并报告无法匹配的项。
 
 ## 4. CodeEdge
@@ -40,6 +42,8 @@ CodeEdge {
 ```
 
 边类型至少包含 CONTAINS、IMPORTS、EXPORTS、CALLS、INHERITS、IMPLEMENTS、CONTROL_FLOW、BRANCH_TRUE、BRANCH_FALSE、LOOP_BACK、READS、WRITES、PASSES_TO、RETURNS_TO、DATA_FLOW、GRADIENT_FLOW。动态调用可带 possibleTargets，但不得伪造单一确定目标。
+
+Phase 4 的 `CALLS` 从 CallSite 指向已证实的函数 / 方法，或指向 Probable 候选 / UnresolvedSymbol；解析到参数或变量只证明绑定身份，不证明实际可调用目标，`self.method()` 因可能被子类覆写也不标 Exact。CallSite 通过 CONTAINS 关联到所在流程步骤 / 控制块；`scope_symbol_id` 保留词法调用者以计算调用环。`CONTROL_FLOW`、`BRANCH_TRUE/FALSE`、`LOOP_BACK` 表示静态结构，不代表实际运行路径。`READS` / `WRITES` 从流程步骤指向关键数据；`DATA_FLOW` 是赋值表达式的静态依赖，置信度为 Probable，不等同于 Gradient Flow。
 
 ## 5. SemanticComponent
 
@@ -55,6 +59,8 @@ SemanticComponent {
 ## 6. DataNode / EntryPoint
 
 DataNode 角色：INPUT、TARGET、MASK、FEATURE、HIDDEN_STATE、PREDICTION、LOSS、PARAMETER、GRADIENT、OTHER。`shape`、`dtype`、`device` 仅保存静态可确认值与 confidence，不通过执行代码获取。
+
+Phase 4 仅按有限变量 / 参数 / `self` 属性名称表创建关键 DataNode，角色标记为 Probable；导入别名和普通临时变量不进入关键数据集合。简单直线赋值可通过隐藏临时变量传递关键数据来源，覆盖赋值会清除旧来源；分支和循环合流保持保守。`FlowAnalysis.data_nodes` 与 `FlowAnalysis.graph` 同时返回，后续 View Builder 再决定可见性。
 
 EntryPoint 至少包含 id、name、kind（Train / Evaluate / Inference / Export）、sourceAnchor、flowNodeIds、modelIds。
 

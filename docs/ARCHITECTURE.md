@@ -2,7 +2,7 @@
 
 ## 1. 当前约束
 
-Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–3 的 `src/codeviz/core`、`src/codeviz/analysis` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和状态库尚未选择。
+Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–4 的 `src/codeviz/core`、`src/codeviz/analysis` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和状态库尚未选择。
 
 ## 2. 分层
 
@@ -26,8 +26,8 @@ Project Source / Config
 - Parser：将 Python AST 转为带 SourceAnchor 的解析结果；部分语法失败不能阻断其他文件。
 - Symbol Index：登记 definition / raw reference、scope、qualifiedName、parentSymbol 和稳定 ID；Phase 2 不做跨文件目标解析。
 - Symbol Resolver：`analysis/imports.py` 只由已扫描文件构造项目模块目录；`analysis/resolution.py` 独立处理 import、词法作用域、静态成员和 unresolved / possible targets，并输出 External / Unresolved 节点及 issues。`analyze_project` 汇总解析结果，不把名称解析散落在 UI 或 parser 中。
-- Code Graph IR：保存 Project、Module、File、Class、Function、Method、Variable、Parameter、Attribute、ExternalSymbol、UnresolvedSymbol 与关系边。
-- Flow Analysis：基础调用、顺序、if、loop、recursion，以及关键 DataNode；不执行代码。
+- Code Graph IR：`analysis/graph_build.py` 将已解析的 Project、File、Module、定义、ExternalSymbol、UnresolvedSymbol 装入 `core.CodeGraph`；调用位置、控制块、流程步骤和关键数据是带源码锚点的附加事实节点。
+- Flow Analysis：`analysis/flow.py` 产生调用位置与 CALLS，`control_flow.py` 产生顺序 / if / loop 边，`data_flow.py` 产生名称线索的关键 DataNode 与静态读写 / 依赖，`call_cycles.py` 汇总确定调用环。`ProjectAnalysis.flow` 暴露图、关键数据、调用环与局部 issues；不执行代码。
 - Semantic Rules：Generic Python / Generic PyTorch / Transformer / Training 插件，输出依据与 confidence。
 - Semantic Graph：把类、函数或内部逻辑段组合成可读组件，可与代码符号多对多关联。
 - View Builder：按视图和选中节点查询局部图、聚合重复结构、控制可见节点数。

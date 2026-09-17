@@ -2,7 +2,7 @@
 
 ## 当前实施前提
 
-Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–3 使用实际路径；Phase 4 以后仍用“目标职责路径”描述并在进入时落实。
+Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–4 使用实际路径；Phase 5 以后仍用“目标职责路径”描述并在进入时落实。
 
 ## Phase 0 — Workspace Audit + Docs
 
@@ -47,12 +47,12 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 ## Phase 4 — Call Graph + Basic Control Flow + Critical Data Flow
 
 - Goal：恢复调用、顺序、分支、循环、递归和关键数据关系。
-- Deliverables：CALLS、CONTROL_FLOW、BRANCH_TRUE/FALSE、LOOP_BACK、READS/WRITES、关键 DataNode。
-- Files likely affected：`analysis/flow`、`analysis/graph-build`。
-- Dependencies：Phase 2–3。
-- Tests：nested if/loop、recursion、call cycle、return、关键变量和普通 tmp 隐藏。
-- Acceptance Criteria：可构造 Full Graph；关系类型可区分；不把 Data Flow 当 Gradient Flow。
-- Out of Scope：完整 CFG、完整 tensor propagation。
+- Deliverables：Full Code Graph、独立 CallSite、CALLS、CONTROL_FLOW、BRANCH_TRUE/FALSE、LOOP_BACK、READS/WRITES、关键 DataNode 与静态 DATA_FLOW、确定调用环。
+- Files likely affected：`src/codeviz/analysis/graph_build.py`、`flow.py`、`control_flow.py`、`data_flow.py`、`call_cycles.py`，`src/codeviz/core/identity.py`、`analysis/project.py`、`symbols.py`，`tests/test_flow.py` 与相关文档。
+- Dependencies：Phase 1–3、Python 3.11+ 标准库；无新增运行时依赖。
+- Tests：同一行多个调用、动态 / 模糊 / 外部 / 多态派发调用、分支步骤与调用位置归属、nested if/loop/with/try、continue、return、定义时调用、recursion / call cycle / 长链、关键变量与 `self` 属性读写、普通 tmp 隐藏及来源传递 / 覆盖、导入别名不误标数据、单文件 flow 失败隔离。
+- Acceptance Criteria：可从 `ProjectAnalysis.flow.graph` 构造 Full Graph，节点与边有源码锚点；关系类型可区分；参数 / 变量调用不伪造 Exact；Data Flow 不等于 Gradient Flow；单文件阶段失败保留其他结果。
+- Out of Scope：完整 CFG、运行时调用目标、tensor shape propagation、真实 gradient flow、PyTorch 语义、Visible Graph。
 
 ## Phase 5 — Generic PyTorch Model Recognition
 
