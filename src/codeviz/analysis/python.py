@@ -1,9 +1,9 @@
 """Parse Python syntax without importing or executing the target project."""
 
 import ast
+import tokenize
 from dataclasses import dataclass
 from pathlib import Path
-import tokenize
 
 from codeviz.core import SourceAnchor
 

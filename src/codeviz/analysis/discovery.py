@@ -1,9 +1,7 @@
 """Discover project Python files without traversing dependencies or symlinks."""
 
 import os
-from pathlib import Path
-from pathlib import PurePosixPath, PureWindowsPath
-
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 _IGNORED_DIRECTORIES = frozenset({
     ".git", ".venv", "venv", "env", "node_modules", "__pycache__",

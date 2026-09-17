@@ -130,6 +130,7 @@ class _SymbolCollector(ast.NodeVisitor):
             self._entry(target.id, kind, target, reuse_binding=True)
         elif isinstance(target, ast.Attribute):
             if isinstance(target.value, ast.Name) and target.value.id == "self" and self.scope.class_name:
+                assert self.scope.class_id is not None
                 class_scope = _Scope(self.scope.class_name, self.scope.class_id, NodeKind.CLASS)
                 self._entry(target.attr, NodeKind.ATTRIBUTE, target, scope=class_scope, reuse_binding=True)
             self.visit(target.value)
@@ -149,9 +150,9 @@ class _SymbolCollector(ast.NodeVisitor):
         for argument in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs):
             if argument.annotation:
                 self.visit(argument.annotation)
-        for argument in (node.args.vararg, node.args.kwarg):
-            if argument is not None and argument.annotation:
-                self.visit(argument.annotation)
+        for optional_argument in (node.args.vararg, node.args.kwarg):
+            if optional_argument is not None and optional_argument.annotation:
+                self.visit(optional_argument.annotation)
         if node.returns:
             self.visit(node.returns)
 
@@ -161,9 +162,9 @@ class _SymbolCollector(ast.NodeVisitor):
         self.scopes.append(_Scope(entry.qualified_name, entry.id, kind, parent.class_name, parent.class_id))
         for argument in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs):
             self._entry(argument.arg, NodeKind.PARAMETER, argument, reuse_binding=True)
-        for argument in (node.args.vararg, node.args.kwarg):
-            if argument is not None:
-                self._entry(argument.arg, NodeKind.PARAMETER, argument, reuse_binding=True)
+        for optional_argument in (node.args.vararg, node.args.kwarg):
+            if optional_argument is not None:
+                self._entry(optional_argument.arg, NodeKind.PARAMETER, optional_argument, reuse_binding=True)
         for statement in node.body:
             self.visit(statement)
         self.scopes.pop()
