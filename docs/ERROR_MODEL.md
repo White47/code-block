@@ -18,6 +18,8 @@ Phase 5 的 `MODEL_CONTAINER_DYNAMIC` 表示成员或重复次数无法静态确
 
 模型规则对某个文件的导入识别、某个构造或调用发生异常时记录 `MODEL_ERROR` 并继续处理其他可用文件 / 事实。它表示分析器局部失败，不是用户代码执行失败；消费者应把模型结果显示为 Partial。
 
+Phase 6 的训练规则导入匹配或某个入口分析失败时产生 `TRAINING_ERROR`；Attention-like 组件候选规则失败时产生 `SEMANTIC_RULE_ERROR`，保留其他模型和入口。Probable 训练事件、checkpoint 候选或梯度关系是正常静态不确定性，不自动算系统错误；UI 应展示其证据与置信度。
+
 ## 用户可见信息
 
 Overview 显示 files parsed、symbols resolved、Exact / Probable / Unresolved。Inspector 显示规则依据。Outdated 结果可继续查看，但所有视图带明显状态标识。

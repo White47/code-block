@@ -2,5 +2,9 @@
 
 from .pytorch import PyTorchModelRule
 from .rules import ConstructorMatch, ModelRule
+from .training import PyTorchTrainingRule, ReceiverFact, TrainingRole, TrainingRuleMatch
 
-__all__ = ["ConstructorMatch", "ModelRule", "PyTorchModelRule"]
+__all__ = [
+    "ConstructorMatch", "ModelRule", "PyTorchModelRule", "PyTorchTrainingRule",
+    "ReceiverFact", "TrainingRole", "TrainingRuleMatch",
+]

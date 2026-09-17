@@ -13,6 +13,8 @@ from .model import (
     EntryPointKind,
     NodeOrigin,
     SemanticComponent,
+    SemanticGraph,
+    SemanticRelation,
     ViewKind,
     VisibleEdge,
     VisibleGraph,
@@ -22,6 +24,7 @@ from .model import (
 __all__ = [
     "CodeEdge", "CodeGraph", "CodeNode", "Confidence", "DataNode", "DataRole",
     "EdgeType", "EntityRole", "EntryPoint", "EntryPointKind", "NodeKind",
-    "NodeOrigin", "SemanticComponent", "SourceAnchor", "ViewKind", "VisibleEdge", "VisibleGraph",
+    "NodeOrigin", "SemanticComponent", "SemanticGraph", "SemanticRelation",
+    "SourceAnchor", "ViewKind", "VisibleEdge", "VisibleGraph",
     "VisibleNode", "stable_node_id",
 ]

@@ -2,7 +2,7 @@
 
 ## 当前实施前提
 
-Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–5 使用实际路径；Phase 6 以后仍用“目标职责路径”描述并在进入时落实。
+Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–6 使用实际路径；Phase 7 以后仍用“目标职责路径”描述并在进入时落实。
 
 ## Phase 0 — Workspace Audit + Docs
 
@@ -68,7 +68,7 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 
 - Goal：生成训练执行语义和可读组件抽象。
 - Deliverables：Training Mode、Epoch / Batch、Forward、Loss、Backward、Optimizer、Scheduler、Gradient Flow。
-- Files likely affected：`semantic/training`、`semantic/components`。
+- Files likely affected：`src/codeviz/semantic/training.py`、`components.py`、`src/codeviz/analysis/training.py`、`project.py`、`src/codeviz/core/model.py`、`tests/test_training.py`、`test_training_rules.py`、`test_semantic_graph.py`、`test_semantic_components.py`。
 - Dependencies：Phase 4–5。
 - Tests：训练 / 评估 / 推理多入口、no_grad、validation、checkpoint、uncertain attention-like。
 - Acceptance Criteria：Exact / Probable / Unresolved 正确传播；Exact 有可检查的接收者与调用证据；提供规则依据；多入口独立 flow。
