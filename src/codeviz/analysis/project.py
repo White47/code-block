@@ -7,6 +7,7 @@ from codeviz.core import SourceAnchor
 
 from .discovery import discover_python_files
 from .flow import FlowAnalysis, build_project_flow
+from .model import ModelAnalysis, build_project_model
 from .python import AnalysisIssue, ParsedFile, parse_python_file
 from .resolution import ResolutionResult, resolve_project_symbols
 from .symbols import SymbolIndex, index_parsed_file
@@ -19,6 +20,7 @@ class ProjectAnalysis:
     issues: tuple[AnalysisIssue, ...]
     resolution: ResolutionResult | None = None
     flow: FlowAnalysis | None = None
+    model: ModelAnalysis | None = None
 
 
 def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> ProjectAnalysis:
@@ -42,4 +44,6 @@ def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> P
     issues.extend(resolution.issues)
     flow = build_project_flow(tuple(files), resolution)
     issues.extend(flow.issues)
-    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues), resolution, flow)
+    model = build_project_model(tuple(files), resolution, flow)
+    issues.extend(model.issues)
+    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues), resolution, flow, model)

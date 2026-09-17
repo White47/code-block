@@ -2,7 +2,7 @@
 
 ## 1. 当前约束
 
-Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–4 的 `src/codeviz/core`、`src/codeviz/analysis` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和状态库尚未选择。
+Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–5 的 `src/codeviz/core`、`src/codeviz/analysis`、`src/codeviz/semantic` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和状态库尚未选择。
 
 ## 2. 分层
 
@@ -28,7 +28,8 @@ Project Source / Config
 - Symbol Resolver：`analysis/imports.py` 只由已扫描文件构造项目模块目录；`analysis/resolution.py` 独立处理 import、词法作用域、静态成员和 unresolved / possible targets，并输出 External / Unresolved 节点及 issues。`analyze_project` 汇总解析结果，不把名称解析散落在 UI 或 parser 中。
 - Code Graph IR：`analysis/graph_build.py` 将已解析的 Project、File、Module、定义、ExternalSymbol、UnresolvedSymbol 装入 `core.CodeGraph`；调用位置、控制块、流程步骤和关键数据是带源码锚点的附加事实节点。
 - Flow Analysis：`analysis/flow.py` 产生调用位置与 CALLS，`control_flow.py` 产生顺序 / if / loop 边，`data_flow.py` 产生名称线索的关键 DataNode 与静态读写 / 依赖，`call_cycles.py` 汇总确定调用环。`ProjectAnalysis.flow` 暴露图、关键数据、调用环与局部 issues；不执行代码。
-- Semantic Rules：Generic Python / Generic PyTorch / Transformer / Training 插件，输出依据与 confidence。
+- Semantic Rules：`semantic/rules.py` 定义 `ModelRule` 协议；`semantic/pytorch.py` 只匹配能追到显式 torch import 的 `nn.Module` 与有限常见层 / 容器名称，不导入 PyTorch。Generic Python / Transformer / Training 扩展仍待后续阶段。
+- Model Analysis：`analysis/model.py` 在 Resolver 和 Flow 之后提取带源码锚点的模型 Definition、子模块 Instance、`forward` Invocation；通过 CallSite ID 与已有 Full Code Graph 关联。`ModuleList` 仅在静态可见的同构结构上给出折叠次数，动态数量保持未知；本阶段不生成 Semantic Component Graph，也不将模型实例直接插入 Code Graph。
 - Semantic Graph：把类、函数或内部逻辑段组合成可读组件，可与代码符号多对多关联。
 - View Builder：按视图和选中节点查询局部图、聚合重复结构、控制可见节点数。
 - UI：VSCode 风格 Activity Bar、Sidebar、Editor Tabs / Split、Inspector、Problems。

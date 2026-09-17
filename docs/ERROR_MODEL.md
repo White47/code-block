@@ -14,6 +14,10 @@ Problem 至少包含 id、severity、code、message、filePath、sourceAnchor?�
 
 Phase 4 的动态可调用值产生 `DYNAMIC_CALL_UNRESOLVED`，多态接收者产生 `DYNAMIC_DISPATCH_UNRESOLVED` 并保留静态候选；控制、关键数据或调用分析在单文件失败时分别产生 `CONTROL_FLOW_ERROR`、`DATA_FLOW_ERROR`、`FLOW_ERROR`，保留其他文件的图。此时部分节点 / 边可能已生成，消费者应展示 Partial，而不是把局部结果宣称为完整执行路径。
 
+Phase 5 的 `MODEL_CONTAINER_DYNAMIC` 表示成员或重复次数无法静态确定；`MODEL_CONTAINER_MEMBER_UNRESOLVED` 表示容器内某成员没有可信的模块构造证据。这些是局部未知，不应清空已识别模型，也不应自动推成 `×1` 或 Shared。
+
+模型规则对某个文件的导入识别、某个构造或调用发生异常时记录 `MODEL_ERROR` 并继续处理其他可用文件 / 事实。它表示分析器局部失败，不是用户代码执行失败；消费者应把模型结果显示为 Partial。
+
 ## 用户可见信息
 
 Overview 显示 files parsed、symbols resolved、Exact / Probable / Unresolved。Inspector 显示规则依据。Outdated 结果可继续查看，但所有视图带明显状态标识。
