@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from codeviz.core import SourceAnchor
+from codeviz.semantic.components import SemanticAnalysis, build_semantic_analysis
 
 from .discovery import discover_python_files
 from .flow import FlowAnalysis, build_project_flow
@@ -11,6 +12,7 @@ from .model import ModelAnalysis, build_project_model
 from .python import AnalysisIssue, ParsedFile, parse_python_file
 from .resolution import ResolutionResult, resolve_project_symbols
 from .symbols import SymbolIndex, index_parsed_file
+from .training import TrainingAnalysis, build_training_analysis
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +23,8 @@ class ProjectAnalysis:
     resolution: ResolutionResult | None = None
     flow: FlowAnalysis | None = None
     model: ModelAnalysis | None = None
+    training: TrainingAnalysis | None = None
+    semantic: SemanticAnalysis | None = None
 
 
 def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> ProjectAnalysis:
@@ -46,4 +50,9 @@ def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> P
     issues.extend(flow.issues)
     model = build_project_model(tuple(files), resolution, flow)
     issues.extend(model.issues)
-    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues), resolution, flow, model)
+    training = build_training_analysis(tuple(files), resolution, model, flow)
+    issues.extend(training.issues)
+    semantic = build_semantic_analysis(tuple(files), model, training)
+    issues.extend(semantic.issues)
+    return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues),
+                           resolution, flow, model, training, semantic)

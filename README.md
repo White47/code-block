@@ -2,7 +2,7 @@
 
 Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
 
-当前已完成 Phase 5：`codeviz.analysis.project.analyze_project(Path(...))` 返回 `flow.graph`（Phase 4 的代码 / 调用 / 控制 / 关键数据事实）和 `model`（静态 PyTorch 模型结构）。`model.definitions`、`model.instances`、`model.invocations` 分别记录模型类、`self` 子模块构造 / 共享别名、以及 `forward` 中与现有 CallSite 对应的调用；常见 `torch.nn` 层、Sequential、ModuleList、ModuleDict 和项目内自定义 Module 可识别。规则位于独立的 `semantic/` 层，源码只读，不导入或执行被分析代码；动态推断不冒充运行时观察。训练语义、局部 Visible Graph 与图形界面仍按 [实施计划](docs/IMPLEMENTATION_PLAN.md) 分阶段加入。
+当前已完成 Phase 6：`codeviz.analysis.project.analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`。`training` 按 Train / Evaluate / Inference / Export 入口分别保存静态事件，`semantic.graph` 组合模型定义、子模块实例与训练事件，保留源码锚点、证据及 Exact / Probable / Unresolved。仅在 Q/K/V → 矩阵得分 → softmax 的结构证据同时存在时生成 Attention-like 候选；梯度关系只是 Probable 的静态模式，并非真实 autograd 图。规则位于独立的 `semantic/` 层，源码只读，不导入或执行被分析代码。局部 Visible Graph 与图形界面仍按 [实施计划](docs/IMPLEMENTATION_PLAN.md) 分阶段加入。
 
 ## 本地验证
 

@@ -7,6 +7,7 @@
 - Resolver / Phase 3：绝对与相对 import、`src` 布局、包重导出、真实跨模块循环与纯别名循环、scope shadowing、`global` / `nonlocal`、重复定义及重复函数体、静态成员、第三方 ExternalSymbol、动态属性、缺失本地成员、星号导入、未使用导入、unresolved / possible targets；不得导入或执行被分析项目。
 - Graph / Phase 4：Full Graph 的节点与锚点、同一行独立 CallSite、确定 / 模糊 / 外部 / 动态及继承派发调用、分支步骤到调用位置的归属、nested if / loop / with / try / continue / return、定义时调用、递归 / 互调环及长链、关键数据与 `self` 属性读写、隐藏 tmp 来源传递与覆盖、导入别名不误标、单文件阶段失败隔离；Visible Graph 查询留给 Phase 7。
 - Model / Phase 5：torch 导入别名、项目内同名 torch 包与局部遮蔽、自定义 Module 继承、常见层、Sequential 顺序、ModuleList 同构 / 共享成员 / 零次 / 动态次数、ModuleDict 部分动态键、共享别名与链式赋值、条件构造、直接 / 索引 / 循环 forward CallSite 关联、未知工厂候选、稳定 ID、坏文件与规则异常隔离、不执行源码；训练规则留 Phase 6。
+- Training / Semantic / Phase 6：显式导入与局部遮蔽、接收者 Exact / Probable、train/eval 与 no_grad 区分、epoch / batch 循环归属、多入口共享模型定义、条件重绑定、checkpoint 候选、Attention-like 正反例、模型 Definition / Instance 分离、图端点 / 子节点校验、来源锚点、Probable 梯度静态关系、坏文件隔离。
 - UI：Overview、选择、下钻、Inspector、Split、搜索、源码定位。
 - Persistence：fingerprint、Outdated、View State、Annotations。
 

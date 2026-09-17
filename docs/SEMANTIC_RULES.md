@@ -38,6 +38,10 @@ Phase 5 已实现 `ModelRule` 协议和 `PyTorchModelRule`。只有显式 `torch
 
 识别 epoch loop、dataloader / batch loop、validation、checkpoint、gradient clipping、autocast、GradScaler 时以简化语义呈现，并标注证据。
 
+Phase 6 当前识别按函数名划分 Train / Evaluate / Inference / Export 入口、`epoch` / loader / batch 命名循环，以及上表的模式与优化步骤。`torch.no_grad()` 只有出现在 `with` 上下文时生成 Disable Gradient 事件；`model.eval()` 仅改变评估模式，不暗示禁用梯度。`torch.save/load` 只生成 Probable Checkpoint 候选，不能从 API 名字断言用途。Gradient Flow 仅在同入口、同循环层的 Backward 与后继 Optimizer Step 之间生成 Probable 静态关系；不表示实际梯度。Gradient clipping、autocast、GradScaler 尚未识别为专用事件。
+
+Attention-like 候选要求同一 `forward` 中 Q/K/V 命名赋值、Q 与 K 参与的矩阵乘法得分、以及该得分被 softmax 消费；只给 Probable，并保留真实类名与依据，不证明运行时算法。
+
 ## 5. 控制流与数据
 
 首版表达顺序、if True/False、条件摘要、折叠循环、LOOP_BACK、递归和可折叠 Call Cycle。普通临时变量默认隐藏；关键输入、target、prediction、loss、parameter、gradient 作为 DataNode 候选。

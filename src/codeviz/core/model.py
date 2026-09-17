@@ -131,6 +131,42 @@ class SemanticComponent:
 
 
 @dataclass(frozen=True, slots=True)
+class SemanticRelation:
+    source: str
+    target: str
+    type: EdgeType
+    confidence: Confidence
+    evidence: tuple[str, ...]
+    source_anchors: tuple[SourceAnchor, ...]
+
+    def __post_init__(self) -> None:
+        if not self.source or not self.target:
+            raise ValueError("semantic relation endpoints are required")
+        if not self.evidence or not self.source_anchors:
+            raise ValueError("semantic relations require evidence and a source anchor")
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticGraph:
+    components: tuple[SemanticComponent, ...] = ()
+    relations: tuple[SemanticRelation, ...] = ()
+    roots: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        ids = {component.id for component in self.components}
+        if len(ids) != len(self.components):
+            raise ValueError("semantic component IDs must be unique")
+        if any(root not in ids for root in self.roots):
+            raise ValueError("semantic roots must exist in the graph")
+        if any(relation.source not in ids or relation.target not in ids
+               for relation in self.relations):
+            raise ValueError("semantic relations must join registered components")
+        if any(child not in ids for component in self.components
+               for child in component.child_component_ids):
+            raise ValueError("semantic children must be registered components")
+
+
+@dataclass(frozen=True, slots=True)
 class DataNode:
     id: str
     name: str

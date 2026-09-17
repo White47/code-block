@@ -56,15 +56,19 @@ SemanticComponent {
 
 一个组件可对应一个或多个类、函数或 `forward()` 内部逻辑段；不要假设一一对应。
 
+Phase 6 的 `ProjectAnalysis.semantic.graph` 使用 `SemanticGraph(components, relations, roots)`。每个组件保留源码锚点、代码符号 ID 或子组件；每条 `SemanticRelation` 保留源、目标、EdgeType、confidence、evidence 与 sourceAnchors，端点和 child ID 必须在图内。模型 Definition 与 Module Instance 分别有组件；入口、训练事件和循环也是独立组件，循环子事件通过 `child_component_ids` / `CONTAINS` 关联。`CONTROL_FLOW` 只代表源码词法顺序，`GRADIENT_FLOW` 是 Backward→Optimizer 静态模式且最多 Probable，不是 autograd 观察。Attention-like 是 Probable 候选，保留真实类名与 forward 锚点。
+
 ## 6. DataNode / EntryPoint
 
 DataNode 角色：INPUT、TARGET、MASK、FEATURE、HIDDEN_STATE、PREDICTION、LOSS、PARAMETER、GRADIENT、OTHER。`shape`、`dtype`、`device` 仅保存静态可确认值与 confidence，不通过执行代码获取。
 
 Phase 4 仅按有限变量 / 参数 / `self` 属性名称表创建关键 DataNode，角色标记为 Probable；导入别名和普通临时变量不进入关键数据集合。简单直线赋值可通过隐藏临时变量传递关键数据来源，覆盖赋值会清除旧来源；分支和循环合流保持保守。`FlowAnalysis.data_nodes` 与 `FlowAnalysis.graph` 同时返回，后续 View Builder 再决定可见性。
 
-Phase 5 的 `ProjectAnalysis.model` 返回独立 `ModelAnalysis`：`ModelDefinition` 以 Symbol Index 的 class ID 为 `symbol_id`，含 base、forward method ID、evidence 与 SourceAnchor；`ModuleInstance` 有稳定的 Instance ID、所属定义 ID、构造层名或项目类 ID、容器种类、按原位置保留的 `member_instance_ids`（未知槽位为 `None`）、`repeat_count: int | None` 与 `shared_with_id`；`ModuleInvocation` 使用已有 CallSite ID 关联被调用 Instance，保留调用锚点和动态选择时的 `possible_instance_ids`。`repeat_count=None` 表示容器重复次数静态未知；`repeat_count > 1` 仅表达来源不同的同构结构候选，不等同共享权重。`shared_with_id` 才表示静态可见的同一对象别名。直接 `forward` 调用仍是 Probable，因为运行时可重绑定。模型事实与 Phase 4 Full Code Graph 分开保存，Phase 6–7 再组成语义 / 可见图。
+Phase 5 的 `ProjectAnalysis.model` 返回独立 `ModelAnalysis`：`ModelDefinition` 以 Symbol Index 的 class ID 为 `symbol_id`，含 base、forward method ID、evidence 与 SourceAnchor；`ModuleInstance` 有稳定的 Instance ID、所属定义 ID、构造层名或项目类 ID、容器种类、按原位置保留的 `member_instance_ids`（未知槽位为 `None`）、`repeat_count: int | None` 与 `shared_with_id`；`ModuleInvocation` 使用已有 CallSite ID 关联被调用 Instance，保留调用锚点和动态选择时的 `possible_instance_ids`。`repeat_count=None` 表示容器重复次数静态未知；`repeat_count > 1` 仅表达来源不同的同构结构候选，不等同共享权重。`shared_with_id` 才表示静态可见的同一对象别名。直接 `forward` 调用仍是 Probable，因为运行时可重绑定。模型事实与 Phase 4 Full Code Graph 分开保存，Phase 6 组成语义图，Phase 7 再生成局部可见图。
 
 EntryPoint 至少包含 id、name、kind（Train / Evaluate / Inference / Export）、sourceAnchor、flowNodeIds、modelIds。
+
+`ProjectAnalysis.training` 返回独立 `TrainingAnalysis(entry_points, events, issues)`。`TrainingEvent` 保存稳定 ID、role、sourceAnchor、confidence、evidence、entryPointId、原始 CallSite / ControlBlock ID、真实调用名及 `parent_loop_id`；`flowNodeIds` 按静态源码访问顺序引用事件。保存和加载调用只生成 Probable 的 Checkpoint 候选，因为 `torch.save/load` 不一定用于训练断点。
 
 ## 7. SymbolIndexEntry
 
