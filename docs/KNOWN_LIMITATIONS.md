@@ -16,6 +16,8 @@ Phase 7 只为 Architecture / Execution 建立局部视图；Calls、Data Flow�
 
 Phase 8 的 Tkinter Canvas 只渲染有限局部图；视觉布局与拖拽位置仅供阅读，重新启动后位置不保存。Search / Symbols 在界面中是明确的 Phase 9 占位，尚不能按符号定位或 Source → Graph 反查；Recent Projects、Outdated 检测、缓存和注释属 Phase 10。Analysis Issues 可单独查看，但复杂问题的自动修复不提供。源码查看仅支持项目内 `.py` 文件，单文件 5 MB 上限，UTF-8 解码错误以替代字符显示；不编辑源码。桌面启动依赖 Python 发行版实际提供 Tk 与图形显示环境，CI 无显示器时只运行可跳过的 Tk 实例测试和纯数据测试。分析目录在后台线程完成；不支持取消或增量更新。
 
+源码读取的最终路径核验当前支持 Windows 文件句柄和 Linux `/proc/self/fd`；若平台无法可靠取得已打开文件的真实路径，或文件系统不提供可比较的文件身份，查看器会拒绝读取而不是忽略安全检查。复杂图的隐藏成员可从聚合节点进入侧栏选择并重新定位，但尚无搜索过滤；超大成员列表的交互优化留后续阶段。
+
 ## MVP 限制
 
 - Python + PyTorch 优先，其他语言只保留 Adapter 接口。

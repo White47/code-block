@@ -36,8 +36,11 @@ class CodeVizApp:
         self._analyzing = False
         self._views: dict[ViewKind, VisibleGraph] = {}
         self._graph_tabs: dict[ViewKind, tuple[Any, GraphCanvas]] = {}
+        self._breadcrumbs: dict[ViewKind, Any] = {}
         self._roots: dict[ViewKind, str | None] = {}
         self._selected_id: str | None = None
+        self._selections: dict[ViewKind, str | None] = {}
+        self._expansion_history: dict[ViewKind, list[str]] = {}
         self._active_kind: ViewKind | None = None
         self._side_open = False
         self._source_tabs: dict[tuple[str, bool], Any] = {}
@@ -136,6 +139,7 @@ class CodeVizApp:
         self.sidebar_tree.bind("<Double-Button-1>", self._activate_sidebar)
         self.sidebar_tree.bind("<Return>", self._activate_sidebar)
         self._sidebar_targets: dict[str, tuple[str, str]] = {}
+        self._hidden_kind: ViewKind | None = None
         self._set_activity("Explorer")
 
     def _build_inspector(self, parent: Any) -> None:
@@ -223,6 +227,9 @@ class CodeVizApp:
             self._open_source(SourceAnchor(path, int(line)), False)
         elif kind == "problems":
             self._open_problems()
+        elif kind == "reveal" and self._hidden_kind is not None:
+            self._selections[self._hidden_kind] = value
+            self._open_graph(self._hidden_kind, self._roots.get(self._hidden_kind))
 
     def _reset_editors(self) -> None:
         for tab in self.main_tabs.tabs():
@@ -239,13 +246,17 @@ class CodeVizApp:
             self._side_open = False
         self._views.clear()
         self._graph_tabs.clear()
+        self._breadcrumbs.clear()
         self._roots.clear()
         self._source_tabs.clear()
         self._source_widgets.clear()
         self._problems_tab = None
         self._problem_anchors.clear()
         self._selected_id = None
+        self._selections.clear()
+        self._expansion_history.clear()
         self._active_kind = None
+        self._hidden_kind = None
         self._set_inspector_message("Select a model, step or data node to inspect its source.")
 
     def _choose_project(self) -> None:
@@ -337,6 +348,13 @@ class CodeVizApp:
         self._button(actions, "Analysis Issues", self._open_problems).pack(
             side="left", padx=4)
 
+        if self._analyzing:
+            tk.Label(self.overview_tab,
+                     text="Analyzing Python source · previous results are hidden until complete",
+                     bg=theme.BACKGROUND, fg=theme.MUTED,
+                     font=(theme.UI_FONT, 11)).pack(anchor="w", padx=35, pady=25)
+            return
+
         analysis = self.controller.analysis
         if analysis is None or project is None:
             tk.Label(self.overview_tab,
@@ -353,6 +371,7 @@ class CodeVizApp:
                        side="left", fill="x", expand=True, padx=5)
         self._card(summary, "ANALYSIS HEALTH",
                    f"{health.files_parsed}/{health.files_total} files · {health.issue_count} issues\n"
+                   f"Resolved {health.symbols_resolved} symbols\n"
                    f"Exact {health.exact}  ·  Probable {health.probable}  ·  "
                    f"Unresolved {health.unresolved}").pack(
                        side="left", fill="x", expand=True, padx=5)
@@ -438,7 +457,11 @@ class CodeVizApp:
             self.status_label.configure(text="Analyze the project before opening a graph")
             return
         if root_id != self._roots.get(kind):
-            self._selected_id = None
+            history = self._expansion_history.pop(kind, [])
+            for node_id in history:
+                self.controller.collapse(node_id)
+            self._selections[kind] = None
+        self._selected_id = self._selections.get(kind)
         try:
             view = self.controller.view(kind, root_id, self._selected_id)
         except (ValueError, RuntimeError) as error:
@@ -452,6 +475,10 @@ class CodeVizApp:
             bar = self.tk.Frame(frame, bg=theme.PANEL)
             bar.pack(fill="x")
             self._button(bar, "← Back", self._go_back).pack(side="left", padx=8, pady=5)
+            breadcrumb = self.tk.Label(bar, bg=theme.PANEL, fg=theme.ACCENT,
+                                       font=(theme.UI_FONT, 9, "bold"))
+            breadcrumb.pack(side="left", padx=8)
+            self._breadcrumbs[kind] = breadcrumb
             self.tk.Label(bar, text="Double-click or Enter to drill down · source opens separately",
                           bg=theme.PANEL, fg=theme.MUTED,
                           font=(theme.UI_FONT, 9)).pack(side="left", padx=12)
@@ -463,6 +490,13 @@ class CodeVizApp:
                                else "Training Flow")
         frame, graph = self._graph_tabs[kind]
         graph.render(view, self._selected_id)
+        names = {node.id: node.display_name for node in view.nodes}
+        parts = ["Architecture" if kind == ViewKind.ARCHITECTURE else "Training Flow"]
+        parts.append(names.get(root_id, root_id) if root_id is not None else
+                     ("All Models" if kind == ViewKind.ARCHITECTURE else "All Entries"))
+        parts.extend(names.get(item, "Expanded component")
+                     for item in self._expansion_history.get(kind, ()))
+        self._breadcrumbs[kind].configure(text=" › ".join(parts))
         self.main_tabs.select(frame)
         self.status_label.configure(
             text=f"{kind.value} · {len(view.nodes)} visible nodes · "
@@ -470,17 +504,28 @@ class CodeVizApp:
                  f"{len(view.edges)} relations")
         if self._selected_id is not None:
             self._update_inspector()
+        else:
+            self._set_inspector_message("Select a visible node to inspect its source.")
 
     def _tab_changed(self, _event: Any) -> None:
         selected = self.main_tabs.select()
         for kind, (frame, _graph) in self._graph_tabs.items():
             if str(frame) == selected:
                 self._active_kind = kind
+                self._selected_id = self._selections.get(kind)
+                if self._selected_id is not None:
+                    self._update_inspector()
+                else:
+                    self._set_inspector_message("Select a visible node to inspect its source.")
                 return
         self._active_kind = None
+        self._selected_id = None
+        self._set_inspector_message("Select a graph node to inspect its source.")
 
     def _on_select(self, node_id: str) -> None:
         self._selected_id = node_id
+        if self._active_kind is not None:
+            self._selections[self._active_kind] = node_id
         self._update_inspector()
 
     def _on_drill_down(self, node_id: str) -> None:
@@ -491,20 +536,46 @@ class CodeVizApp:
         node = next((item for item in view.nodes if item.id == node_id), None)
         if node is None:
             return
-        if node.metadata.get("has_children"):
+        if node.member_ids:
+            self._show_hidden_members(kind, node.member_ids)
+        elif node.metadata.get("has_children"):
             self.controller.expand(node_id)
+            history = self._expansion_history.setdefault(kind, [])
+            if node_id not in history:
+                history.append(node_id)
             self._selected_id = node_id
+            self._selections[kind] = node_id
             self._open_graph(kind, self._roots.get(kind))
-        elif node.source_anchors:
-            self._open_source(node.source_anchors[0], False)
+        else:
+            self.status_label.configure(
+                text="No deeper component · use Open Source to view the source file")
+
+    def _show_hidden_members(self, kind: ViewKind, member_ids: tuple[str, ...]) -> None:
+        self._hidden_kind = kind
+        self.sidebar_title.configure(text="HIDDEN MEMBERS")
+        self.sidebar_tree.delete(*self.sidebar_tree.get_children())
+        self._sidebar_targets.clear()
+        analysis = self.controller.analysis
+        names: dict[str, str] = {}
+        if analysis is not None:
+            if analysis.semantic is not None:
+                names.update((item.id, item.display_name)
+                             for item in analysis.semantic.graph.components)
+            if analysis.flow is not None:
+                names.update((item.id, item.name) for item in analysis.flow.data_nodes)
+        for member_id in member_ids:
+            item = self.sidebar_tree.insert("", "end", text=names.get(member_id, member_id))
+            self._sidebar_targets[item] = ("reveal", member_id)
 
     def _go_back(self) -> None:
         kind = self._active_kind
-        if kind is None or not self.controller.view_state.expanded_ids:
+        history = self._expansion_history.get(kind, []) if kind is not None else []
+        if kind is None or not history:
             self.main_tabs.select(self.overview_tab)
             return
-        self.controller.collapse(self.controller.view_state.expanded_ids[-1])
+        self.controller.collapse(history.pop())
         self._selected_id = None
+        self._selections[kind] = None
         self._open_graph(kind, self._roots.get(kind))
 
     def _on_move(self, node_id: str, point: tuple[float, float]) -> None:
@@ -620,4 +691,11 @@ class CodeVizApp:
 
 
 def main() -> None:
-    CodeVizApp().run()
+    try:
+        from tkinter import TclError
+    except ImportError as error:
+        raise SystemExit("CodeViz requires Tkinter and a graphical desktop") from error
+    try:
+        CodeVizApp().run()
+    except (ImportError, TclError) as error:
+        raise SystemExit("CodeViz requires Tkinter and a graphical desktop") from error

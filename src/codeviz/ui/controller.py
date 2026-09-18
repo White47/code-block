@@ -1,8 +1,11 @@
 """UI-independent project session and safe, read-only source navigation."""
 
+import os
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+from stat import S_ISREG
+from typing import BinaryIO
 
 from codeviz.analysis.project import ProjectAnalysis, analyze_project
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph
@@ -24,6 +27,37 @@ class SourceDocument:
     text: str
     start_line: int
     end_line: int
+
+
+def _opened_file_path(source: BinaryIO) -> Path:
+    """Resolve the opened handle, not the name that may have changed before open."""
+    if os.name == "nt":
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+
+        api = ctypes.windll.kernel32.GetFinalPathNameByHandleW
+        api.argtypes = (wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD)
+        api.restype = wintypes.DWORD
+        size = 260
+        while size <= 32768:
+            buffer = ctypes.create_unicode_buffer(size)
+            length = api(msvcrt.get_osfhandle(source.fileno()), buffer, size, 0)
+            if length == 0:
+                raise OSError(ctypes.get_last_error(), "cannot verify opened source path")
+            if length < size:
+                raw = buffer.value
+                if raw.startswith("\\\\?\\UNC\\"):
+                    return Path("\\\\" + raw[8:])
+                if raw.startswith("\\\\?\\"):
+                    return Path(raw[4:])
+                raise ValueError("opened source path is not a DOS path")
+            size = length + 1
+        raise ValueError("opened source path is too long to verify")
+    descriptor = Path("/proc/self/fd") / str(source.fileno())
+    if not descriptor.exists():
+        raise ValueError("opened source path cannot be verified on this platform")
+    return descriptor.resolve(strict=True)
 
 
 class AppController:
@@ -98,10 +132,23 @@ class AppController:
         resolved = source_path.resolve(strict=True)
         if not resolved.is_relative_to(self.project_root):
             raise ValueError("source file resolves outside the project")
-        if not resolved.is_file() or resolved.suffix.casefold() != ".py":
+        before = resolved.stat()
+        if not S_ISREG(before.st_mode) or resolved.suffix.casefold() != ".py":
             raise ValueError("source anchor must reference a Python file")
-        if resolved.stat().st_size > max_bytes:
+        if before.st_size > max_bytes:
             raise ValueError("source file exceeds viewer size limit")
-        text = resolved.read_text(encoding="utf-8", errors="replace")
+        with resolved.open("rb") as source:
+            opened = os.fstat(source.fileno())
+            if not _opened_file_path(source).is_relative_to(self.project_root):
+                raise ValueError("opened source file is outside the project")
+            if (not before.st_ino or not opened.st_ino or
+                    (before.st_dev, before.st_ino) != (opened.st_dev, opened.st_ino)):
+                raise ValueError("source file changed between validation and open")
+            if not S_ISREG(opened.st_mode) or opened.st_size > max_bytes:
+                raise ValueError("source file exceeds viewer size limit")
+            content = source.read(max_bytes + 1)
+            if len(content) > max_bytes:
+                raise ValueError("source file exceeds viewer size limit")
+        text = content.decode("utf-8", errors="replace")
         return SourceDocument(anchor.file_path, text, anchor.start_line,
                               anchor.end_line or anchor.start_line)
