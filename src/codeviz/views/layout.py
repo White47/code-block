@@ -26,12 +26,10 @@ def layout_positions(nodes: tuple[VisibleNode, ...], edges: tuple[VisibleEdge, .
                 frontier.append(child)
 
     if kind == "hierarchical":
-        rows: dict[int, int] = defaultdict(int)
-        positions: dict[str, tuple[float, float]] = {}
-        for node in nodes:
-            depth = nesting.get(node.id, 1)
-            positions[node.id] = (float(rows[depth] * 220), float(depth * 140))
-            rows[depth] += 1
+        ordered = sorted(nodes, key=lambda node: (nesting.get(node.id, 1),
+                                                   index[node.id]))
+        positions = {node.id: (0.0, float(position * 112))
+                     for position, node in enumerate(ordered)}
     else:
         forward_types = {EdgeType.CONTROL_FLOW, EdgeType.BRANCH_TRUE,
                          EdgeType.BRANCH_FALSE, EdgeType.CONTAINS}
@@ -52,7 +50,7 @@ def layout_positions(nodes: tuple[VisibleNode, ...], edges: tuple[VisibleEdge, .
                     ready.append(child)
         ordered_ids = set(ordering)
         ordering.extend(node.id for node in nodes if node.id not in ordered_ids)
-        positions = {node_id: (float(position * 220), float(nesting.get(node_id, 1) * 150))
+        positions = {node_id: (0.0, float(position * 112))
                      for position, node_id in enumerate(ordering)}
 
     positions.update({node_id: state.positions[node_id]

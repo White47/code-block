@@ -36,6 +36,10 @@ class CodeVizApp:
         self.root.geometry("1440x880")
         self.root.minsize(1000, 650)
         self.root.configure(bg=theme.BACKGROUND)
+        self._close_image = tk.PhotoImage(master=self.root, width=14, height=14)
+        for point in range(3, 11):
+            self._close_image.put(theme.MUTED, to=(point, point))
+            self._close_image.put(theme.MUTED, to=(13 - point, point))
         self.controller = AppController(CacheStore())
         self._messages: Queue[tuple[str, str | None]] = Queue()
         self._analyzing = False
@@ -65,6 +69,7 @@ class CodeVizApp:
         self._render_overview()
         self._poll_after_id: str | None = self.root.after(100, self._poll_messages)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.root.bind_all("<Control-w>", self._close_active_tab)
 
     def _configure_style(self) -> None:
         style = self.ttk.Style(self.root)
@@ -121,6 +126,8 @@ class CodeVizApp:
         self.editor_panes.add(self.main_tabs, minsize=400)
         self.side_tabs: Any = self.ttk.Notebook(self.editor_panes)
         self.main_tabs.bind("<<NotebookTabChanged>>", self._tab_changed)
+        self.main_tabs.bind("<Button-1>", self._on_tab_click, add="+")
+        self.side_tabs.bind("<Button-1>", self._on_tab_click, add="+")
         self.overview_tab = tk.Frame(self.main_tabs, bg=theme.BACKGROUND)
         self.main_tabs.add(self.overview_tab, text="Project Overview")
 
@@ -627,7 +634,8 @@ class CodeVizApp:
             tree.bind("<Return>", self._activate_problem)
             self.problems_tree = tree
             self._problems_tab = frame
-            self.main_tabs.add(frame, text="Problems")
+            self.main_tabs.add(frame, text="Problems", image=self._close_image,
+                               compound="right")
         self.problems_tree.delete(*self.problems_tree.get_children())
         self._problem_anchors.clear()
         for issue in build_problems(analysis):
@@ -713,6 +721,8 @@ class CodeVizApp:
                                     font=(theme.UI_FONT, 9, "bold"))
             warning.pack(side="right", padx=12)
             self._graph_warnings[kind] = warning
+            self._button(bar, "重置项目布局", self._reset_project_layout).pack(
+                side="right", padx=4, pady=5)
             if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
                 for label, direction in (("Both", "both"), ("Upstream", "upstream"),
                                          ("Downstream", "downstream")):
@@ -735,7 +745,8 @@ class CodeVizApp:
                          ViewKind.EXECUTION: "Training Flow",
                          ViewKind.SYMBOL: "Symbol Context",
                          ViewKind.DATA_FLOW: "Data Flow Context"}[kind]
-            self.main_tabs.add(frame, text=tab_title)
+            self.main_tabs.add(frame, text=tab_title, image=self._close_image,
+                               compound="right")
         frame, graph = self._graph_tabs[kind]
         self._graph_warnings[kind].configure(text=self._cache_warning())
         graph.render(view, self._selected_id)
@@ -769,6 +780,17 @@ class CodeVizApp:
             self._set_inspector_message("Select a visible node to inspect its source.")
         self._sync_layout()
 
+    def _reset_project_layout(self) -> None:
+        self.controller.reset_positions()
+        for kind, (_frame, graph) in self._graph_tabs.items():
+            selected = self._selections.get(kind)
+            view = self.controller.view(
+                kind, self._roots.get(kind), selected,
+                hops=self._context_hops.get(kind, 1),
+                direction=self._context_direction.get(kind, "both"))
+            self._views[kind] = view
+            graph.render(view, selected)
+
     def _tab_changed(self, _event: Any) -> None:
         selected = self.main_tabs.select()
         for kind, (frame, _graph) in self._graph_tabs.items():
@@ -785,6 +807,83 @@ class CodeVizApp:
         self._selected_id = None
         self._set_inspector_message("Select a graph node to inspect its source.")
         self._sync_layout()
+
+    def _on_tab_click(self, event: Any) -> str | None:
+        notebook = event.widget
+        try:
+            raw_index = notebook.tk.call(notebook._w, "identify", "tab",
+                                         event.x, event.y)
+            if raw_index == "":
+                return None
+            index = int(raw_index)
+            tabs = notebook.tabs()
+            tab = tabs[index]
+        except (self.tk.TclError, IndexError, TypeError, ValueError):
+            return None
+        if tab == str(self.overview_tab):
+            return None
+        right = event.x + 1
+        while right < notebook.winfo_width() and str(notebook.tk.call(
+                notebook._w, "identify", "tab", right, event.y)) == str(index):
+            right += 1
+        if event.x >= right - 26:
+            self._close_tab(notebook, tab)
+            return "break"
+        return None
+
+    def _close_active_tab(self, event: Any) -> str:
+        widget_path = str(event.widget)
+        side_path = str(self.side_tabs)
+        notebook = (self.side_tabs if self._side_open and
+                    (widget_path == side_path or widget_path.startswith(side_path + "."))
+                    else self.main_tabs)
+        selected = notebook.select()
+        if selected:
+            self._close_tab(notebook, selected)
+        return "break"
+
+    def _close_tab(self, notebook: Any, tab: str) -> bool:
+        tabs = notebook.tabs()
+        if tab not in tabs or tab == str(self.overview_tab):
+            return False
+        index = tabs.index(tab)
+        was_selected = notebook.select() == tab
+        widget = notebook.nametowidget(tab)
+        for kind, (frame, _graph) in tuple(self._graph_tabs.items()):
+            if str(frame) == tab:
+                for mapping in (self._views, self._graph_tabs, self._breadcrumbs,
+                                self._roots, self._root_history, self._selections,
+                                self._expansion_history, self._navigation_actions,
+                                self._graph_warnings, self._context_hops,
+                                self._context_direction):
+                    mapping.pop(kind, None)
+                if self._hidden_kind == kind:
+                    self._hidden_kind = None
+                if self._active_kind == kind:
+                    self._active_kind = None
+                    self._selected_id = None
+                break
+        for key, frame in tuple(self._source_tabs.items()):
+            if str(frame) == tab:
+                self._source_tabs.pop(key)
+                self._source_widgets.pop(key, None)
+                self._source_warnings.pop(key, None)
+                break
+        if self._problems_tab is not None and str(self._problems_tab) == tab:
+            self._problems_tab = None
+            self._problem_anchors.clear()
+        notebook.forget(tab)
+        widget.destroy()
+        remaining = notebook.tabs()
+        if notebook is self.side_tabs and not remaining and self._side_open:
+            self.editor_panes.forget(self.side_tabs)
+            self._side_open = False
+        elif was_selected and remaining:
+            notebook.select(remaining[min(index, len(remaining) - 1)])
+        if notebook is self.main_tabs:
+            self._tab_changed(None)
+        self._sync_layout()
+        return True
 
     def _on_select(self, node_id: str) -> None:
         self._selected_id = node_id
@@ -995,7 +1094,8 @@ class CodeVizApp:
             scrollbar.pack(side="right", fill="y")
             self._source_tabs[key] = frame
             self._source_widgets[key] = text
-            tabs.add(frame, text=Path(document.file_path).name)
+            tabs.add(frame, text=Path(document.file_path).name,
+                     image=self._close_image, compound="right")
         frame = self._source_tabs[key]
         self._source_warnings[key].configure(text=self._cache_warning())
         self._fill_source(self._source_widgets[key], document)
