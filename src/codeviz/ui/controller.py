@@ -1,6 +1,7 @@
 """UI-independent project session and safe, read-only source navigation."""
 
 import os
+import sys
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -31,7 +32,7 @@ class SourceDocument:
 
 def _opened_file_path(source: BinaryIO) -> Path:
     """Resolve the opened handle, not the name that may have changed before open."""
-    if os.name == "nt":
+    if sys.platform == "win32":
         import ctypes
         import msvcrt
         from ctypes import wintypes
