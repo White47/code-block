@@ -7,10 +7,11 @@ from typing import Any
 
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph
 from codeviz.navigation import plan_reveal
+from codeviz.persistence.store import CacheStore
 from codeviz.search import SearchResult, search_project
 
 from . import theme
-from .controller import AppController, SourceDocument
+from .controller import AnalysisStatus, AppController, SourceDocument
 from .graph_canvas import GraphCanvas
 from .presenter import OverviewChoice, build_inspector, build_overview, build_problems
 
@@ -33,7 +34,7 @@ class CodeVizApp:
         self.root.geometry("1440x880")
         self.root.minsize(1000, 650)
         self.root.configure(bg=theme.BACKGROUND)
-        self.controller = AppController()
+        self.controller = AppController(CacheStore())
         self._messages: Queue[tuple[str, str | None]] = Queue()
         self._analyzing = False
         self._views: dict[ViewKind, VisibleGraph] = {}
@@ -45,9 +46,12 @@ class CodeVizApp:
         self._expansion_history: dict[ViewKind, list[str]] = {}
         self._navigation_actions: dict[ViewKind, list[tuple[str, str | None]]] = {}
         self._active_kind: ViewKind | None = None
+        self._restoring_layout = False
         self._side_open = False
         self._source_tabs: dict[tuple[str, bool], Any] = {}
         self._source_widgets: dict[tuple[str, bool], Any] = {}
+        self._source_warnings: dict[tuple[str, bool], Any] = {}
+        self._graph_warnings: dict[ViewKind, Any] = {}
         self._problems_tab: Any | None = None
         self._problem_anchors: dict[str, SourceAnchor] = {}
         self._search_rows: dict[str, SearchResult] = {}
@@ -56,7 +60,8 @@ class CodeVizApp:
         self._configure_style()
         self._build_shell()
         self._render_overview()
-        self.root.after(100, self._poll_messages)
+        self._poll_after_id: str | None = self.root.after(100, self._poll_messages)
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     def _configure_style(self) -> None:
         style = self.ttk.Style(self.root)
@@ -185,7 +190,8 @@ class CodeVizApp:
     def _set_inspector_message(self, message: str) -> None:
         self.inspector_text.configure(state="normal")
         self.inspector_text.delete("1.0", "end")
-        self.inspector_text.insert("end", message)
+        notice = self._cache_warning()
+        self.inspector_text.insert("end", f"{notice}\n\n{message}" if notice else message)
         self.inspector_text.configure(state="disabled")
         self.source_button.configure(state="disabled")
         self.side_button.configure(state="disabled")
@@ -209,7 +215,7 @@ class CodeVizApp:
                 self.search_entry.delete(0, "end")
             self._refresh_search()
         elif name == "Settings":
-            tree.insert("", "end", text="Persistent settings arrive in Phase 10")
+            tree.insert("", "end", text="Analysis cache and layout stay on this device")
         elif name == "Explorer":
             self._refresh_explorer()
 
@@ -217,6 +223,12 @@ class CodeVizApp:
         if self._analyzing:
             self.sidebar_tree.insert("", "end", text="Analyzing project…")
             return
+        recent = self.controller.recent_projects()
+        if recent:
+            group = self.sidebar_tree.insert("", "end", text="Recent Projects", open=False)
+            for path in recent:
+                item = self.sidebar_tree.insert(group, "end", text=path.name or str(path))
+                self._sidebar_targets[item] = ("recent", str(path))
         analysis = self.controller.analysis
         if analysis is None:
             if self.controller.project_root is not None:
@@ -306,6 +318,8 @@ class CodeVizApp:
             self._open_source(SourceAnchor(path, int(line)), False)
         elif kind == "problems":
             self._open_problems()
+        elif kind == "recent":
+            self._open_project_path(Path(value))
         elif kind == "reveal" and self._hidden_kind is not None:
             previous = self._selections.get(self._hidden_kind)
             view = self._views.get(self._hidden_kind)
@@ -336,6 +350,8 @@ class CodeVizApp:
         self._roots.clear()
         self._source_tabs.clear()
         self._source_widgets.clear()
+        self._source_warnings.clear()
+        self._graph_warnings.clear()
         self._problems_tab = None
         self._problem_anchors.clear()
         self._search_rows.clear()
@@ -349,22 +365,105 @@ class CodeVizApp:
         self._hidden_kind = None
         self._set_inspector_message("Select a model, step or data node to inspect its source.")
 
+    def _sync_layout(self) -> None:
+        if self._restoring_layout or self.controller.project_root is None:
+            return
+        tabs: list[str] = []
+        for notebook in (self.main_tabs, self.side_tabs):
+            for tab in notebook.tabs():
+                if tab == str(self.overview_tab):
+                    continue
+                if any(str(frame) == tab for frame, _ in self._graph_tabs.values()):
+                    kind = next(kind for kind, (frame, _) in self._graph_tabs.items()
+                                if str(frame) == tab)
+                    tabs.append(f"graph:{kind.value}")
+                elif self._problems_tab is not None and str(self._problems_tab) == tab:
+                    tabs.append("problems")
+                else:
+                    for (path, side), frame in self._source_tabs.items():
+                        if str(frame) == tab:
+                            tabs.append(f"source:{int(side)}:{path}")
+                            break
+        self.controller.save_layout(
+            self._active_kind, self._selected_id, tuple(tabs),
+            {kind.value: root for kind, root in self._roots.items()})
+
+    def _restore_layout(self) -> None:
+        if self.controller.analysis is None:
+            self._restoring_layout = False
+            return
+        state = self.controller.view_state
+        self._restoring_layout = True
+        try:
+            for token in state.open_tabs:
+                if token.startswith("graph:"):
+                    try:
+                        kind = ViewKind(token[6:])
+                    except ValueError:
+                        continue
+                    if kind in (ViewKind.ARCHITECTURE, ViewKind.EXECUTION,
+                                ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+                        self._open_graph(kind, state.graph_roots.get(kind.value))
+                elif token.startswith("source:"):
+                    parts = token.split(":", 2)
+                    if len(parts) != 3 or parts[1] not in ("0", "1"):
+                        continue
+                    try:
+                        anchor = SourceAnchor(parts[2], 1)
+                    except ValueError:
+                        continue
+                    project_root = self.controller.project_root
+                    if (project_root is not None and
+                            project_root.joinpath(*anchor.file_path.split("/")).is_file()):
+                        self._open_source(anchor, parts[1] == "1")
+                elif token == "problems":
+                    self._open_problems()
+            if state.active_view in self._graph_tabs:
+                kind = state.active_view
+                assert kind is not None
+                self._open_graph(kind, state.graph_roots.get(kind.value),
+                                 reveal_id=state.selected_id)
+            else:
+                self.main_tabs.select(self.overview_tab)
+        finally:
+            self._restoring_layout = False
+        self._sync_layout()
+
     def _choose_project(self) -> None:
         if self._analyzing:
             return
         selected = self.filedialog.askdirectory(title="Open a local Python project")
         if not selected:
             return
+        self._open_project_path(Path(selected))
+
+    def _open_project_path(self, selected: Path) -> None:
         try:
-            self.controller.open_project(Path(selected))
+            self.controller.open_project(selected)
         except (OSError, ValueError) as error:
             self.messagebox.showerror("Cannot open project", str(error))
             return
+        self._restoring_layout = True
         self._reset_editors()
         self.path_label.configure(text=str(self.controller.project_root))
-        self.status_label.configure(text="Project opened · click Analyze Project to read source")
+        self.analyze_button.configure(
+            text="Re-analyze" if self.controller.analysis is not None else "Analyze Project")
+        if self.controller.analysis is not None:
+            self.status_label.configure(text=self._cache_warning() or
+                                        "Loaded saved analysis · source is unchanged")
+        else:
+            self.status_label.configure(text=self.controller.cache_issue or
+                                        "Project opened · click Analyze Project")
         self._set_activity("Explorer")
         self._render_overview()
+        self._restore_layout()
+
+    def _cache_warning(self) -> str:
+        if self.controller.outdated_reasons:
+            return "OUTDATED · " + ", ".join(self.controller.outdated_reasons) + " · Re-analyze"
+        if self.controller.status == AnalysisStatus.FAILED and self.controller.analysis:
+            return "ANALYSIS FAILED · showing previous results · Re-analyze"
+        return ""
 
     def _start_analyze(self) -> None:
         if self._analyzing:
@@ -373,6 +472,7 @@ class CodeVizApp:
             self._choose_project()
             if self.controller.project_root is None:
                 return
+        self._restoring_layout = True
         self._reset_editors()
         self._analyzing = True
         self._set_activity("Explorer")
@@ -396,19 +496,26 @@ class CodeVizApp:
                 kind, detail = self._messages.get_nowait()
                 self._analyzing = False
                 self.analyze_button.configure(state="normal")
+                self.analyze_button.configure(
+                    text="Re-analyze" if self.controller.analysis is not None else "Analyze Project")
                 if kind == "error":
-                    self.status_label.configure(text=f"Analysis failed · {detail}")
+                    self.status_label.configure(text=self._cache_warning() or
+                                                f"Analysis failed · {detail}")
                     self.messagebox.showerror("Analysis failed", detail or "Unknown error")
                 else:
                     analysis = self.controller.analysis
                     issue_count = len(analysis.issues) if analysis else 0
                     self.status_label.configure(
-                        text=f"{self.controller.status.value} · {issue_count} analysis issues")
+                        text=self._cache_warning() or
+                             f"{self.controller.status.value} · {issue_count} analysis issues" +
+                             (f" · {self.controller.cache_issue}"
+                              if self.controller.cache_issue else ""))
                 self._set_activity("Explorer")
                 self._render_overview()
+                self._restore_layout()
         except Empty:
             pass
-        self.root.after(100, self._poll_messages)
+        self._poll_after_id = self.root.after(100, self._poll_messages)
 
     def _render_overview(self) -> None:
         tk = self.tk
@@ -428,7 +535,8 @@ class CodeVizApp:
 
         actions = tk.Frame(self.overview_tab, bg=theme.BACKGROUND)
         actions.pack(fill="x", padx=30, pady=(0, 20))
-        self._button(actions, "Analyze Project", self._start_analyze, accent=True).pack(
+        self._button(actions, "Re-analyze" if self.controller.analysis else "Analyze Project",
+                     self._start_analyze, accent=True).pack(
             side="left", padx=4)
         self._button(actions, "Open Architecture",
                      lambda: self._open_graph(ViewKind.ARCHITECTURE)).pack(side="left", padx=4)
@@ -438,6 +546,13 @@ class CodeVizApp:
                      lambda: self._set_activity("Symbols")).pack(side="left", padx=4)
         self._button(actions, "Analysis Issues", self._open_problems).pack(
             side="left", padx=4)
+
+        notice = self._cache_warning()
+        if notice or self.controller.cache_issue:
+            tk.Label(self.overview_tab, text=notice or self.controller.cache_issue,
+                     bg=theme.SURFACE, fg=theme.WARNING, anchor="w",
+                     padx=16, pady=11, wraplength=900,
+                     font=(theme.UI_FONT, 10, "bold")).pack(fill="x", padx=35, pady=(0, 14))
 
         if self._analyzing:
             tk.Label(self.overview_tab,
@@ -520,6 +635,7 @@ class CodeVizApp:
             except ValueError:
                 pass
         self.main_tabs.select(self._problems_tab)
+        self._sync_layout()
 
     def _activate_problem(self, _event: Any) -> None:
         selected = self.problems_tree.selection()
@@ -586,6 +702,10 @@ class CodeVizApp:
                                        font=(theme.UI_FONT, 9, "bold"))
             breadcrumb.pack(side="left", padx=8)
             self._breadcrumbs[kind] = breadcrumb
+            warning = self.tk.Label(bar, bg=theme.PANEL, fg=theme.WARNING,
+                                    font=(theme.UI_FONT, 9, "bold"))
+            warning.pack(side="right", padx=12)
+            self._graph_warnings[kind] = warning
             if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
                 for label, direction in (("Both", "both"), ("Upstream", "upstream"),
                                          ("Downstream", "downstream")):
@@ -610,6 +730,7 @@ class CodeVizApp:
                          ViewKind.DATA_FLOW: "Data Flow Context"}[kind]
             self.main_tabs.add(frame, text=tab_title)
         frame, graph = self._graph_tabs[kind]
+        self._graph_warnings[kind].configure(text=self._cache_warning())
         graph.render(view, self._selected_id)
         names = {node.id: node.display_name for node in view.nodes}
         parts = [{ViewKind.ARCHITECTURE: "Architecture",
@@ -631,13 +752,15 @@ class CodeVizApp:
         self._breadcrumbs[kind].configure(text=" › ".join(parts))
         self.main_tabs.select(frame)
         self.status_label.configure(
-            text=f"{kind.value} · {len(view.nodes)} visible nodes · "
+            text=(self._cache_warning() + " · " if self._cache_warning() else "") +
+                 f"{kind.value} · {len(view.nodes)} visible nodes · "
                  f"{view.hidden_counts.get('nodes', 0)} hidden · "
                  f"{len(view.edges)} relations")
         if self._selected_id is not None:
             self._update_inspector()
         else:
             self._set_inspector_message("Select a visible node to inspect its source.")
+        self._sync_layout()
 
     def _tab_changed(self, _event: Any) -> None:
         selected = self.main_tabs.select()
@@ -649,10 +772,12 @@ class CodeVizApp:
                     self._update_inspector()
                 else:
                     self._set_inspector_message("Select a visible node to inspect its source.")
+                self._sync_layout()
                 return
         self._active_kind = None
         self._selected_id = None
         self._set_inspector_message("Select a graph node to inspect its source.")
+        self._sync_layout()
 
     def _on_select(self, node_id: str) -> None:
         self._selected_id = node_id
@@ -671,6 +796,7 @@ class CodeVizApp:
                                      reveal_id=node_id)
                     return
         self._update_inspector()
+        self._sync_layout()
 
     def _change_context(self, kind: ViewKind, *, direction: str | None = None,
                         hop_delta: int = 0) -> None:
@@ -758,7 +884,8 @@ class CodeVizApp:
         except StopIteration:
             self._set_inspector_message("Select a visible node to inspect its source.")
             return
-        lines = ["OVERVIEW", inspector.display_name,
+        lines = ([self._cache_warning(), ""] if self._cache_warning() else []) + [
+                 "OVERVIEW", inspector.display_name,
                  f"Code name  ·  {inspector.code_name or '—'}",
                  f"Role  ·  {inspector.role or 'Generic'}",
                  f"Confidence  ·  {inspector.confidence.value}", ""]
@@ -821,6 +948,11 @@ class CodeVizApp:
         key = (document.file_path, to_side)
         if key not in self._source_tabs:
             frame = self.tk.Frame(tabs, bg=theme.BACKGROUND)
+            warning = self.tk.Label(frame, bg=theme.SURFACE, fg=theme.WARNING,
+                                    anchor="w", padx=12, pady=7,
+                                    font=(theme.UI_FONT, 9, "bold"))
+            warning.pack(fill="x")
+            self._source_warnings[key] = warning
             text = self.tk.Text(frame, bg=theme.BACKGROUND, fg=theme.TEXT,
                                 insertbackground=theme.ACCENT, relief="flat",
                                 padx=18, pady=14, wrap="none",
@@ -833,8 +965,10 @@ class CodeVizApp:
             self._source_widgets[key] = text
             tabs.add(frame, text=Path(document.file_path).name)
         frame = self._source_tabs[key]
+        self._source_warnings[key].configure(text=self._cache_warning())
         self._fill_source(self._source_widgets[key], document)
         tabs.select(frame)
+        self._sync_layout()
 
     def _fill_source(self, widget: Any, document: SourceDocument) -> None:
         lines = document.text.splitlines()
@@ -851,6 +985,12 @@ class CodeVizApp:
 
     def run(self) -> None:
         self.root.mainloop()
+
+    def close(self) -> None:
+        if self._poll_after_id is not None:
+            self.root.after_cancel(self._poll_after_id)
+            self._poll_after_id = None
+        self.root.destroy()
 
 
 def main() -> None:

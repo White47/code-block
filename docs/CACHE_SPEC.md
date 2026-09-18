@@ -14,4 +14,4 @@
 - Stable ID 不因行号单独改变；缓存版本变化要可识别并安全失效。
 - 缓存损坏时保留源码访问能力，删除 / 重建分析缓存不应丢失 Annotations。
 
-具体 SQLite / JSON / 其他格式待真实仓库技术栈确认并记录 ADR。
+Phase 10 依据真实标准库 + Tkinter 技术栈选择 JSON，详见 `adr/007-json-local-cache.md`。源码指纹采用发现的 `.py` 文件内容 SHA-256、Ignore Paths 与分析 / parser / semantic rule 版本；文件不可安全核验时不将旧缓存标为 Ready。View State、Annotations 和 Recent Projects 各自独立于 Analysis Cache。

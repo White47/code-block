@@ -88,7 +88,7 @@ def build_overview(analysis: ProjectAnalysis, project_root: Path) -> OverviewDat
               for item in definitions),
         tuple(OverviewChoice(item.id, item.name, item.source_anchor) for item in entries),
         areas,
-        HealthData(sum(item.tree is not None for item in analysis.files), len(analysis.files),
+        HealthData(sum(item.was_parsed for item in analysis.files), len(analysis.files),
                    resolved, counts[Confidence.EXACT], counts[Confidence.PROBABLE],
                    counts[Confidence.UNRESOLVED], len(analysis.issues)),
     )

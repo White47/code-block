@@ -26,8 +26,11 @@ py -m venv .venv
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check src tests
 .\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m mypy --platform linux
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -v
 ```
+
+Windows 本机的 mypy 通过不等于 Ubuntu 通过。`--platform linux` 使用 Linux 平台类型定义，可在推送前发现 Windows-only API 属性错误；GitHub Actions 仍须在真实 Ubuntu 上单独验证。Phase 8/9 的 CI 失败即由该差异引起，已在 `779a864` 修复并推送；不把本地模拟结果冒称为远端成功。
 
 打包检查沿用 `py -m pip wheel . --no-deps --no-build-isolation --no-index`；如需保存产物，应指定临时输出目录，避免将构建产物纳入提交。
 
