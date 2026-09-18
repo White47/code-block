@@ -33,4 +33,4 @@
 
 ## 审查状态
 
-初次独立只读审查发现 6 项 Important 与 4 项 Minor，修复后复审又发现 Explorer 旧结果与聚合 Reveal 的 Back 路径遗漏。最终只读复核确认“先单击聚合节点→Reveal→Back”的回归修复有效，结论为 Ready to merge：Yes；未发现新增 Critical / Important。功能缺陷均在功能分支先补回归测试再修复；合入后仍需复验。
+初次独立只读审查发现 6 项 Important 与 4 项 Minor，修复后复审又发现 Explorer 旧结果与聚合 Reveal 的 Back 路径遗漏。最终只读复核确认“先单击聚合节点→Reveal→Back”的回归修复有效，结论为 Ready to merge：Yes；未发现新增 Critical / Important。功能缺陷均在功能分支先补回归测试再修复。Phase 8 已快进合入本地 `main`；合并后 170 项测试（2 项环境跳过）、Ruff、mypy 复验通过。下一阶段为 Phase 9 Search / Reveal in Graph。
