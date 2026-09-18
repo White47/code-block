@@ -233,6 +233,10 @@ class CodeVizApp:
             self._open_problems()
         elif kind == "reveal" and self._hidden_kind is not None:
             previous = self._selections.get(self._hidden_kind)
+            view = self._views.get(self._hidden_kind)
+            if view is None or not any(node.id == previous and not node.member_ids
+                                       for node in view.nodes):
+                previous = None
             self._navigation_actions.setdefault(self._hidden_kind, []).append(
                 ("reveal", previous))
             self._selections[self._hidden_kind] = value
