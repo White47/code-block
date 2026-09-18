@@ -2,7 +2,7 @@
 
 ## 当前工作区限制
 
-Phase 0 初次审计发现工作区为空且无 Git 仓库；用户随后确认从空目录新建。Phase 1–4 建立 Python 领域核心、一次性扫描 / AST / Resolver、基础 Full Code Graph；Phase 5 加入 PyTorch 模型事实；Phase 6 加入训练事件与 Semantic Component Graph；Phase 7 加入 Architecture / Execution 的局部 Visible Graph；Phase 8 加入 Tkinter 本地桌面阅读界面。仍无磁盘 ViewState 持久化或 Analysis Cache。指定连接器的 `workspace_info` 在 Phase 0 返回内部错误，绑定身份当时未验证；当前阶段的目录与 Git 检查来自直接读取目标路径。
+Phase 0 初次审计发现工作区为空且无 Git 仓库；用户随后确认从空目录新建。Phase 1–4 建立 Python 领域核心、一次性扫描 / AST / Resolver、基础 Full Code Graph；Phase 5 加入 PyTorch 模型事实；Phase 6 加入训练事件与 Semantic Component Graph；Phase 7 加入 Architecture / Execution 的局部 Visible Graph；Phase 8 加入 Tkinter 本地桌面阅读界面；Phase 9 加入定义 / 语义搜索与局部 Symbol / Data Flow 图定位。仍无磁盘 ViewState 持久化或 Analysis Cache。指定连接器的 `workspace_info` 在 Phase 0 返回内部错误，绑定身份当时未验证；当前阶段的目录与 Git 检查来自直接读取目标路径。
 
 Phase 3 能处理常见绝对 / 相对导入、`src` 布局、词法作用域与显式成员，但不是完整 Python 解释器。星号导入只报 issue，不推断导出名；动态 import、运行时属性绑定、条件 / 顺序敏感的名称重绑定、推导式细分作用域和复杂嵌套 `nonlocal` 仍可能保持 Unresolved 或 Probable。缺少 `__init__.py` 的 namespace package 尚无专门合成包节点；重复定义的发生序号在插入更早的同名定义后可能改变。
 
@@ -14,9 +14,9 @@ Phase 6 的入口检测主要依赖函数名，可能漏掉通过 CLI、装饰�
 
 Phase 7 只为 Architecture / Execution 建立局部视图；Calls、Data Flow、Gradient 和 Symbol 的独立局部 Code Graph 视图仍需后续阶段扩展。Architecture 以组件包含关系为主；只有模型 `forward` 作用域内可静态确认的关键 DataNode 及代码级 DATA_FLOW 会进入视图，尚未把数据边解释为组件间真实张量流。Execution 的关键数据仅来自所选入口函数作用域，不能由此推断动态调用中的值传递。收起组件及预算截断会隐藏事实，但返回 hiddenCounts、可继续下钻提示和聚合成员 ID；聚合节点不是新源码定义。布局是确定性的阅读提示，不是运行时顺序或完整 CFG。ViewState 只支持 JSON 数据往返，尚未写入应用数据目录；取消分析和 Partial 状态尚未接入视图查询。默认上限 100 节点、300 边限制的是输出量，不是输入项目的解析成本。
 
-Phase 8 的 Tkinter Canvas 只渲染有限局部图；视觉布局与拖拽位置仅供阅读，重新启动后位置不保存。Search / Symbols 在界面中是明确的 Phase 9 占位，尚不能按符号定位或 Source → Graph 反查；Recent Projects、Outdated 检测、缓存和注释属 Phase 10。Analysis Issues 可单独查看，但复杂问题的自动修复不提供。源码查看仅支持项目内 `.py` 文件，单文件 5 MB 上限，UTF-8 解码错误以替代字符显示；不编辑源码。桌面启动依赖 Python 发行版实际提供 Tk 与图形显示环境，CI 无显示器时只运行可跳过的 Tk 实例测试和纯数据测试。分析目录在后台线程完成；不支持取消或增量更新。
+Phase 8–9 的 Tkinter Canvas 只渲染有限局部图；视觉布局与拖拽位置仅供阅读，重新启动后位置不保存。Search / Symbols 查询已索引的定义与有限训练语义别名，默认最多返回 100 项；未解析引用不作为确定的定义结果，源码文件内容不做全文搜索。Symbol / Data Flow 图只显示现有 Code Graph 的 1–5 hop 邻域，不是完整调用图或运行时数据流；Source → Graph 反查仍待后续实现。Recent Projects、Outdated 检测、缓存和注释属 Phase 10。Analysis Issues 可单独查看，但复杂问题的自动修复不提供。源码查看仅支持项目内 `.py` 文件，单文件 5 MB 上限，UTF-8 解码错误以替代字符显示；不编辑源码。桌面启动依赖 Python 发行版实际提供 Tk 与图形显示环境，CI 无显示器时只运行可跳过的 Tk 实例测试和纯数据测试。分析目录在后台线程完成；不支持取消或增量更新。
 
-源码读取的最终路径核验当前支持 Windows 文件句柄和 Linux `/proc/self/fd`；若平台无法可靠取得已打开文件的真实路径，或文件系统不提供可比较的文件身份，查看器会拒绝读取而不是忽略安全检查。复杂图的隐藏成员可从聚合节点进入侧栏选择并重新定位，但尚无搜索过滤；超大成员列表的交互优化留后续阶段。
+源码读取的最终路径核验当前支持 Windows 文件句柄和 Linux `/proc/self/fd`；若平台无法可靠取得已打开文件的真实路径，或文件系统不提供可比较的文件身份，查看器会拒绝读取而不是忽略安全检查。复杂图的隐藏成员可从聚合节点进入侧栏选择并重新定位，但聚合成员侧栏尚无独立过滤；超大成员列表的交互优化留后续阶段。
 
 ## MVP 限制
 

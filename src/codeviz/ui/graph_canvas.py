@@ -55,6 +55,8 @@ def edge_paint(style: str) -> EdgePaint:
         "branch-false": EdgePaint(theme.WARNING, (6, 3), 2),
         "data-solid": EdgePaint("#7fb3e8", None, 3),
         "loop-curved": EdgePaint(theme.WARNING, (4, 3), 2),
+        "calls-dashed": EdgePaint(theme.ACCENT, (6, 3), 2),
+        "data-dashed": EdgePaint("#7fb3e8", (5, 3), 2),
     }.get(style, EdgePaint(theme.MUTED, None, 1))
 
 
@@ -135,7 +137,9 @@ class GraphCanvas:
         if not scene.nodes:
             message = ("No model components detected · inspect Analysis Issues"
                        if view.view_kind == ViewKind.ARCHITECTURE else
-                       "No execution entry points detected · inspect Analysis Issues")
+                       "No execution entry points detected · inspect Analysis Issues"
+                       if view.view_kind == ViewKind.EXECUTION else
+                       "No local code context available · open source instead")
             self.canvas.create_text(80, 110, text=message, anchor="w", fill=theme.MUTED,
                                     font=(theme.UI_FONT, 12), tags=("empty-state",))
         for edge in scene.edges:

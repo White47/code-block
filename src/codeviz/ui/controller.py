@@ -98,10 +98,12 @@ class AppController:
         return result
 
     def view(self, kind: ViewKind, root_id: str | None = None,
-             selected_id: str | None = None) -> VisibleGraph:
+             selected_id: str | None = None, *, hops: int = 1,
+             direction: str = "both") -> VisibleGraph:
         if self.analysis is None:
             raise RuntimeError("analyze the project before opening a graph")
-        request = ViewRequest(kind, root_id=root_id, selected_id=selected_id)
+        request = ViewRequest(kind, root_id=root_id, selected_id=selected_id,
+                              hops=hops, direction=direction)
         return build_visible_graph(self.analysis, request, self.view_state)
 
     def expand(self, node_id: str) -> None:
