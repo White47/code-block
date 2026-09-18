@@ -2,7 +2,7 @@
 
 ## 当前实施前提
 
-Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 尚未成功，连接器身份核验待完成。Phase 1–6 使用实际路径；Phase 7 以后仍用“目标职责路径”描述并在进入时落实。
+Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 在 Phase 0 未成功；当前阶段直接审计目标路径与 Git 状态。Phase 1–8 已按实际代码路径落实，后续阶段进入时再细化。
 
 ## Phase 0 — Workspace Audit + Docs
 
@@ -87,12 +87,12 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 ## Phase 8 — VSCode-style UI + Tabs/Split + Inspector
 
 - Goal：打通 Overview、视图、源码和 Inspector 的阅读体验。
-- Deliverables：Activity Bar、Sidebar、Editor Tabs / Split、Inspector、Problems、Source viewer。
-- Files likely affected：`ui/layout`、`ui/views`、`ui/inspector`、`ui/source`。
-- Dependencies：Phase 7；复用真实仓库已有 UI / graph 组件。
-- Tests：单击、双击、Open Source、Split、面包屑、键盘操作、空状态和 Partial。
-- Acceptance Criteria：完成架构与训练两条视觉链路；节点默认显示易读名 + 真实名。
-- Out of Scope：源码编辑 / 重构。
+- Deliverables：本地 Tkinter Activity Bar、Sidebar、Project Overview、Architecture / Training Flow Canvas、Editor Tabs / Split、Inspector、独立 Problems、只读 Source viewer、显式后台 Analyze。
+- Files likely affected：`src/codeviz/ui/presenter.py`、`controller.py`、`graph_canvas.py`、`theme.py`、`tkapp.py`、`pyproject.toml`、`tests/test_ui_*.py`、相应文档。
+- Dependencies：Phase 7 的 VisibleGraph / ViewState；Python 3.11+ 标准库 Tkinter / ttk（见 ADR-006），不新增运行时依赖。
+- Tests：Overview / Inspector 事实映射、项目切换与源码路径限制、图场景和关系线型、惰性导入、Tk 可用时的模型直达 / Problems / Split / Inspector / 源码定位 / 控件释放；全量 unittest、Ruff、mypy、离线 wheel，Windows 桌面烟测。
+- Acceptance Criteria：Overview 可选择模型或入口，架构和训练局部图可下钻；单击节点高亮一跳并在 Inspector 显示证据与源码，Open Source / Open to Side 独立；Problems 可查看；Analyze 不执行用户代码，分析中不能切换项目；节点仅显示易读名与真实名。
+- Out of Scope：真实搜索与符号定位（Phase 9）、磁盘缓存 / Recent Projects / Outdated（Phase 10）、源码编辑 / 重构。
 
 ## Phase 9 — Search / Reveal in Graph / Source Navigation
 

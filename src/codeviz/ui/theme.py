@@ -1,0 +1,13 @@
+"""A restrained dark workstation palette for the desktop shell."""
+
+BACKGROUND = "#171b20"
+PANEL = "#20262d"
+SURFACE = "#29313a"
+SURFACE_SELECTED = "#214447"
+TEXT = "#e8edf0"
+MUTED = "#aab7bd"
+ACCENT = "#6dd6c5"
+WARNING = "#e5ac61"
+BORDER = "#3b4650"
+CODE_FONT = "Cascadia Code"
+UI_FONT = "Bahnschrift"

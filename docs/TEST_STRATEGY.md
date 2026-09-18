@@ -9,7 +9,7 @@
 - Model / Phase 5：torch 导入别名、项目内同名 torch 包与局部遮蔽、自定义 Module 继承、常见层、Sequential 顺序、ModuleList 同构 / 共享成员 / 零次 / 动态次数、ModuleDict 部分动态键、共享别名与链式赋值、条件构造、直接 / 索引 / 循环 forward CallSite 关联、未知工厂候选、稳定 ID、坏文件与规则异常隔离、不执行源码；训练规则留 Phase 6。
 - Training / Semantic / Phase 6：显式导入与局部遮蔽、接收者 Exact / Probable、train/eval 与 no_grad 区分、epoch / batch 循环归属、多入口共享模型定义、条件重绑定、checkpoint 候选、Attention-like 正反例、模型 Definition / Instance 分离、图端点 / 子节点校验、来源锚点、Probable 梯度静态关系、坏文件隔离。
 - Visible Graph / Phase 7：Architecture / Execution 多根与指定根、默认折叠和展开、选中组件 1-hop、单节点预算保留选中项、节点与边预算、执行主控制边优先、关键数据与真实代码级 DATA_FLOW 投影、可追溯溢出聚合、重复结构与共享实例区分、关系白名单、LOOP_BACK 布局、图例、手动位置覆盖及 JSON 数据往返；不得修改分析事实或执行项目代码。
-- UI：Overview、选择、下钻、Inspector、Split、搜索、源码定位。
+- UI / Phase 8：无显示器测试 Presenter 事实映射、Controller 的显式 Analyze 与源码边界、GraphScene / 边样式、Tk 模块惰性导入；有 Tk 显示时测试 Overview 模型入口、独立 Problems、源文件 / Split 控件释放、图节点选择→Inspector→侧边源码定位。Search / Symbol Reveal 留 Phase 9，不计入 Phase 8 通过率。
 - Persistence：fingerprint、Outdated、View State、Annotations。
 
 ## 必备 fixture

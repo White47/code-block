@@ -6,7 +6,7 @@
 
 **Architecture:** `ui/presenter.py` 将分析事实变成纯数据的 Overview / Inspector / Problems；`ui/controller.py` 管理已打开目录、一次性 Analyze、视图与安全源码读取；`ui/graph_canvas.py` 绘制不超过 View Builder 预算的图；`ui/tkapp.py` 只承载 Tk 事件、Tabs / Split 与后台分析通知。设计边界见 `PHASE8_DESIGN.md`。
 
-**Tech Stack:** Python 3.11+ 标准库 Tkinter / ttk、现有 unittest / Ruff / mypy / setuptools，无新增运行时依赖。`tkinter.Tk()` 不在 CI 测试中创建；启动时再检查显示环境。
+**Tech Stack:** Python 3.11+ 标准库 Tkinter / ttk、现有 unittest / Ruff / mypy / setuptools，无新增运行时依赖。无显示器时 Tk 实例测试跳过；其余测试无需创建窗口。
 
 ---
 
