@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph, VisibleNode
 from codeviz.navigation import plan_reveal
+from codeviz.persistence.store import CacheStore
 from codeviz.search import search_project
 from codeviz.ui.controller import AnalysisStatus
 from codeviz.ui.presenter import build_overview, build_problems
@@ -45,8 +46,12 @@ class TkAppLiveTests(unittest.TestCase):
             yield from self._labels(child)
 
     def setUp(self):
+        self.cache_dir = TemporaryDirectory()
+        self.addCleanup(self.cache_dir.cleanup)
         try:
-            self.app = CodeVizApp()
+            with patch("codeviz.ui.tkapp.CacheStore",
+                       return_value=CacheStore(Path(self.cache_dir.name))):
+                self.app = CodeVizApp()
         except Exception as error:
             import tkinter
 
@@ -56,7 +61,7 @@ class TkAppLiveTests(unittest.TestCase):
         self.app.root.withdraw()
 
     def tearDown(self):
-        self.app.root.destroy()
+        self.app.close()
 
     def test_reset_destroys_detached_source_widgets(self):
         with TemporaryDirectory() as temporary:
@@ -355,7 +360,7 @@ class TkAppLiveTests(unittest.TestCase):
             self.assertIn("Analyzing", self.app.sidebar_tree.item(
                 self.app.sidebar_tree.get_children()[0], "text"))
 
-    def test_failed_reanalysis_restores_explorer_empty_state(self):
+    def test_failed_reanalysis_restores_explorer_and_keeps_recent_project(self):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "model.py").write_text(
@@ -372,9 +377,55 @@ class TkAppLiveTests(unittest.TestCase):
             self.app._messages.put(("error", "scan failed"))
             with patch.object(self.app.messagebox, "showerror"):
                 self.app._poll_messages()
-            self.assertEqual(self.app.sidebar_tree.item(
-                self.app.sidebar_tree.get_children()[0], "text"), "Click Analyze Project")
-            self.assertFalse(self.app._sidebar_targets)
+            root_labels = [self.app.sidebar_tree.item(item, "text")
+                           for item in self.app.sidebar_tree.get_children()]
+            self.assertIn("Click Analyze Project", root_labels)
+            self.assertIn("Recent Projects", root_labels)
+            self.assertTrue(all(action == "recent" for action, _ in
+                                self.app._sidebar_targets.values()))
+
+    def test_outdated_cache_warning_appears_in_overview_graph_and_source(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "run.py"
+            source.write_text("def train(): return 1\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            source.write_text("def train(): return 2\n", encoding="utf-8")
+            self.app._open_project_path(root)
+            self.assertEqual(self.app.controller.status, AnalysisStatus.OUTDATED)
+            self.assertTrue(any("OUTDATED" in label.cget("text")
+                                for label in self._labels(self.app.overview_tab)))
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            self.assertIn("OUTDATED", self.app._graph_warnings[ViewKind.ARCHITECTURE].cget(
+                "text"))
+            self.app._open_source(SourceAnchor("run.py", 1), False)
+            self.assertIn("OUTDATED", self.app._source_warnings[("run.py", False)].cget(
+                "text"))
+
+    def test_reopen_restores_graph_source_tabs_and_selection(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text(
+                "import torch.nn as nn\nclass Net(nn.Module):\n"
+                "    def forward(self, x): return x\n", encoding="utf-8")
+            self.app._open_project_path(root)
+            self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            visible = self.app._views[ViewKind.ARCHITECTURE]
+            selected = visible.nodes[0].id
+            self.app._on_select(selected)
+            self.app._open_source(SourceAnchor("run.py", 1), False)
+            self.app._open_graph(ViewKind.ARCHITECTURE, reveal_id=selected)
+            self.app.root.update()
+            self.app._sync_layout()
+            self.assertIn("graph:Architecture", self.app.controller.view_state.open_tabs)
+            self.assertIn("source:0:run.py", self.app.controller.view_state.open_tabs)
+            self.app._open_project_path(root)
+            self.assertEqual(self.app.controller.status, AnalysisStatus.READY)
+            self.assertIn(ViewKind.ARCHITECTURE, self.app._graph_tabs)
+            self.assertIn(("run.py", False), self.app._source_tabs)
+            self.assertEqual(self.app._selected_id, selected)
 
     def test_aggregate_drill_down_exposes_hidden_member_choices(self):
         kind = ViewKind.ARCHITECTURE

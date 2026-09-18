@@ -23,6 +23,12 @@ class ParsedFile:
     tree: ast.Module | None
     line_count: int
     issues: tuple[AnalysisIssue, ...] = ()
+    parsed_success: bool | None = None
+
+    @property
+    def was_parsed(self) -> bool:
+        """Cache snapshots retain success metadata without retaining an AST."""
+        return self.parsed_success if self.parsed_success is not None else self.tree is not None
 
 
 def _module_name(relative_path: str) -> str:

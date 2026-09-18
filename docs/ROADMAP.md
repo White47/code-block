@@ -18,6 +18,6 @@
 
 ## Phase 10–11 — 持久化与硬化
 
-实现 Cache、Health、Problems、布局持久化、fixture、验收测试和 MVP hardening。
+Phase 10 已在功能分支实现本地 Cache、Outdated、Recent Projects 和布局持久化；Health / Problems 沿用 Phase 8 的事实呈现，阶段验证见 `PHASE10_REPORT.md`。下一步 Phase 11：扩充 fixture、三条黄金路径验收、性能基线与 MVP hardening。
 
 后置：file watcher / incremental parse、runtime trace、真实 tensor propagation、完整 autograd、distributed 深层语义、复杂配置和 notebook 深度分析。

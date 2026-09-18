@@ -107,12 +107,12 @@ Phase 0 审计时间：2026-09-17。建立文档前 `<workspace>` 为空且不�
 ## Phase 10 — Cache / Health / Problems / Layout Persistence
 
 - Goal：提供可恢复、可解释的本地持久化。
-- Deliverables：Analysis Cache、View State、Annotations 分离；fingerprint、version、Outdated、health、Problems。
-- Files likely affected：`persistence`、`cache`、`health`、`problems`。
-- Dependencies：Phase 1–9；存储格式按真实仓库 ADR 决定。
-- Tests：源码、Ignore Paths、分析配置、解析器 / 规则版本变化均标 Outdated 或使缓存安全失效；无变化加载、缓存损坏、annotation 保留、源码仓库无污染。
-- Acceptance Criteria：不保存完整源码副本；旧结果可查看但显式 Outdated。
-- Out of Scope：增量 watcher、远程缓存。
+- Deliverables：白名单 JSON Analysis Cache、独立 View State / Annotations / Recent Projects；内容指纹、分析 / parser / rule version、Outdated 与 Re-analyze；复用 Phase 8 的 Health / Problems。
+- Files likely affected：`src/codeviz/persistence/{codec,fingerprint,store}.py`、`source_handles.py`、`analysis/python.py`、`views/state.py`、`ui/{controller,presenter,tkapp}.py`、`tests/test_persistence_*.py`、`tests/test_ui_tkapp.py`；细节见 `PHASE10_PLAN.md` 和 ADR-007。
+- Dependencies：Phase 1–9；Python 标准库 JSON / hashlib / tempfile，无新运行时依赖或 GUI 迁移。
+- Tests：往返后搜索与视图等价；AST / 源码不入缓存；改 / 增 / 删源文件、Ignore Paths 和版本变化；损坏与原子写失败；标注独立；旧图带过期警告；重开恢复图 / 源码标签与选中节点；Ruff、Windows / Linux mypy、unittest、wheel。
+- Acceptance Criteria：不保存完整源码副本、不写入被分析仓库；旧结果可查但 Overview / Graph / Inspector / Source 显示 Outdated；缓存失败不抹掉用户数据。
+- Out of Scope：增量 watcher、远程缓存、Settings 通用配置面板、复杂标注编辑器、尚无 UI 操作的 zoom / pan / filters。
 
 ## Phase 11 — MVP Hardening + Fixtures + Acceptance Tests
 
