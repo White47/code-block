@@ -198,6 +198,10 @@ class VisibleNode:
     code_node_ids: tuple[str, ...] = ()
     source_anchors: tuple[SourceAnchor, ...] = ()
     member_ids: tuple[str, ...] = ()
+    code_name: str | None = None
+    role: str | None = None
+    confidence: Confidence = Confidence.UNRESOLVED
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not any((self.semantic_component_ids, self.code_node_ids, self.source_anchors, self.member_ids)):
@@ -222,17 +226,53 @@ class VisibleEdge:
 
 
 @dataclass(frozen=True, slots=True)
+class VisibleAggregation:
+    id: str
+    member_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.id or not self.member_ids or any(not member for member in self.member_ids):
+            raise ValueError("aggregations require an ID and source member IDs")
+
+
+@dataclass(frozen=True, slots=True)
+class VisibleLegendItem:
+    type: EdgeType
+    label: str
+    style: str
+
+
+@dataclass(frozen=True, slots=True)
 class VisibleGraph:
     view_kind: ViewKind
     nodes: tuple[VisibleNode, ...]
     root_ids: tuple[str, ...] = ()
     edges: tuple[VisibleEdge, ...] = ()
+    aggregations: tuple[VisibleAggregation, ...] = ()
+    layout_kind: str = ""
+    layout_hints: dict[str, tuple[float, float]] = field(default_factory=dict)
+    legend: tuple[VisibleLegendItem, ...] = ()
+    hidden_counts: dict[str, int] = field(default_factory=dict)
+    query_context: dict[str, object] = field(default_factory=dict)
+    max_nodes: int = 100
+    max_edges: int = 300
 
     def __post_init__(self) -> None:
         ids = {node.id for node in self.nodes}
         if len(ids) != len(self.nodes):
             raise ValueError("visible node IDs must be unique")
+        if (type(self.max_nodes) is not int or type(self.max_edges) is not int
+                or self.max_nodes < 1 or self.max_edges < 1):
+            raise ValueError("visible graph budgets must be positive")
+        if len(self.nodes) > self.max_nodes or len(self.edges) > self.max_edges:
+            raise ValueError("visible graph exceeds its node or edge budget")
         if any(root not in ids for root in self.root_ids):
             raise ValueError("visible roots must exist in nodes")
         if any(edge.source not in ids or edge.target not in ids for edge in self.edges):
             raise ValueError("visible edges must join visible nodes")
+        if any(aggregation.id not in ids for aggregation in self.aggregations):
+            raise ValueError("aggregation must have a visible node")
+        if any(node_id not in ids for node_id in self.layout_hints):
+            raise ValueError("layout hints must refer to visible nodes")
+        if any(count < 0 for count in self.hidden_counts.values()):
+            raise ValueError("hidden counts cannot be negative")

@@ -76,4 +76,4 @@ EntryPoint 至少包含 id、name、kind（Train / Evaluate / Inference / Export
 
 ## 8. VisibleGraph
 
-VisibleGraph 是查询结果，不是事实存储：包含 viewKind、rootIds、visibleNodes、visibleEdges、aggregations、layoutHints、legend、hiddenCounts、queryContext。每个可见节点需携带到 SemanticComponent / CodeNode / SourceAnchor 的来源引用；聚合节点携带成员 ID 集合。用户布局和展开状态不得写回分析事实。
+VisibleGraph 是查询结果，不是事实存储：包含 viewKind、rootIds、visibleNodes、visibleEdges、aggregations、layoutKind、layoutHints、legend、hiddenCounts、queryContext 与本次 maxNodes / maxEdges。Phase 7 的 `build_visible_graph(ProjectAnalysis, ViewRequest, ViewState)` 支持 Architecture / Execution；默认最多 100 个节点、300 条边，选中节点可取 1-hop，上限 5-hop。语义可见节点携带 SemanticComponent ID、可用的代码符号 ID 和 SourceAnchor；关键数据可见节点携带真实 CodeNode ID 和 SourceAnchor，DATA_FLOW 边取自代码图并保留赋值锚点与 Probable，不从相近位置猜造新数据边。溢出聚合节点携带真实成员 ID 集合，不把它们伪装成新的代码事实。hiddenCounts 包含被折叠或预算截断的可达节点 / 关系；legend 按实际可见边给出不同线型。`ViewState` 的 expandedIds / 手动 positions 可转成 JSON 数据并恢复，但 Phase 10 前不做磁盘持久化；任何布局状态都不写回分析事实。

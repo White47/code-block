@@ -2,7 +2,7 @@
 
 ## 1. 当前约束
 
-Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–6 的 `src/codeviz/core`、`src/codeviz/analysis`、`src/codeviz/semantic` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和状态库尚未选择。
+Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–7 的 `src/codeviz/core`、`src/codeviz/analysis`、`src/codeviz/semantic`、`src/codeviz/views` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和 UI 状态库尚未选择。
 
 ## 2. 分层
 
@@ -31,8 +31,8 @@ Project Source / Config
 - Semantic Rules：`semantic/rules.py` 定义 `ModelRule` 协议；`semantic/pytorch.py` 匹配模型和常见层；`semantic/training.py` 定义训练角色与接收者证据。规则不导入 PyTorch；完整 Generic Python / Transformer 插件仍待后续阶段。
 - Model Analysis：`analysis/model.py` 在 Resolver 和 Flow 之后提取带源码锚点的模型 Definition、子模块 Instance、`forward` Invocation；通过 CallSite ID 与已有 Full Code Graph 关联。`ModuleList` 仅在静态可见的同构结构上给出折叠次数；模型事实不直接插入 Code Graph。
 - Training Analysis：`analysis/training.py` 将 AST 调用与 Resolver / Model / Flow 证据组合成独立入口、训练事件和循环归属；函数参数名称仅形成 Probable 线索。
-- Semantic Graph：`semantic/components.py` 组合模型定义、实例、入口和事件；关系含源码锚点与证据。控制流边只表达词法顺序，梯度边只表示 Probable 静态模式；Attention-like 是结构性 Probable 候选。
-- View Builder：按视图和选中节点查询局部图、聚合重复结构、控制可见节点数。
+- Semantic Graph：`semantic/components.py` 组合模型定义、实例、入口和事件；关系含源码锚点与证据。控制流边表达 AST 路径的静态近似，梯度边只表示 Probable 静态模式；Attention-like 是结构性 Probable 候选。
+- View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单，限制可见节点与边并保留聚合成员 ID；`views/layout.py` 提供确定性层级 / 流程位置，`views/state.py` 只序列化展开和手动位置。完整代码图不直接交给 UI，磁盘持久化留 Phase 10。
 - UI：VSCode 风格 Activity Bar、Sidebar、Editor Tabs / Split、Inspector、Problems。
 - Cache：Analysis Cache、View State、Annotations 三者分离。
 

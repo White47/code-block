@@ -78,10 +78,10 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 
 - Goal：从 Full Graph 生成受控局部 Visible Graph。
 - Deliverables：Graph Query、聚合 / 折叠、1-hop 上下文、Architecture 层级布局、Execution 流程布局、Legend。
-- Files likely affected：`views`、`graph-query`、`layout`。
+- Files likely affected：`core/model.py`、`views/query.py`、`views/data.py`、`views/builder.py`、`views/layout.py`、`views/state.py`、`tests/test_views.py`。
 - Dependencies：Phase 1–6。
 - Tests：节点阈值、聚合、视图关系过滤、展开 / 收起、布局稳定性。
-- Acceptance Criteria：默认几十到约 100 节点；超过阈值不直接铺满；用户位置可保存。
+- Acceptance Criteria：默认不超过 100 节点 / 300 边；超过阈值不直接铺满；用户位置可序列化并在下一次构图时恢复。磁盘保存由 Phase 10 接入。
 - Out of Scope：最终 UI 皮肤、实时增量更新。
 
 ## Phase 8 — VSCode-style UI + Tabs/Split + Inspector
