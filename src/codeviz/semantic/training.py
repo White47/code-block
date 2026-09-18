@@ -61,11 +61,36 @@ class PyTorchTrainingRule:
                 return TrainingRuleMatch(role, receiver.confidence,
                                          (*receiver.evidence, f"{receiver.role} called"))
             return None
+        if (isinstance(expression, ast.Attribute) and expression.attr == "backward"
+                and isinstance(expression.value, ast.Call)):
+            scaled = expression.value
+            if (isinstance(scaled.func, ast.Attribute) and scaled.func.attr == "scale"
+                    and isinstance(scaled.func.value, ast.Name) and scaled.args
+                    and isinstance(scaled.args[0], ast.Name)):
+                scaler = receivers.get(scaled.func.value.id)
+                loss = receivers.get(scaled.args[0].id)
+                if (scaler is not None and scaler.role == "grad_scaler"
+                        and loss is not None and loss.role == "loss"):
+                    return TrainingRuleMatch(
+                        TrainingRole.BACKWARD_PASS, Confidence.PROBABLE,
+                        (*scaler.evidence, *loss.evidence,
+                         "GradScaler.scale(loss).backward() syntax; runtime behavior is unknown"),
+                    )
         if not isinstance(expression, ast.Attribute) or not isinstance(expression.value, ast.Name):
             return None
         receiver = receivers.get(expression.value.id)
         if receiver is None:
             return None
+        if receiver.role == "grad_scaler" and expression.attr == "step" and call.args:
+            optimizer_arg = call.args[0]
+            optimizer = (receivers.get(optimizer_arg.id)
+                         if isinstance(optimizer_arg, ast.Name) else None)
+            if optimizer is not None and optimizer.role == "optimizer":
+                return TrainingRuleMatch(
+                    TrainingRole.PARAMETER_UPDATE, Confidence.PROBABLE,
+                    (*receiver.evidence, *optimizer.evidence,
+                     "GradScaler.step(optimizer) syntax; update may be skipped"),
+                )
         if receiver.role == "model" and expression.attr in ("train", "eval"):
             mode = TrainingRole.TRAINING_MODE if expression.attr == "train" else TrainingRole.EVALUATION_MODE
             confidence = receiver.confidence

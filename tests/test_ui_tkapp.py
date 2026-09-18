@@ -33,6 +33,49 @@ class TkAppImportTests(unittest.TestCase):
 
 
 class TkAppLiveTests(unittest.TestCase):
+    def test_inspector_relations_use_names_and_bound_long_lists(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = ("import torch.nn as nn\n"
+                      "class Net(nn.Module):\n"
+                      "    def __init__(self):\n" + "".join(
+                          f"        self.layer{index} = nn.Linear(2, 2)\n"
+                          for index in range(20)))
+            (root / "model.py").write_text(source, encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            model = next(node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
+                         if node.role == "ModelDefinition")
+            self.app._on_select(model.id)
+            preview = self.app.inspector_text.get("1.0", "end")
+            self.assertIn("layer0", preview)
+            self.assertIn("more relations", preview)
+            self.assertNotIn("node_", preview)
+
+    def test_long_source_anchor_has_bounded_inspector_preview_but_full_source(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = ("import torch.nn as nn\n"
+                      "class Net(nn.Module):\n"
+                      "    def __init__(self):\n"
+                      "        super().__init__()\n" + "".join(
+                          f"        self.layer{index} = nn.Linear(2, 2)\n"
+                          for index in range(30)))
+            (root / "model.py").write_text(source, encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            model = next(node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
+                         if node.role == "ModelDefinition")
+            self.app._on_select(model.id)
+            preview = self.app.inspector_text.get("1.0", "end")
+            self.assertIn("more source lines", preview)
+            self.assertNotIn("self.layer29", preview)
+            self.app.source_button.invoke()
+            self.assertIn("self.layer29", self.app._source_widgets[("model.py", False)].get(
+                "1.0", "end"))
+
     def _buttons(self, parent):
         for child in parent.winfo_children():
             if isinstance(child, self.app.tk.Button):

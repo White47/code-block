@@ -182,8 +182,12 @@ def build_semantic_analysis(files: tuple[ParsedFile, ...], model: ModelAnalysis,
         children = (tuple(event.id for event in entry_events if event.parent_loop_id is None)
                     + tuple(join.id for join in entry_joins if join.parent_loop_id is None))
         components.append(SemanticComponent(
-            entry.id, entry.name, entry.name, "EntryPoint", Confidence.EXACT,
-            (f"named {entry.kind.value} entry point",), children,
+            entry.id, entry.name, entry.name, "EntryPoint",
+            Confidence.PROBABLE if entry.name.endswith(".py") else Confidence.EXACT,
+            ((f"module filename suggests {entry.kind.value} entry; "
+              "statically recognized training actions",)
+             if entry.name.endswith(".py") else
+             (f"named {entry.kind.value} entry point",)), children,
             (entry.id,), (entry.source_anchor,), {"entry_kind": entry.kind.value},
         ))
         roots.append(entry.id)

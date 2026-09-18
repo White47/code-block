@@ -18,6 +18,8 @@
 
 ## Phase 10–11 — 持久化与硬化
 
-Phase 10 已合入主分支，实现本地 Cache、Outdated、Recent Projects 和布局持久化；Health / Problems 沿用 Phase 8 的事实呈现，详见 `PHASE10_REPORT.md`。Phase 11 功能分支加入固定 fixture、三条黄金路径自动验收和小 / 中样本性能基线，见 `PHASE11_REPORT.md`。正式发布前仍需人工理解度观察、真实较大 PyTorch 项目试用和 GitHub CI 最终核验。
+Phase 10 已合入主分支，实现本地 Cache、Outdated、Recent Projects 和布局持久化；Health / Problems 沿用 Phase 8 的事实呈现，详见 `PHASE10_REPORT.md`。Phase 11 已合入主分支，加入固定 fixture、三条黄金路径自动验收和小 / 中样本性能基线，见 `PHASE11_REPORT.md`。正式发布前仍需人工理解度观察，并核验本轮新提交的 GitHub CI。
+
+后续真实仓库试用已覆盖 nanoGPT、PyTorch Examples、YOLOv5 的四档静态范围，结果与保守语义修复见 `REAL_REPOSITORY_VALIDATION.md`。下一项发布前工作是 Problems 降噪、空流程入口说明与首次使用者的人工理解度观察；自动化路径通过不能代替这些观察。
 
 后置：file watcher / incremental parse、runtime trace、真实 tensor propagation、完整 autograd、distributed 深层语义、复杂配置和 notebook 深度分析。

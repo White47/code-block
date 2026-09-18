@@ -16,6 +16,8 @@ from .graph_canvas import GraphCanvas
 from .presenter import OverviewChoice, build_inspector, build_overview, build_problems
 
 ACTIVITIES = ("Explorer", "Search", "Architecture", "Execution", "Symbols", "Settings")
+INSPECTOR_RELATION_LIMIT = 12
+INSPECTOR_SOURCE_PREVIEW_LINES = 12
 
 
 class CodeVizApp:
@@ -916,8 +918,13 @@ class CodeVizApp:
                       f"{len(inspector.children)} child components",
                       f"{len(inspector.member_ids)} aggregated members", ""))
         lines.append("RELATIONS")
-        lines.extend(f"{item.direction} · {item.type.value} · {item.other_id}"
-                     for item in inspector.relations)
+        visible_names = {item.id: item.display_name for item in self._views[kind].nodes}
+        lines.extend(f"{item.direction} · {item.type.value} · "
+                     f"{visible_names.get(item.other_id, 'Related component')}"
+                     for item in inspector.relations[:INSPECTOR_RELATION_LIMIT])
+        if len(inspector.relations) > INSPECTOR_RELATION_LIMIT:
+            lines.append(f"… {len(inspector.relations) - INSPECTOR_RELATION_LIMIT} "
+                         "more relations · inspect the graph for context")
         if not inspector.relations:
             lines.append("No visible local relations")
         lines.extend(("", "DATA"))
@@ -933,8 +940,12 @@ class CodeVizApp:
                 source_lines = document.text.splitlines()
                 start = max(0, document.start_line - 2)
                 end = min(len(source_lines), document.end_line + 1)
+                preview_end = min(end, start + INSPECTOR_SOURCE_PREVIEW_LINES)
                 lines.extend(f"{index + 1:>4}  {source_lines[index]}"
-                             for index in range(start, end))
+                             for index in range(start, preview_end))
+                if preview_end < end:
+                    lines.append(f"… {end - preview_end} more source lines · "
+                                 "Open Source for the full file")
             except (OSError, ValueError):
                 lines.append("Source is no longer available")
         else:

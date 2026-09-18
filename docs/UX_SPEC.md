@@ -21,7 +21,7 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 统一分区：Overview（易读名、真实名、类型、语义角色、confidence、说明）；Structure / Flow；Relations；Data；Source（file/class/function/line range、片段、Open Source）。
 
-节点默认只显示易读名称和真实代码名；路径、行号和完整关系放 Inspector。
+节点默认只显示易读名称和真实代码名；路径、行号和局部关系放 Inspector。对大组件，Inspector 默认最多列出 12 条带易读名称的可见关系与 12 行源码预览，并提示未展开数量；Open Source 仍可查看完整文件，局部图负责继续探索关系，不在侧栏堆叠内部 ID。
 
 ## 5. 视图语义
 
