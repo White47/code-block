@@ -20,7 +20,7 @@ Tkinter 与 ttk 是 Python 官方提供的 Tcl/Tk 接口；PySide6 是 Qt 官方
 
 ## 交互与数据流
 
-`ui/controller.py` 保存当前目录、一次性分析结果、已打开标签、选中项与展开状态，不依赖 Tk。`ui/presenter.py` 从 ProjectAnalysis / VisibleGraph 生成 Overview、Inspector、Problems 和源码展示数据；保留 confidence / evidence / SourceAnchor。`ui/tkapp.py` 只负责绘制与事件转发，不解析 AST 或判断框架语义。
+`ui/controller.py` 保存当前目录、一次性分析结果与展开 / 手动位置状态，不依赖 Tk；标签页和当前选中项仅在 Tk 壳中管理。`ui/presenter.py` 从 ProjectAnalysis / VisibleGraph 生成 Overview、Inspector、Problems 纯数据；保留 confidence / evidence / SourceAnchor，源码内容由 Controller 安全读取。`ui/tkapp.py` 只负责绘制与事件转发，不解析 AST 或判断框架语义。
 
 图 Canvas 接收 Phase 7 的局部 VisibleGraph；节点只显示易读名与真实代码名。单击选择并高亮一跳，Inspector 同步显示 Overview / Structure / Relations / Data / Source；双击或 Enter 展开容器，Open Source 和 Open to Side 是独立按钮。边按 Contains、Control、Data、Loop、Gradient 使用不同颜色 / 线型，图例只显示当前实际关系。手动拖动节点更新 ViewState；本阶段会话内保留位置，Phase 10 再落盘。
 

@@ -2,7 +2,7 @@
 
 ## 1. 当前约束
 
-Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–7 的 `src/codeviz/core`、`src/codeviz/analysis`、`src/codeviz/semantic`、`src/codeviz/views` 使用 Python 3.11+ 标准库，具体决定见 ADR-005。以下是目标边界与接口契约；桌面壳、图形库和 UI 状态库尚未选择。
+Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–8 的领域层与 UI 均使用 Python 3.11+ 标准库；Phase 8 采用 Tkinter / ttk / Canvas 本地桌面壳，不新增运行时依赖，见 ADR-005、ADR-006。持久化格式仍留 Phase 10 决定。
 
 ## 2. 分层
 
@@ -33,7 +33,7 @@ Project Source / Config
 - Training Analysis：`analysis/training.py` 将 AST 调用与 Resolver / Model / Flow 证据组合成独立入口、训练事件和循环归属；函数参数名称仅形成 Probable 线索。
 - Semantic Graph：`semantic/components.py` 组合模型定义、实例、入口和事件；关系含源码锚点与证据。控制流边表达 AST 路径的静态近似，梯度边只表示 Probable 静态模式；Attention-like 是结构性 Probable 候选。
 - View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单，限制可见节点与边并保留聚合成员 ID；`views/layout.py` 提供确定性层级 / 流程位置，`views/state.py` 只序列化展开和手动位置。完整代码图不直接交给 UI，磁盘持久化留 Phase 10。
-- UI：VSCode 风格 Activity Bar、Sidebar、Editor Tabs / Split、Inspector、Problems。
+- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、ViewState 和受限只读源码访问；`ui/graph_canvas.py` 只绘制 VisibleGraph；`ui/tkapp.py` 用 Tkinter 实现 Activity Bar、Sidebar、Editor Tabs / Split、Inspector、Problems 和后台分析消息队列。真实 Search / Symbols 导航留 Phase 9。
 - Cache：Analysis Cache、View State、Annotations 三者分离。
 
 ## 4. 关键边界
@@ -44,6 +44,6 @@ Parser 只负责语法事实；Resolver 负责名称；Semantic Rules 负责解�
 
 项目分析状态为 Analyzing、Ready、Partial、Outdated、Failed。文件级失败只产生 Problem，不抹掉其他文件的可用结果。
 
-## 6. 待真实仓库确认的技术决策
+## 6. 后续技术决策
 
-桌面壳、图渲染库、状态管理、持久化格式和源码查看组件仍暂缓。Phase 1 已选择 `unittest` 和 setuptools；后续技术决策应在相应阶段记录 ADR，并优先复用已建立的领域核心。
+桌面壳、图绘制与源码查看由 ADR-006 的 Tkinter 方案落地；会话内 ViewState 仍沿用 Phase 7 数据类型。Phase 10 再决定 Analysis Cache、Annotations 和 ViewState 的磁盘格式；Phase 9 实现 Symbol Search / Reveal in Graph。若图形壳更换，保留 UI 无关的 Controller / Presenter 与 VisibleGraph 契约。
