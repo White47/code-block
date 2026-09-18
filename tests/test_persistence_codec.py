@@ -2,9 +2,12 @@
 
 import json
 import unittest
+from typing import get_type_hints
+from unittest.mock import patch
 
 from tests.test_training import analyze_files
 
+import codeviz.persistence.codec as codec
 from codeviz.core import ViewKind
 from codeviz.persistence.codec import decode_analysis, encode_analysis
 from codeviz.search import search_project
@@ -40,3 +43,15 @@ class AnalysisCodecTests(unittest.TestCase):
             decode_analysis({"@": "object", "type": "os.system", "fields": {}})
         with self.assertRaises(ValueError):
             decode_analysis({"unexpected": "payload"})
+
+    def test_decoder_resolves_type_hints_once_per_registered_type(self):
+        analysis = analyze_files({"run.py": (
+            "def train(loss, optimizer):\n"
+            "    loss.backward()\n    optimizer.step()\n"
+            "    loss = optimizer.step()\n"
+        )})
+        payload = encode_analysis(analysis)
+        codec._field_hints.cache_clear()
+        with patch.object(codec, "get_type_hints", wraps=get_type_hints) as hints:
+            decode_analysis(payload)
+        self.assertLessEqual(hints.call_count, len(codec._TYPES))

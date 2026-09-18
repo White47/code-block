@@ -53,3 +53,5 @@ py -m venv .venv
 Ruff 检查源码与测试；mypy 严格检查产品源码。开发工具只在 `dev` 可选依赖中，不会成为运行时依赖。配置与阶段基线见 `docs/QUALITY_GATES.md`。产品与技术边界见 `docs/PRD.md`、`docs/ARCHITECTURE.md` 和 `docs/DATA_MODEL.md`。
 
 推送到 `main` 或提交拉取请求时，GitHub Actions 会在 Python 3.11 / 3.12 下自动运行同一组检查及 wheel 构建；工作流见 `.github/workflows/quality.yml`。合并保护规则需另行在 GitHub 设置，自动检查本身不会禁止合并。
+
+固定的 MVP 样例与三条黄金路径自动验收在 `tests/fixtures/mvp_project/`、`tests/test_mvp_acceptance.py` 和 Tk 界面测试中；`docs/MVP_ACCEPTANCE.md` 区分自动验证与仍需人工观察的理解度验收。在已激活的虚拟环境中运行 `python -B tests/benchmark_mvp.py`，或运行 `python -B tests/benchmark_scale.py 50` / `200` 对比简单多文件项目。基线解释见 `docs/PERFORMANCE.md`，不构成所有项目的性能保证。

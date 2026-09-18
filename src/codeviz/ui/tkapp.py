@@ -41,6 +41,7 @@ class CodeVizApp:
         self._graph_tabs: dict[ViewKind, tuple[Any, GraphCanvas]] = {}
         self._breadcrumbs: dict[ViewKind, Any] = {}
         self._roots: dict[ViewKind, str | None] = {}
+        self._root_history: dict[ViewKind, list[str | None]] = {}
         self._selected_id: str | None = None
         self._selections: dict[ViewKind, str | None] = {}
         self._expansion_history: dict[ViewKind, list[str]] = {}
@@ -348,6 +349,7 @@ class CodeVizApp:
         self._graph_tabs.clear()
         self._breadcrumbs.clear()
         self._roots.clear()
+        self._root_history.clear()
         self._source_tabs.clear()
         self._source_widgets.clear()
         self._source_warnings.clear()
@@ -660,11 +662,14 @@ class CodeVizApp:
         return frame
 
     def _open_graph(self, kind: ViewKind, root_id: str | None = None,
-                    *, reveal_id: str | None = None) -> None:
+                    *, reveal_id: str | None = None,
+                    retain_root_history: bool = False) -> None:
         if self.controller.analysis is None:
             self.status_label.configure(text="Analyze the project before opening a graph")
             return
         if root_id != self._roots.get(kind):
+            if not retain_root_history:
+                self._root_history.pop(kind, None)
             history = self._expansion_history.pop(kind, [])
             self._navigation_actions.pop(kind, None)
             for node_id in history:
@@ -818,6 +823,15 @@ class CodeVizApp:
             self._show_hidden_members(kind, node.member_ids)
         elif kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
             self._change_context(kind, hop_delta=1)
+        elif kind == ViewKind.ARCHITECTURE and isinstance(
+                target_id := node.metadata.get("target_definition_id"), str):
+            analysis = self.controller.analysis
+            if (analysis is not None and analysis.model is not None and
+                    any(item.symbol_id == target_id for item in analysis.model.definitions)):
+                previous_root = self._roots.get(kind)
+                self._open_graph(kind, target_id, retain_root_history=True)
+                if self._roots.get(kind) == target_id and target_id != previous_root:
+                    self._root_history.setdefault(kind, []).append(previous_root)
         elif node.metadata.get("has_children"):
             self.controller.expand(node_id)
             history = self._expansion_history.setdefault(kind, [])
@@ -852,8 +866,15 @@ class CodeVizApp:
     def _go_back(self) -> None:
         kind = self._active_kind
         actions = self._navigation_actions.get(kind, []) if kind is not None else []
-        if kind is None or not actions:
+        if kind is None:
             self.main_tabs.select(self.overview_tab)
+            return
+        if not actions:
+            roots = self._root_history.get(kind, [])
+            if roots:
+                self._open_graph(kind, roots.pop(), retain_root_history=True)
+            else:
+                self.main_tabs.select(self.overview_tab)
             return
         action, node_id = actions.pop()
         if action == "reveal":

@@ -11,7 +11,8 @@
 - Visible Graph / Phase 7：Architecture / Execution 多根与指定根、默认折叠和展开、选中组件 1-hop、单节点预算保留选中项、节点与边预算、执行主控制边优先、关键数据与真实代码级 DATA_FLOW 投影、可追溯溢出聚合、重复结构与共享实例区分、关系白名单、LOOP_BACK 布局、图例、手动位置覆盖及 JSON 数据往返；不得修改分析事实或执行项目代码。
 - UI / Phase 8：无显示器测试 Presenter 事实映射、Controller 的显式 Analyze 与源码边界（含检查与打开之间的路径替换）、GraphScene / 边样式、Tk 模块惰性导入；有 Tk 显示时测试 Overview 模型入口、独立 Problems、源文件 / Split 控件释放、跨图选中与 Inspector、再次分析旧结果隐藏、Back / 面包屑、聚合成员重新定位、空图说明、图节点→Inspector→侧边源码定位。
 - Search / Navigation / Phase 9：无显示器测试同名定义按 scope 消歧、中文 / 英文语义词、有限结果和空结果、模型 / 训练 / 普通符号 / 关键数据路由、1–5 hop / 方向 / 预算 / 来源锚点；有 Tk 显示时测试 Search→Reveal→Inspector→Split Source，并确认项目切换或再次 Analyze 不复用旧结果。
-- Persistence：fingerprint、Outdated、View State、Annotations。
+- Persistence / Phase 10：白名单 JSON 往返、不保存 AST / 源码、内容指纹和配置 / 版本过期、原子写失败回滚、损坏缓存与独立标注、旧图仍可查、Tk 的过期提示与标签恢复；Windows 本机额外模拟 Linux 平台 mypy。
+- MVP / Phase 11：固定 `tests/fixtures/mvp_project` 含多模型、ModuleList / Sequential、训练与评估共享模型、同名 loss、动态调用、坏文件和不可执行陷阱；`test_mvp_acceptance.py` 验证三条黄金路径的领域与源码关系，`test_ui_tkapp.py` 以真实 Tk 点击串起同一 fixture；可选基线脚本只写临时目录，不执行目标项目。
 
 ## 必备 fixture
 
