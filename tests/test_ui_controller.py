@@ -1,5 +1,6 @@
 """Desktop controller keeps source access read-only and project-scoped."""
 
+import builtins
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -93,6 +94,44 @@ class ControllerTests(unittest.TestCase):
             controller.open_project(root)
             with self.assertRaises(ValueError):
                 controller.read_source(SourceAnchor("linked.py", 1))
+
+    def test_source_navigation_rejects_file_changed_between_check_and_open(self):
+        with TemporaryDirectory() as project, TemporaryDirectory() as outside:
+            root = Path(project)
+            (root / "public.py").write_text("public = 1\n", encoding="utf-8")
+            secret = Path(outside) / "secret.py"
+            secret.write_text("secret = 1\n", encoding="utf-8")
+            controller = AppController()
+            controller.open_project(root)
+
+            def diverted_open(_path, *args, **kwargs):
+                return builtins.open(secret, *args, **kwargs)
+
+            with patch.object(Path, "open", diverted_open):
+                with self.assertRaises(ValueError):
+                    controller.read_source(SourceAnchor("public.py", 1))
+
+    def test_open_handle_path_rejects_stale_resolve_and_stat(self):
+        with TemporaryDirectory() as project, TemporaryDirectory() as outside:
+            root = Path(project)
+            public = root / "public.py"
+            public.write_text("public = 1\n", encoding="utf-8")
+            secret = Path(outside) / "secret.py"
+            secret.write_text("secret = 1\n", encoding="utf-8")
+            secret_stat = secret.stat()
+            original_stat = Path.stat
+            controller = AppController()
+            controller.open_project(root)
+
+            def stale_stat(path, *args, **kwargs):
+                return secret_stat if path == public else original_stat(path, *args, **kwargs)
+
+            def diverted_open(_path, *args, **kwargs):
+                return builtins.open(secret, *args, **kwargs)
+
+            with patch.object(Path, "stat", stale_stat), patch.object(Path, "open", diverted_open):
+                with self.assertRaises(ValueError):
+                    controller.read_source(SourceAnchor("public.py", 1))
 
     def test_expanding_view_does_not_change_analysis_facts(self):
         with TemporaryDirectory() as temporary:

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable
 
-from codeviz.core import EdgeType, VisibleGraph
+from codeviz.core import EdgeType, ViewKind, VisibleGraph
 
 from . import theme
 
@@ -132,6 +132,12 @@ class GraphCanvas:
         self._selected_id = selected_id
         scene = graph_scene(view, selected_id)
         self.canvas.delete("all")
+        if not scene.nodes:
+            message = ("No model components detected · inspect Analysis Issues"
+                       if view.view_kind == ViewKind.ARCHITECTURE else
+                       "No execution entry points detected · inspect Analysis Issues")
+            self.canvas.create_text(80, 110, text=message, anchor="w", fill=theme.MUTED,
+                                    font=(theme.UI_FONT, 12), tags=("empty-state",))
         for edge in scene.edges:
             paint = edge_paint(edge.style)
             self.canvas.create_line(list(edge.points), fill=paint.color,
