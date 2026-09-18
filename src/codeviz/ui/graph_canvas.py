@@ -60,14 +60,17 @@ def edge_paint(style: str) -> EdgePaint:
     }.get(style, EdgePaint(theme.MUTED, None, 1))
 
 
-def graph_scene(view: VisibleGraph, selected_id: str | None = None) -> GraphScene:
+def graph_scene(view: VisibleGraph, selected_id: str | None = None,
+                *, viewport_width: float = 0.0) -> GraphScene:
     """Calculate drawing instructions without creating a Tk window."""
     neighbors = {edge.target if edge.source == selected_id else edge.source
                  for edge in view.edges if selected_id in (edge.source, edge.target)}
     positions = view.layout_hints
     min_x = min((point[0] for point in positions.values()), default=0.0)
     min_y = min((point[1] for point in positions.values()), default=0.0)
-    shift_x = 80.0 - min(0.0, min_x)
+    max_x = max((point[0] + 170.0 for point in positions.values()), default=170.0)
+    content_width = max_x - min_x
+    shift_x = max(80.0 - min_x, (viewport_width - content_width) / 2 - min_x)
     shift_y = 80.0 - min(0.0, min_y)
     nodes = tuple(SceneNode(
         node.id, node.display_name, node.code_name or "",
@@ -88,15 +91,13 @@ def graph_scene(view: VisibleGraph, selected_id: str | None = None) -> GraphScen
                       source.x + source.width + 35, target.y - 22,
                       target.x + target.width / 2, target.y - 22,
                       target.x + target.width / 2, target.y)
-        elif view.layout_kind == "hierarchical":
+        else:
             points = (source.x + source.width / 2, source.y + source.height,
                       target.x + target.width / 2, target.y)
-        else:
-            points = (source.x + source.width, source.y + source.height / 2,
-                      target.x, target.y + target.height / 2)
         edges.append(SceneEdge(edge.source, edge.target, edge.type,
                                styles.get(edge.type, edge.type.value), points))
-    width = max((node.x + node.width for node in nodes), default=0.0) + 80.0
+    width = max(max((node.x + node.width for node in nodes), default=0.0) + 80.0,
+                viewport_width)
     height = max((node.y + node.height for node in nodes), default=0.0) + 80.0
     return GraphScene(nodes, tuple(edges), width, height)
 
@@ -128,11 +129,18 @@ class GraphCanvas:
         self._drag_point: tuple[float, float] | None = None
         self._drag_total = (0.0, 0.0)
         self.canvas.bind("<Return>", self._enter)
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<Button-4>", self._on_mousewheel)
+        self.canvas.bind("<Button-5>", self._on_mousewheel)
+        self.canvas.bind("<Next>", self._on_page_key)
+        self.canvas.bind("<Prior>", self._on_page_key)
+        self.canvas.bind("<Configure>", self._on_resize)
 
     def render(self, view: VisibleGraph, selected_id: str | None = None) -> None:
         self._view = view
         self._selected_id = selected_id
-        scene = graph_scene(view, selected_id)
+        scene = graph_scene(view, selected_id,
+                            viewport_width=max(float(self.canvas.winfo_width()), 400.0))
         self.canvas.delete("all")
         if not scene.nodes:
             message = ("No model components detected · inspect Analysis Issues"
@@ -175,6 +183,21 @@ class GraphCanvas:
                                 font=(theme.UI_FONT, 9))
         self.canvas.configure(scrollregion=(0, 0, max(scene.width, 400.0),
                                             max(scene.height, 250.0)))
+
+    def _on_mousewheel(self, event: Any) -> str:
+        direction = -1 if getattr(event, "num", 0) == 4 or getattr(event, "delta", 0) > 0 else 1
+        self.canvas.yview_scroll(direction, "units")
+        return "break"
+
+    def _on_page_key(self, event: Any) -> str:
+        self.canvas.yview_scroll(-1 if event.keysym == "Prior" else 1, "pages")
+        return "break"
+
+    def _on_resize(self, _event: Any) -> None:
+        if self._view is not None:
+            first = self.canvas.yview()[0]
+            self.render(self._view, self._selected_id)
+            self.canvas.yview_moveto(first)
 
     def _press(self, event: Any, node_id: str) -> None:
         self.canvas.focus_set()

@@ -182,6 +182,11 @@ class AppController:
         self.view_state = replace(self.view_state, positions=positions)
         self._persist_view_state()
 
+    def reset_positions(self) -> None:
+        """Restore automatic positions for this project's graphs only."""
+        self.view_state = replace(self.view_state, positions={})
+        self._persist_view_state()
+
     def read_source(self, anchor: SourceAnchor, *, max_bytes: int = 5_000_000) -> SourceDocument:
         if self.project_root is None:
             raise RuntimeError("open a project before reading source")

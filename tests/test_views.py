@@ -9,13 +9,34 @@ from codeviz.core import (
     EdgeType,
     ViewKind,
     VisibleAggregation,
+    VisibleEdge,
     VisibleGraph,
     VisibleNode,
 )
 from codeviz.views import ViewRequest, ViewState, build_visible_graph
+from codeviz.views.layout import layout_positions
 
 
 class VisibleContractTests(unittest.TestCase):
+    def test_default_architecture_and_execution_layouts_read_downward(self):
+        nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
+                      for name in ("root", "middle", "leaf"))
+        architecture_edges = (
+            VisibleEdge("root", "middle", EdgeType.CONTAINS, code_edge_ids=("a",)),
+            VisibleEdge("root", "leaf", EdgeType.CONTAINS, code_edge_ids=("b",)),
+        )
+        execution_edges = (
+            VisibleEdge("root", "middle", EdgeType.CONTROL_FLOW, code_edge_ids=("c",)),
+            VisibleEdge("middle", "leaf", EdgeType.CONTROL_FLOW, code_edge_ids=("d",)),
+        )
+        for kind, edges in (("hierarchical", architecture_edges),
+                            ("flowchart", execution_edges)):
+            with self.subTest(kind=kind):
+                positions = layout_positions(nodes, edges, ("root",), kind, ViewState())
+                self.assertEqual(len({point[0] for point in positions.values()}), 1)
+                self.assertLess(positions["root"][1], positions["middle"][1])
+                self.assertLess(positions["middle"][1], positions["leaf"][1])
+
     def test_graph_enforces_budget_and_aggregation_provenance(self):
         nodes = (VisibleNode("a", "A", code_node_ids=("a",)),
                  VisibleNode("b", "B", code_node_ids=("b",)))

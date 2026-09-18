@@ -4,6 +4,7 @@ import tomllib
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph, VisibleNode
@@ -116,6 +117,89 @@ class TkAppLiveTests(unittest.TestCase):
             frames = tuple(self.app._source_tabs.values())
             self.app._reset_editors()
             self.assertTrue(all(not frame.winfo_exists() for frame in frames))
+
+    def test_reset_project_layout_button_clears_saved_positions_only(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text("def train(): return 1\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            analysis = self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            self.app.controller.move_node("custom-node", (400.0, 120.0))
+            button = next(button for button in self._buttons(self.app.root)
+                          if button.cget("text") == "重置项目布局")
+            button.invoke()
+            self.assertEqual(self.app.controller.view_state.positions, {})
+            self.assertIs(self.app.controller.analysis, analysis)
+
+    def test_tab_close_removes_only_requested_graph_source_or_problem(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text("def train(): return 1\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            graph_frame = self.app._graph_tabs[ViewKind.ARCHITECTURE][0]
+            self.assertNotEqual(self.app.main_tabs.tab(str(graph_frame), "image"), "")
+            self.app._open_source(SourceAnchor("run.py", 1), False)
+            source_frame = self.app._source_tabs[("run.py", False)]
+            self.app._open_problems()
+            problems_frame = self.app._problems_tab
+            self.assertIsNotNone(problems_frame)
+            self.assertFalse(self.app._close_tab(self.app.main_tabs,
+                                                 str(self.app.overview_tab)))
+            self.assertTrue(self.app._close_tab(self.app.main_tabs, str(source_frame)))
+            self.assertFalse(source_frame.winfo_exists())
+            self.assertIn(ViewKind.ARCHITECTURE, self.app._graph_tabs)
+            self.assertNotIn("source:0:run.py", self.app.controller.view_state.open_tabs)
+            self.assertTrue(self.app._close_tab(self.app.main_tabs, str(graph_frame)))
+            self.assertNotIn(ViewKind.ARCHITECTURE, self.app._graph_tabs)
+            self.assertTrue(self.app._close_tab(self.app.main_tabs, str(problems_frame)))
+            self.assertEqual(self.app.main_tabs.tabs(), (str(self.app.overview_tab),))
+            self.app._open_source(SourceAnchor("run.py", 1), False)
+            self.assertIn(("run.py", False), self.app._source_tabs)
+
+    def test_closing_last_side_source_collapses_split_editor(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text("value = 1\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app._open_source(SourceAnchor("run.py", 1), True)
+            frame = self.app._source_tabs[("run.py", True)]
+            self.assertTrue(self.app._side_open)
+            self.assertTrue(self.app._close_tab(self.app.side_tabs, str(frame)))
+            self.assertFalse(self.app._side_open)
+            self.assertNotIn(("run.py", True), self.app._source_tabs)
+            self.app._open_source(SourceAnchor("run.py", 1), True)
+            self.assertTrue(self.app._side_open)
+
+    def test_close_marker_click_and_shortcut_leave_overview_open(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text("def train(): return 1\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            graph_frame = self.app._graph_tabs[ViewKind.ARCHITECTURE][0]
+            self.app.root.deiconify()
+            self.app.root.update()
+            self.assertEqual(self.app.main_tabs.tab(str(self.app.overview_tab), "image"), "")
+            self.assertNotEqual(self.app.main_tabs.tab(str(graph_frame), "image"), "")
+            graph_index = self.app.main_tabs.index(str(graph_frame))
+            y = 14
+            tab_x = [x for x in range(self.app.main_tabs.winfo_width())
+                     if str(self.app.main_tabs.tk.call(
+                         self.app.main_tabs._w, "identify", "tab", x, y)) == str(graph_index)]
+            self.assertGreater(len(tab_x), 30)
+            ordinary_click = SimpleNamespace(widget=self.app.main_tabs,
+                                             x=tab_x[0] + 12, y=y)
+            self.assertIsNone(self.app._on_tab_click(ordinary_click))
+            event = SimpleNamespace(widget=self.app.main_tabs, x=tab_x[-1] - 8, y=y)
+            self.assertEqual(self.app._on_tab_click(event), "break")
+            self.assertNotIn(ViewKind.ARCHITECTURE, self.app._graph_tabs)
+            self.assertEqual(self.app._close_active_tab(SimpleNamespace(widget=self.app.main_tabs)),
+                             "break")
+            self.assertEqual(self.app.main_tabs.tabs(), (str(self.app.overview_tab),))
 
     def test_project_picker_is_unavailable_while_analysis_runs(self):
         self.app._analyzing = True

@@ -157,6 +157,22 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(controller.view(ViewKind.EXECUTION).layout_hints[loop.id],
                              (90.0, 120.0))
 
+    def test_reset_positions_keeps_analysis_and_navigation_state(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text("def train(): return 1\n", encoding="utf-8")
+            controller = AppController()
+            controller.open_project(root)
+            analysis = controller.analyze()
+            controller.move_node("custom-node", (220.0, 100.0))
+            controller.save_layout(ViewKind.ARCHITECTURE, None,
+                                   ("graph:Architecture",), {})
+            controller.reset_positions()
+            self.assertEqual(controller.view_state.positions, {})
+            self.assertEqual(controller.view_state.open_tabs, ("graph:Architecture",))
+            self.assertIs(controller.analysis, analysis)
+
+
 
 if __name__ == "__main__":
     unittest.main()
