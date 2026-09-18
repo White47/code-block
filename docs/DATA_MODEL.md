@@ -56,7 +56,7 @@ SemanticComponent {
 
 一个组件可对应一个或多个类、函数或 `forward()` 内部逻辑段；不要假设一一对应。
 
-Phase 6 的 `ProjectAnalysis.semantic.graph` 使用 `SemanticGraph(components, relations, roots)`。每个组件保留源码锚点、代码符号 ID 或子组件；每条 `SemanticRelation` 保留源、目标、EdgeType、confidence、evidence 与 sourceAnchors，端点和 child ID 必须在图内。模型 Definition 与 Module Instance 分别有组件；入口、训练事件和循环也是独立组件，循环子事件通过 `child_component_ids` / `CONTAINS` 关联。`CONTROL_FLOW` 只代表源码词法顺序，`GRADIENT_FLOW` 是 Backward→Optimizer 静态模式且最多 Probable，不是 autograd 观察。Attention-like 是 Probable 候选，保留真实类名与 forward 锚点。
+Phase 6 的 `ProjectAnalysis.semantic.graph` 使用 `SemanticGraph(components, relations, roots)`。每个组件保留源码锚点、代码符号 ID 或子组件；每条 `SemanticRelation` 保留源、目标、EdgeType、confidence、evidence 与 sourceAnchors，端点和 child ID 必须在图内。模型 Definition 与 Module Instance 分别有组件；入口、训练事件、循环和合成 `ControlJoin` 分别建模，循环子组件通过 `child_component_ids` / `CONTAINS` 关联。`CONTROL_FLOW` 来自 AST 分支前沿及有源码锚点的汇合组件，不从平铺事件序列猜测；`GRADIENT_FLOW` 只在同一静态分支路径上连接 Backward→Optimizer，领域契约禁止其为 Exact；它不是 autograd 观察。Attention-like 是 Probable 候选，保留真实类名与 forward 锚点。
 
 ## 6. DataNode / EntryPoint
 
@@ -68,7 +68,7 @@ Phase 5 的 `ProjectAnalysis.model` 返回独立 `ModelAnalysis`：`ModelDefinit
 
 EntryPoint 至少包含 id、name、kind（Train / Evaluate / Inference / Export）、sourceAnchor、flowNodeIds、modelIds。
 
-`ProjectAnalysis.training` 返回独立 `TrainingAnalysis(entry_points, events, issues)`。`TrainingEvent` 保存稳定 ID、role、sourceAnchor、confidence、evidence、entryPointId、原始 CallSite / ControlBlock ID、真实调用名及 `parent_loop_id`；`flowNodeIds` 按静态源码访问顺序引用事件。保存和加载调用只生成 Probable 的 Checkpoint 候选，因为 `torch.save/load` 不一定用于训练断点。
+`ProjectAnalysis.training` 返回独立 `TrainingAnalysis(entry_points, events, issues, joins)`。`TrainingEvent` 保存稳定 ID、role、sourceAnchor、confidence、evidence、entryPointId、原始 CallSite / ControlBlock ID、真实调用名、`parent_loop_id`、静态 `branch_path` 与 `control_predecessor_ids`；后者由 AST 遍历时各可能路径的前沿事件产生。循环事件另存 `loop_back_predecessor_ids`，指向循环体结束时的控制前沿，而非词法子节点列表最后一项。`TrainingControlJoin` 保存分支汇合来源、前驱 ID、入口与循环归属；当不同路径汇合时先汇入该合成节点，以免大量可跳过分支使后续事件前驱成平方增长。`flowNodeIds` 仍按静态源码访问顺序引用训练事件，不把控制汇合节点冒充训练步骤。保存和加载调用只生成 Probable 的 Checkpoint 候选，因为 `torch.save/load` 不一定用于训练断点。
 
 ## 7. SymbolIndexEntry
 

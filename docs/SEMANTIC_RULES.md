@@ -38,7 +38,7 @@ Phase 5 已实现 `ModelRule` 协议和 `PyTorchModelRule`。只有显式 `torch
 
 识别 epoch loop、dataloader / batch loop、validation、checkpoint、gradient clipping、autocast、GradScaler 时以简化语义呈现，并标注证据。
 
-Phase 6 当前识别按函数名划分 Train / Evaluate / Inference / Export 入口、`epoch` / loader / batch 命名循环，以及上表的模式与优化步骤。`torch.no_grad()` 只有出现在 `with` 上下文时生成 Disable Gradient 事件；`model.eval()` 仅改变评估模式，不暗示禁用梯度。`torch.save/load` 只生成 Probable Checkpoint 候选，不能从 API 名字断言用途。Gradient Flow 仅在同入口、同循环层的 Backward 与后继 Optimizer Step 之间生成 Probable 静态关系；不表示实际梯度。Gradient clipping、autocast、GradScaler 尚未识别为专用事件。
+Phase 6 当前识别按函数名划分 Train / Evaluate / Inference / Export 入口、`epoch` / loader / batch 命名循环，以及上表的模式与优化步骤。`torch.no_grad()` 只有出现在 `with` 上下文时生成 Disable Gradient 事件；`model.eval()` 仅改变评估模式，不暗示禁用梯度。`torch.save/load` 只生成 Probable Checkpoint 候选，不能从 API 名字断言用途。Gradient Flow 仅在同入口、同循环层、同一静态 `if` 语句或条件表达式分支路径中的 Backward 与后继 Optimizer Step 之间生成 Probable 关系；互斥分支不连边，跨分支即使可能连续也暂不推断；不表示实际梯度。控制关系在 AST 分支汇合处通过带源码锚点的 ControlJoin 收束前驱路径，保留各分支出口的可能去向；循环回边从循环体结束时的控制前沿发出，而非最后收集的组件，但这些关系仍不等于完整运行轨迹。Gradient clipping、autocast、GradScaler 尚未识别为专用事件。
 
 Attention-like 候选要求同一 `forward` 中 Q/K/V 命名赋值、Q 与 K 参与的矩阵乘法得分、以及该得分被 softmax 消费；只给 Probable，并保留真实类名与依据，不证明运行时算法。
 

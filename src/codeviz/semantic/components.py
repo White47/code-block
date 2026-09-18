@@ -3,9 +3,13 @@
 import ast
 from dataclasses import dataclass
 
-from codeviz.analysis.model import ModelAnalysis
+from codeviz.analysis.model import ModelAnalysis, ModuleInstance
 from codeviz.analysis.python import AnalysisIssue, ParsedFile
-from codeviz.analysis.training import TrainingAnalysis, TrainingEvent
+from codeviz.analysis.training import (
+    TrainingAnalysis,
+    TrainingControlJoin,
+    TrainingEvent,
+)
 from codeviz.core import (
     Confidence,
     EdgeType,
@@ -89,7 +93,9 @@ def _event_component(event: TrainingEvent,
         code_symbol_ids=(event.source_node_id,) if event.source_node_id else (),
         source_anchors=(event.source_anchor,),
         metadata={"entry_point_id": event.entry_point_id,
-                  "parent_loop_id": event.parent_loop_id},
+                  "parent_loop_id": event.parent_loop_id,
+                  "branch_path": event.branch_path,
+                  "control_predecessor_ids": event.control_predecessor_ids},
     )
 
 
@@ -101,15 +107,18 @@ def build_semantic_analysis(files: tuple[ParsedFile, ...], model: ModelAnalysis,
     roots: list[str] = []
     issues: list[AnalysisIssue] = []
     parsed_by_path = {item.relative_path: item for item in files}
+    instances_by_owner: dict[str, list[ModuleInstance]] = {}
+    for instance in model.instances:
+        instances_by_owner.setdefault(instance.owner_definition_id, []).append(instance)
+    model_definition_ids = {definition.symbol_id for definition in model.definitions}
     class_nodes = {(item.relative_path, node.name, node.lineno): node
                    for item in files if item.tree is not None
                    for node in ast.walk(item.tree) if isinstance(node, ast.ClassDef)}
     for definition in model.definitions:
-        instances = [item for item in model.instances
-                     if item.owner_definition_id == definition.symbol_id]
-        member_ids = {child for item in instances for child in item.member_instance_ids
-                      if child is not None}
-        child_ids = tuple(item.id for item in instances if item.id not in member_ids)
+        instances = instances_by_owner.get(definition.symbol_id, [])
+        member_parent = {child: item.id for item in instances
+                         for child in item.member_instance_ids if child is not None}
+        child_ids = tuple(item.id for item in instances if item.id not in member_parent)
         components.append(SemanticComponent(
             definition.symbol_id, definition.qualified_name.rsplit(".", 1)[-1],
             definition.qualified_name, "ModelDefinition", definition.confidence,
@@ -130,8 +139,7 @@ def build_semantic_analysis(files: tuple[ParsedFile, ...], model: ModelAnalysis,
                  "repeat_count": instance.repeat_count,
                  "shared_with_id": instance.shared_with_id},
             ))
-            parent = next((owner.id for owner in instances
-                           if instance.id in owner.member_instance_ids), definition.symbol_id)
+            parent = member_parent.get(instance.id, definition.symbol_id)
             relations.append(_relation(parent, instance.id, EdgeType.CONTAINS,
                                        instance.confidence, "static module assignment",
                                        instance.source_anchor))
@@ -155,9 +163,23 @@ def build_semantic_analysis(files: tuple[ParsedFile, ...], model: ModelAnalysis,
                                             f"{type(error).__name__}: {error}",
                                             parsed.relative_path, definition.source_anchor))
     events = {event.id: event for event in training.events}
+    joins_by_entry: dict[str, list[TrainingControlJoin]] = {}
+    for join in training.joins:
+        joins_by_entry.setdefault(join.entry_point_id, []).append(join)
     for entry in training.entry_points:
         entry_events = [events[event_id] for event_id in entry.flow_node_ids if event_id in events]
-        children = tuple(event.id for event in entry_events if event.parent_loop_id is None)
+        entry_joins = joins_by_entry.get(entry.id, [])
+        entry_node_ids = {event.id for event in entry_events}
+        entry_node_ids.update(join.id for join in entry_joins)
+        event_children: dict[str, list[str]] = {}
+        for event in entry_events:
+            if event.parent_loop_id is not None:
+                event_children.setdefault(event.parent_loop_id, []).append(event.id)
+        for join in entry_joins:
+            if join.parent_loop_id is not None:
+                event_children.setdefault(join.parent_loop_id, []).append(join.id)
+        children = (tuple(event.id for event in entry_events if event.parent_loop_id is None)
+                    + tuple(join.id for join in entry_joins if join.parent_loop_id is None))
         components.append(SemanticComponent(
             entry.id, entry.name, entry.name, "EntryPoint", Confidence.EXACT,
             (f"named {entry.kind.value} entry point",), children,
@@ -165,43 +187,69 @@ def build_semantic_analysis(files: tuple[ParsedFile, ...], model: ModelAnalysis,
         ))
         roots.append(entry.id)
         for model_id in entry.model_ids:
-            if model_id in {definition.symbol_id for definition in model.definitions}:
+            if model_id in model_definition_ids:
                 relations.append(_relation(entry.id, model_id, EdgeType.CALLS,
                                            Confidence.PROBABLE,
                                            "entry constructs or references this model statically",
                                            entry.source_anchor))
         for event in entry_events:
-            components.append(_event_component(
-                event, tuple(child.id for child in entry_events
-                             if child.parent_loop_id == event.id)))
+            components.append(_event_component(event, tuple(event_children.get(event.id, ()))))
             relations.append(_relation(event.parent_loop_id or entry.id, event.id,
                                        EdgeType.CONTAINS, event.confidence,
                                        "event occurs lexically within entry or loop",
                                        event.source_anchor))
-        for left, right in zip(entry_events, entry_events[1:], strict=False):
-            relations.append(_relation(left.id, right.id, EdgeType.CONTROL_FLOW,
-                                       Confidence.PROBABLE,
-                                       "lexical order only; branches and runtime paths may differ",
-                                       right.source_anchor))
+        for join in entry_joins:
+            components.append(SemanticComponent(
+                join.id, "Flow Join", role="ControlJoin", confidence=Confidence.PROBABLE,
+                evidence=join.evidence, source_anchors=(join.source_anchor,),
+                metadata={"entry_point_id": entry.id,
+                          "parent_loop_id": join.parent_loop_id,
+                          "branch_path": join.branch_path},
+            ))
+            relations.append(_relation(join.parent_loop_id or entry.id, join.id,
+                                       EdgeType.CONTAINS, Confidence.PROBABLE,
+                                       "static branch paths merge within entry or loop",
+                                       join.source_anchor))
+        for event in entry_events:
+            for predecessor_id in event.control_predecessor_ids:
+                if predecessor_id in entry_node_ids:
+                    relations.append(_relation(
+                        predecessor_id, event.id, EdgeType.CONTROL_FLOW,
+                        Confidence.PROBABLE,
+                        "static branch predecessor; runtime execution is not observed",
+                        event.source_anchor,
+                    ))
+        for join in entry_joins:
+            for predecessor_id in join.control_predecessor_ids:
+                if predecessor_id in entry_node_ids:
+                    relations.append(_relation(
+                        predecessor_id, join.id, EdgeType.CONTROL_FLOW,
+                        Confidence.PROBABLE,
+                        "static branch merge; runtime execution is not observed",
+                        join.source_anchor,
+                    ))
         for loop in entry_events:
             if loop.role not in (TrainingRole.EPOCH_LOOP, TrainingRole.BATCH_LOOP):
                 continue
-            direct_children = [event for event in entry_events if event.parent_loop_id == loop.id]
-            if direct_children:
-                relations.append(_relation(direct_children[-1].id, loop.id,
+            for predecessor_id in loop.loop_back_predecessor_ids:
+                if predecessor_id not in entry_node_ids:
+                    continue
+                relations.append(_relation(predecessor_id, loop.id,
                                            EdgeType.LOOP_BACK, Confidence.PROBABLE,
-                                           "static loop syntax; iteration count and exit are not observed",
+                                           "static loop body exit; iteration count is not observed",
                                            loop.source_anchor))
-        for index, event in enumerate(entry_events):
-            if event.role != TrainingRole.BACKWARD_PASS:
-                continue
-            next_update = next((candidate for candidate in entry_events[index + 1:]
-                                if candidate.parent_loop_id == event.parent_loop_id
-                                and candidate.role == TrainingRole.PARAMETER_UPDATE), None)
-            if next_update is not None:
-                relations.append(_relation(event.id, next_update.id,
-                                           EdgeType.GRADIENT_FLOW, Confidence.PROBABLE,
-                                           "static backward/optimizer pattern; actual gradients not observed",
-                                           event.source_anchor))
+        pending_backward: dict[tuple[str | None, tuple[tuple[str, bool], ...]],
+                               list[TrainingEvent]] = {}
+        for event in entry_events:
+            key = (event.parent_loop_id, event.branch_path)
+            if event.role == TrainingRole.BACKWARD_PASS:
+                pending_backward.setdefault(key, []).append(event)
+            elif event.role == TrainingRole.PARAMETER_UPDATE:
+                for backward in pending_backward.pop(key, ()):
+                    relations.append(_relation(backward.id, event.id,
+                                               EdgeType.GRADIENT_FLOW, Confidence.PROBABLE,
+                                               "same static branch backward/optimizer pattern; "
+                                               "actual gradients not observed",
+                                               backward.source_anchor))
     return SemanticAnalysis(SemanticGraph(tuple(components), tuple(relations), tuple(roots)),
                             tuple(issues))
