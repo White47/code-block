@@ -7,6 +7,8 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph, VisibleNode
+from codeviz.navigation import plan_reveal
+from codeviz.search import search_project
 from codeviz.ui.controller import AnalysisStatus
 from codeviz.ui.presenter import build_overview, build_problems
 from codeviz.ui.tkapp import CodeVizApp, main
@@ -139,6 +141,138 @@ class TkAppLiveTests(unittest.TestCase):
             source = self.app._source_widgets[("run.py", True)]
             self.assertIn("optimizer.step()", source.get("1.0", "end"))
             self.assertTrue(source.tag_ranges("focus"))
+
+    def test_search_reveal_symbol_inspector_and_side_source(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text(
+                "def train_epoch():\n    loss = 1\n    return loss\n"
+                "def validate():\n    loss = 2\n    return loss\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_activity("Search")
+            self.app.search_entry.insert(0, "loss")
+            self.app._refresh_search()
+            rows = self.app.sidebar_tree.get_children()
+            self.assertEqual(len(rows), 2)
+            chosen = next(row for row in rows if "validate.loss" in
+                          self.app.sidebar_tree.item(row, "text"))
+            self.app.sidebar_tree.selection_set(chosen)
+            self.app._open_search_source()
+            self.assertIn("loss = 2", self.app._source_widgets[("run.py", False)].get("1.0", "end"))
+            self.app._reveal_search_result()
+            self.assertEqual(self.app._active_kind, ViewKind.DATA_FLOW)
+            self.assertIn("run.py:5", self.app.inspector_text.get("1.0", "end"))
+            self.app.side_button.invoke()
+            self.assertTrue(self.app._side_open)
+            self.assertIn("loss = 2", self.app._source_widgets[("run.py", True)].get("1.0", "end"))
+
+    def test_search_semantic_result_reveals_training_event(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text(
+                "def train(loss, optimizer):\n"
+                "    loss.backward()\n    optimizer.step()\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_activity("Search")
+            self.app.search_entry.insert(0, "反向传播")
+            self.app._refresh_search()
+            rows = self.app.sidebar_tree.get_children()
+            self.assertEqual(len(rows), 1)
+            self.app.sidebar_tree.selection_set(rows[0])
+            self.app._reveal_search_result()
+            self.assertEqual(self.app._active_kind, ViewKind.EXECUTION)
+            self.assertIn("loss.backward", self.app.inspector_text.get("1.0", "end"))
+
+    def test_symbols_browse_and_new_project_discard_old_search_rows(self):
+        with TemporaryDirectory() as first, TemporaryDirectory() as second:
+            original = Path(first)
+            replacement = Path(second)
+            (original / "run.py").write_text("value = 1\n", encoding="utf-8")
+            (replacement / "other.py").write_text("fresh = 2\n", encoding="utf-8")
+            self.app.controller.open_project(original)
+            self.app.controller.analyze()
+            self.app._set_activity("Search")
+            self.app.search_entry.insert(0, "value")
+            self.app._refresh_search()
+            self.assertTrue(self.app._search_rows)
+            self.app._set_activity("Symbols")
+            self.assertEqual(self.app.search_entry.get(), "")
+            self.assertTrue(self.app._search_rows)
+            self.app.controller.open_project(replacement)
+            self.app._reset_editors()
+            self.app._set_activity("Search")
+            self.assertFalse(self.app._search_rows)
+
+    def test_data_flow_step_click_selects_without_invalid_recentering(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text(
+                "def train(x):\n    loss = x\n    return loss\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            analysis = self.app.controller.analyze()
+            result = next(item for item in search_project(analysis, "loss").results
+                          if item.source_kind == "symbol" and item.name == "loss")
+            target = plan_reveal(analysis, result)
+            self.app._open_graph(target.view_kind, target.root_id,
+                                 reveal_id=target.selected_id)
+            view = self.app._views[ViewKind.DATA_FLOW]
+            step = next(node for node in view.nodes
+                        if analysis.flow.graph.nodes[node.id].kind.value == "FlowStep")
+            with patch.object(self.app.messagebox, "showerror") as showerror:
+                self.app._on_select(step.id)
+            showerror.assert_not_called()
+            self.assertEqual(self.app._selected_id, step.id)
+            self.assertIn("SOURCE", self.app.inspector_text.get("1.0", "end"))
+
+    def test_new_search_reveal_resets_local_context_to_one_hop(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text(
+                "def train_epoch():\n    loss = 1\n    return loss\n"
+                "def validate():\n    loss = 2\n    return loss\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_activity("Search")
+            self.app.search_entry.insert(0, "loss")
+            self.app._refresh_search()
+            rows = self.app.sidebar_tree.get_children()
+            self.app.sidebar_tree.selection_set(rows[0])
+            self.app._reveal_search_result()
+            self.app._change_context(ViewKind.DATA_FLOW, direction="downstream", hop_delta=4)
+            self.assertEqual(self.app._views[ViewKind.DATA_FLOW].query_context["hops"], 5)
+            self.app.sidebar_tree.selection_set(rows[1])
+            self.app._reveal_search_result()
+            context = self.app._views[ViewKind.DATA_FLOW].query_context
+            self.assertEqual(context["hops"], 1)
+            self.assertEqual(context["direction"], "both")
+
+    def test_reveal_neighbor_in_same_graph_also_resets_search_context(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "run.py").write_text(
+                "def train(x):\n    loss = x\n    prediction = loss\n"
+                "    return prediction\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_activity("Search")
+            self.app.search_entry.insert(0, "loss")
+            self.app._refresh_search()
+            loss_row = next(row for row, result in self.app._search_rows.items()
+                            if result.name == "loss" and result.source_kind == "symbol")
+            self.app.sidebar_tree.selection_set(loss_row)
+            self.app._reveal_search_result()
+            self.app._change_context(ViewKind.DATA_FLOW, direction="downstream", hop_delta=4)
+            self.app.search_entry.delete(0, "end")
+            self.app.search_entry.insert(0, "prediction")
+            self.app._refresh_search()
+            prediction_row = next(row for row, result in self.app._search_rows.items()
+                                  if result.name == "prediction" and result.source_kind == "symbol")
+            self.app.sidebar_tree.selection_set(prediction_row)
+            self.app._reveal_search_result()
+            self.assertEqual(self.app._views[ViewKind.DATA_FLOW].query_context["hops"], 1)
+            self.assertEqual(self.app._views[ViewKind.DATA_FLOW].query_context["direction"], "both")
 
     def test_switching_graph_kind_does_not_reuse_unrelated_selection(self):
         with TemporaryDirectory() as temporary:

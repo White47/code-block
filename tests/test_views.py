@@ -37,6 +37,47 @@ class VisibleContractTests(unittest.TestCase):
 
 
 class VisibleBuilderTests(unittest.TestCase):
+    def test_symbol_context_is_bounded_and_directional(self):
+        result = analyze_files({"run.py": (
+            "def source(): return 1\n"
+            "def middle(): return source()\n"
+            "def sink(): return middle()\n")})
+        middle = next(item for item in result.symbol_index.entries.values()
+                      if item.name == "middle")
+        upstream = build_visible_graph(result, ViewRequest(
+            ViewKind.SYMBOL, root_id=middle.id, selected_id=middle.id, hops=1))
+        self.assertIn(middle.id, {node.id for node in upstream.nodes})
+        self.assertLessEqual(len(upstream.nodes), 100)
+        self.assertTrue(all(node.source_anchors or node.member_ids
+                            for node in upstream.nodes))
+        callers = build_visible_graph(result, ViewRequest(
+            ViewKind.SYMBOL, selected_id=middle.id, direction="upstream"))
+        descendants = build_visible_graph(result, ViewRequest(
+            ViewKind.SYMBOL, selected_id=middle.id, direction="downstream"))
+        self.assertNotEqual({node.id for node in callers.nodes},
+                            {node.id for node in descendants.nodes})
+        limited = build_visible_graph(result, ViewRequest(
+            ViewKind.SYMBOL, selected_id=middle.id, hops=5, max_nodes=2, max_edges=1))
+        self.assertLessEqual(len(limited.nodes), 2)
+        self.assertLessEqual(len(limited.edges), 1)
+        self.assertIn(middle.id, {node.id for node in limited.nodes})
+        self.assertGreater(limited.hidden_counts["nodes"], 0)
+
+    def test_data_read_is_downstream_of_data_not_upstream(self):
+        result = analyze_files({"run.py": "def train(x):\n    loss = x\n    return loss\n"})
+        loss = next(node for node in result.flow.graph.nodes.values()
+                    if node.kind.value == "Data" and node.name == "loss")
+        read = next(edge for edge in result.flow.graph.edges
+                    if edge.type == EdgeType.READS and edge.target == loss.id)
+        upstream = build_visible_graph(result, ViewRequest(
+            ViewKind.DATA_FLOW, selected_id=loss.id, direction="upstream"))
+        downstream = build_visible_graph(result, ViewRequest(
+            ViewKind.DATA_FLOW, selected_id=loss.id, direction="downstream"))
+        self.assertNotIn(read.source, {node.id for node in upstream.nodes})
+        self.assertIn(read.source, {node.id for node in downstream.nodes})
+        self.assertTrue(any(edge.source == loss.id and edge.target == read.source
+                            and edge.type == EdgeType.READS for edge in downstream.edges))
+
     def test_architecture_and_execution_choose_independent_roots(self):
         result = analyze_files({
             "model.py": (

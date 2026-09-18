@@ -6,6 +6,8 @@ from threading import Thread
 from typing import Any
 
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph
+from codeviz.navigation import plan_reveal
+from codeviz.search import SearchResult, search_project
 
 from . import theme
 from .controller import AppController, SourceDocument
@@ -48,6 +50,9 @@ class CodeVizApp:
         self._source_widgets: dict[tuple[str, bool], Any] = {}
         self._problems_tab: Any | None = None
         self._problem_anchors: dict[str, SourceAnchor] = {}
+        self._search_rows: dict[str, SearchResult] = {}
+        self._context_hops: dict[ViewKind, int] = {}
+        self._context_direction: dict[ViewKind, str] = {}
         self._configure_style()
         self._build_shell()
         self._render_overview()
@@ -135,6 +140,20 @@ class CodeVizApp:
                                       fg=theme.MUTED, anchor="w", padx=14, pady=14,
                                       font=(theme.UI_FONT, 10, "bold"))
         self.sidebar_title.pack(fill="x")
+        search_box = tk.Frame(self.sidebar, bg=theme.PANEL)
+        self.search_box = search_box
+        self.search_entry = tk.Entry(search_box, bg=theme.SURFACE, fg=theme.TEXT,
+                                     insertbackground=theme.ACCENT, relief="flat",
+                                     font=(theme.UI_FONT, 10))
+        self.search_entry.pack(fill="x", padx=7, pady=(2, 6), ipady=6)
+        self.search_entry.bind("<Return>", lambda _event: self._refresh_search())
+        search_actions = tk.Frame(search_box, bg=theme.PANEL)
+        search_actions.pack(fill="x", padx=5, pady=(0, 8))
+        self._button(search_actions, "Find", self._refresh_search).pack(side="left", padx=2)
+        self._button(search_actions, "Reveal", self._reveal_search_result).pack(
+            side="left", padx=2)
+        self._button(search_actions, "Source", self._open_search_source).pack(
+            side="left", padx=2)
         self.sidebar_tree = self.ttk.Treeview(self.sidebar, show="tree", selectmode="browse")
         self.sidebar_tree.pack(fill="both", expand=True, padx=7)
         self.sidebar_tree.bind("<Double-Button-1>", self._activate_sidebar)
@@ -173,15 +192,22 @@ class CodeVizApp:
 
     def _set_activity(self, name: str) -> None:
         self.sidebar_title.configure(text=name.upper())
+        if name in ("Search", "Symbols"):
+            self.search_box.pack(fill="x", before=self.sidebar_tree)
+        else:
+            self.search_box.pack_forget()
         tree = self.sidebar_tree
         tree.delete(*tree.get_children())
         self._sidebar_targets.clear()
+        self._search_rows.clear()
         if name == "Architecture":
             self._open_graph(ViewKind.ARCHITECTURE)
         elif name == "Execution":
             self._open_graph(ViewKind.EXECUTION)
         elif name in ("Search", "Symbols"):
-            tree.insert("", "end", text=f"{name} navigation arrives in Phase 9")
+            if name == "Symbols":
+                self.search_entry.delete(0, "end")
+            self._refresh_search()
         elif name == "Settings":
             tree.insert("", "end", text="Persistent settings arrive in Phase 10")
         elif name == "Explorer":
@@ -215,8 +241,57 @@ class CodeVizApp:
                 problems, "end", text=f"{problem.code}: {problem.file_path}:{problem.line or 1}")
             self._sidebar_targets[item] = ("problem", f"{problem.file_path}:{problem.line or 1}")
 
+    def _refresh_search(self) -> None:
+        tree = self.sidebar_tree
+        tree.delete(*tree.get_children())
+        self._sidebar_targets.clear()
+        self._search_rows.clear()
+        analysis = self.controller.analysis
+        if analysis is None or self._analyzing:
+            tree.insert("", "end", text="Analyze Project to search source")
+            return
+        response = search_project(analysis, self.search_entry.get())
+        for result in response.results:
+            label = (f"{result.qualified_name}  ·  {result.kind}  ·  "
+                     f"{result.source_anchor.file_path}:{result.source_anchor.start_line}")
+            item = tree.insert("", "end", text=label)
+            self._search_rows[item] = result
+        if not response.results:
+            tree.insert("", "end", text="No matching definitions or semantic roles")
+        if response.truncated:
+            tree.insert("", "end", text=f"Showing 100 of {response.total_count} · narrow query")
+
+    def _selected_search_result(self) -> SearchResult | None:
+        selected = self.sidebar_tree.selection()
+        return self._search_rows.get(selected[0]) if selected else None
+
+    def _reveal_search_result(self) -> None:
+        result = self._selected_search_result()
+        analysis = self.controller.analysis
+        if result is None or analysis is None:
+            self.status_label.configure(text="Select a search result first")
+            return
+        current = self._views.get(self._active_kind) if self._active_kind else None
+        target = plan_reveal(analysis, result, current)
+        if target.view_kind is None or target.selected_id is None:
+            self.status_label.configure(text=target.reason or "No graph location available")
+            return
+        if (target.view_kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW)
+                and target.selected_id != self._selections.get(target.view_kind)):
+            self._context_hops[target.view_kind] = 1
+            self._context_direction[target.view_kind] = "both"
+        self._open_graph(target.view_kind, target.root_id, reveal_id=target.selected_id)
+
+    def _open_search_source(self) -> None:
+        result = self._selected_search_result()
+        if result is not None:
+            self._open_source(result.source_anchor, False)
+
     def _activate_sidebar(self, _event: Any) -> None:
         selected = self.sidebar_tree.selection()
+        if selected and selected[0] in self._search_rows:
+            self._reveal_search_result()
+            return
         if not selected or selected[0] not in self._sidebar_targets:
             return
         kind, value = self._sidebar_targets[selected[0]]
@@ -263,6 +338,9 @@ class CodeVizApp:
         self._source_widgets.clear()
         self._problems_tab = None
         self._problem_anchors.clear()
+        self._search_rows.clear()
+        self._context_hops.clear()
+        self._context_direction.clear()
         self._selected_id = None
         self._selections.clear()
         self._expansion_history.clear()
@@ -465,7 +543,8 @@ class CodeVizApp:
                              fill="x", pady=(9, 0))
         return frame
 
-    def _open_graph(self, kind: ViewKind, root_id: str | None = None) -> None:
+    def _open_graph(self, kind: ViewKind, root_id: str | None = None,
+                    *, reveal_id: str | None = None) -> None:
         if self.controller.analysis is None:
             self.status_label.configure(text="Analyze the project before opening a graph")
             return
@@ -475,9 +554,23 @@ class CodeVizApp:
             for node_id in history:
                 self.controller.collapse(node_id)
             self._selections[kind] = None
-        self._selected_id = self._selections.get(kind)
+            if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+                self._context_hops[kind] = 1
+                self._context_direction[kind] = "both"
+        self._selected_id = reveal_id if reveal_id is not None else self._selections.get(kind)
+        if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW) and self._selected_id is not None:
+            analysis = self.controller.analysis
+            if (analysis is not None and analysis.flow is not None
+                    and (self._selected_id not in analysis.flow.graph.nodes or
+                         (kind == ViewKind.DATA_FLOW and
+                          analysis.flow.graph.nodes[self._selected_id].kind.value != "Data"))):
+                self._selected_id = root_id
+        self._selections[kind] = self._selected_id
         try:
-            view = self.controller.view(kind, root_id, self._selected_id)
+            view = self.controller.view(
+                kind, root_id, self._selected_id,
+                hops=self._context_hops.get(kind, 1),
+                direction=self._context_direction.get(kind, "both"))
         except (ValueError, RuntimeError) as error:
             self.messagebox.showerror("Cannot open view", str(error))
             return
@@ -493,21 +586,43 @@ class CodeVizApp:
                                        font=(theme.UI_FONT, 9, "bold"))
             breadcrumb.pack(side="left", padx=8)
             self._breadcrumbs[kind] = breadcrumb
-            self.tk.Label(bar, text="Double-click or Enter to drill down · source opens separately",
-                          bg=theme.PANEL, fg=theme.MUTED,
-                          font=(theme.UI_FONT, 9)).pack(side="left", padx=12)
+            if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+                for label, direction in (("Both", "both"), ("Upstream", "upstream"),
+                                         ("Downstream", "downstream")):
+                    self._button(bar, label,
+                                 lambda value=direction, view_kind=kind:
+                                 self._change_context(view_kind, direction=value)).pack(
+                                     side="left", padx=2, pady=5)
+                self._button(bar, "+ hop", lambda view_kind=kind:
+                             self._change_context(view_kind, hop_delta=1)).pack(
+                                 side="left", padx=2, pady=5)
+            else:
+                self.tk.Label(bar, text="Double-click or Enter to drill down · source opens separately",
+                              bg=theme.PANEL, fg=theme.MUTED,
+                              font=(theme.UI_FONT, 9)).pack(side="left", padx=12)
             graph = GraphCanvas(frame, on_select=self._on_select,
                                 on_drill_down=self._on_drill_down, on_move=self._on_move)
             graph.widget.pack(fill="both", expand=True)
             self._graph_tabs[kind] = (frame, graph)
-            self.main_tabs.add(frame, text="Architecture" if kind == ViewKind.ARCHITECTURE
-                               else "Training Flow")
+            tab_title = {ViewKind.ARCHITECTURE: "Architecture",
+                         ViewKind.EXECUTION: "Training Flow",
+                         ViewKind.SYMBOL: "Symbol Context",
+                         ViewKind.DATA_FLOW: "Data Flow Context"}[kind]
+            self.main_tabs.add(frame, text=tab_title)
         frame, graph = self._graph_tabs[kind]
         graph.render(view, self._selected_id)
         names = {node.id: node.display_name for node in view.nodes}
-        parts = ["Architecture" if kind == ViewKind.ARCHITECTURE else "Training Flow"]
-        parts.append(names.get(root_id, root_id) if root_id is not None else
-                     ("All Models" if kind == ViewKind.ARCHITECTURE else "All Entries"))
+        parts = [{ViewKind.ARCHITECTURE: "Architecture",
+                  ViewKind.EXECUTION: "Training Flow",
+                  ViewKind.SYMBOL: "Symbol Context",
+                  ViewKind.DATA_FLOW: "Data Flow Context"}[kind]]
+        root_name = names.get(root_id) if root_id is not None else None
+        if root_name is None and root_id is not None and self.controller.analysis is not None:
+            flow = self.controller.analysis.flow
+            if flow is not None and root_id in flow.graph.nodes:
+                root_name = flow.graph.nodes[root_id].name
+        parts.append(root_name or (root_id if root_id is not None else
+                     ("All Models" if kind == ViewKind.ARCHITECTURE else "All Entries")))
         parts.extend(names.get(item, "Expanded component")
                      for item in self._expansion_history.get(kind, ()))
         if (self._selected_id is not None and any(
@@ -543,7 +658,27 @@ class CodeVizApp:
         self._selected_id = node_id
         if self._active_kind is not None:
             self._selections[self._active_kind] = node_id
+            if self._active_kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+                view = self._views.get(self._active_kind)
+                node = next((item for item in view.nodes if item.id == node_id), None) if view else None
+                analysis = self.controller.analysis
+                can_focus = (self._active_kind == ViewKind.SYMBOL or
+                             (analysis is not None and analysis.flow is not None and
+                              node_id in analysis.flow.graph.nodes and
+                              analysis.flow.graph.nodes[node_id].kind.value == "Data"))
+                if node is not None and not node.member_ids and can_focus:
+                    self._open_graph(self._active_kind, self._roots.get(self._active_kind),
+                                     reveal_id=node_id)
+                    return
         self._update_inspector()
+
+    def _change_context(self, kind: ViewKind, *, direction: str | None = None,
+                        hop_delta: int = 0) -> None:
+        if direction is not None:
+            self._context_direction[kind] = direction
+        if hop_delta:
+            self._context_hops[kind] = min(5, self._context_hops.get(kind, 1) + hop_delta)
+        self._open_graph(kind, self._roots.get(kind))
 
     def _on_drill_down(self, node_id: str) -> None:
         kind = self._active_kind
@@ -555,6 +690,8 @@ class CodeVizApp:
             return
         if node.member_ids:
             self._show_hidden_members(kind, node.member_ids)
+        elif kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+            self._change_context(kind, hop_delta=1)
         elif node.metadata.get("has_children"):
             self.controller.expand(node_id)
             history = self._expansion_history.setdefault(kind, [])
@@ -581,6 +718,7 @@ class CodeVizApp:
                              for item in analysis.semantic.graph.components)
             if analysis.flow is not None:
                 names.update((item.id, item.name) for item in analysis.flow.data_nodes)
+                names.update((item.id, item.name) for item in analysis.flow.graph.nodes.values())
         for member_id in member_ids:
             item = self.sidebar_tree.insert("", "end", text=names.get(member_id, member_id))
             self._sidebar_targets[item] = ("reveal", member_id)

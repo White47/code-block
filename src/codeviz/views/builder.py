@@ -14,6 +14,7 @@ from codeviz.core import (
     VisibleNode,
 )
 
+from .code_context import build_code_context
 from .data import critical_data_slice
 from .layout import layout_positions
 from .query import GraphQuery
@@ -42,6 +43,7 @@ class ViewRequest:
     hops: int = 1
     max_nodes: int = 100
     max_edges: int = 300
+    direction: str = "both"
 
     def __post_init__(self) -> None:
         if (type(self.max_nodes) is not int or type(self.max_edges) is not int
@@ -52,6 +54,8 @@ class ViewRequest:
             not item for item in self.expanded_ids
         ):
             raise ValueError("view IDs cannot be empty")
+        if self.direction not in ("both", "upstream", "downstream"):
+            raise ValueError("direction must be both, upstream or downstream")
 
 
 def _visible_node(query: GraphQuery, node_id: str) -> VisibleNode:
@@ -71,6 +75,8 @@ def _visible_node(query: GraphQuery, node_id: str) -> VisibleNode:
 def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
                         state: ViewState | None = None) -> VisibleGraph:
     """Return only the source-backed local graph permitted by this request's budgets."""
+    if request.view_kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+        return build_code_context(analysis, request, state or ViewState())
     if analysis.semantic is None:
         raise ValueError("semantic analysis is required before building a visible graph")
     query = GraphQuery(analysis.semantic.graph)

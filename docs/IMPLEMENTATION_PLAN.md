@@ -98,7 +98,7 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 
 - Goal：闭环 Search → Graph → Inspector → Source。
 - Deliverables：Symbol Search、Semantic Search、scope disambiguation、local context、Reveal in Graph。
-- Files likely affected：`search`、`ui/search`、`navigation`。
+- Files likely affected：`src/codeviz/search.py`、`navigation.py`、`views/code_context.py`、`ui/tkapp.py`、`ui/controller.py`、`ui/graph_canvas.py`；执行细节见 `PHASE9_PLAN.md`。
 - Dependencies：Phase 3、6–8。
 - Tests：同名 symbol、中文 / 英文语义词、不同视图定位、1-hop、Open to Side。
 - Acceptance Criteria：每条结果都能定位或明确标记无法定位的原因。
