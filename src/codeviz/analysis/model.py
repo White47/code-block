@@ -234,7 +234,8 @@ class _ModelBuilder:
                   expression: ast.expr, bindings: dict[str, str],
                   by_name: dict[str, ModuleInstance], *, repetition: int = 1,
                   shared_source: ModuleInstance | None = None, guarded: bool = False,
-                  candidate: bool = False, range_available: bool = True) -> ModuleInstance | None:
+                  candidate: bool = False, range_available: bool = True,
+                  dict_available: bool = True) -> ModuleInstance | None:
         shared = shared_source
         if (shared is None and isinstance(expression, ast.Attribute)
                 and isinstance(expression.value, ast.Name)
@@ -286,12 +287,9 @@ class _ModelBuilder:
                       and not source.generators[0].ifs and not source.generators[0].is_async):
                     count = (_static_range_count(source.generators[0].iter)
                              if range_available else None)
-                    if count is not None:
-                        members = [(f"{name}[*]", source.elt)] if count > 0 else []
-                        repeat_count = count
-                        comprehension = True
-                    else:
-                        repeat_count = None
+                    members = [(f"{name}[*]", source.elt)] if count != 0 else []
+                    repeat_count = count
+                    comprehension = True
                 else:
                     repeat_count = None
             elif container_kind == "ModuleList":
@@ -303,6 +301,12 @@ class _ModelBuilder:
                                for key, value in zip(source.keys, source.values, strict=True)
                                if isinstance(key, ast.Constant) and isinstance(key.value, str)]
                     partial_members = len(members) != len(source.keys)
+                elif (dict_available and isinstance(source, ast.Call)
+                      and isinstance(source.func, ast.Name) and source.func.id == "dict"
+                      and not source.args):
+                    members = [(f"{name}[{keyword.arg}]", keyword.value)
+                               for keyword in source.keywords if keyword.arg is not None]
+                    partial_members = len(members) != len(source.keywords)
                 else:
                     partial_members = True
             child_start = len(self.instances)
@@ -319,7 +323,8 @@ class _ModelBuilder:
                         parsed, owner, child_name, child_expression, bindings, by_name,
                         repetition=(repeat_count or 1) if child_name.endswith("[*]")
                         and not is_shared_template else 1,
-                        guarded=guarded, range_available=range_available,
+                        guarded=guarded or (comprehension and repeat_count is None),
+                        range_available=range_available, dict_available=dict_available,
                     )
                     child_ids.append(child.id if child is not None else None)
                     if child is not None:
@@ -339,7 +344,8 @@ class _ModelBuilder:
                     else:
                         by_name[child_name] = previous
                 raise
-            if (not members and expression.args and repeat_count != 0) or partial_members:
+            if ((not members and expression.args and repeat_count != 0)
+                    or (repeat_count is None and expression.args) or partial_members):
                 self.issues.append(AnalysisIssue(
                     "MODEL_CONTAINER_DYNAMIC", "container members or count are not statically known",
                     parsed.relative_path, _anchor(parsed, expression),
@@ -395,6 +401,10 @@ class _ModelBuilder:
                 entry.name == "range" and entry.file_path == parsed.relative_path
                 and entry.scope == parsed.module_name for entry in self.index.entries.values()
             )
+            dict_available = "dict" not in local_names and not any(
+                entry.name == "dict" and entry.file_path == parsed.relative_path
+                and entry.scope == parsed.module_name for entry in self.index.entries.values()
+            )
             forward = next((item for item in node.body
                             if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
                             and item.name == "forward"), None)
@@ -415,6 +425,7 @@ class _ModelBuilder:
                                     by_name, shared_source=first, guarded=guarded,
                                     candidate=target.attr in candidate_names,
                                     range_available=range_available,
+                                    dict_available=dict_available,
                                 )
                                 first = created or first
                                 if guarded or created is None:
@@ -432,6 +443,7 @@ class _ModelBuilder:
                             bindings, by_name, guarded=guarded,
                             candidate=statement.target.attr in candidate_names,
                             range_available=range_available,
+                            dict_available=dict_available,
                         )
                         if guarded or created is None:
                             by_name.pop(statement.target.attr, None)

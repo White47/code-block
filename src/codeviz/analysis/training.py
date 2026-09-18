@@ -110,27 +110,44 @@ def _parameter_role(name: str) -> str | None:
     return None
 
 
-def _local_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
-    names = {arg.arg for arg in (*function.args.posonlyargs, *function.args.args,
-             *function.args.kwonlyargs)}
-    if function.args.vararg is not None:
+def _local_names(function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Module,
+                 *, include_imports: bool = True) -> set[str]:
+    names = ({arg.arg for arg in (*function.args.posonlyargs, *function.args.args,
+              *function.args.kwonlyargs)}
+             if not isinstance(function, ast.Module) else set())
+    if not isinstance(function, ast.Module) and function.args.vararg is not None:
         names.add(function.args.vararg.arg)
-    if function.args.kwarg is not None:
+    if not isinstance(function, ast.Module) and function.args.kwarg is not None:
         names.add(function.args.kwarg.arg)
     for node in ast.walk(function):
         if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
             names.add(node.id)
-        elif isinstance(node, ast.Import):
+        elif include_imports and isinstance(node, ast.Import):
             names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
+        elif include_imports and isinstance(node, ast.ImportFrom):
             names.update(alias.asname or alias.name for alias in node.names)
         elif isinstance(node, ast.ExceptHandler) and node.name:
             names.add(node.name)
     return names
 
 
+def _executed_calls(statements: list[ast.stmt]) -> list[ast.Call]:
+    """Ignore calls inside definitions that a loop merely creates."""
+    calls: list[ast.Call] = []
+    pending: list[ast.AST] = list(statements)
+    while pending:
+        node = pending.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            continue
+        if isinstance(node, ast.Call):
+            calls.append(node)
+        pending.extend(ast.iter_child_nodes(node))
+    return calls
+
+
 class _EntryVisitor(ast.NodeVisitor):
-    def __init__(self, parsed: ParsedFile, function: ast.FunctionDef | ast.AsyncFunctionDef,
+    def __init__(self, parsed: ParsedFile,
+                 function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Module,
                  entry: SymbolIndexEntry, kind: EntryPointKind, imports: dict[str, str],
                  model_ids: frozenset[str],
                  references: dict[tuple[str, int, int | None], str],
@@ -140,7 +157,7 @@ class _EntryVisitor(ast.NodeVisitor):
         self.function = function
         self.entry = entry
         self.kind = kind
-        shadowed = _local_names(function)
+        shadowed = _local_names(function, include_imports=not isinstance(function, ast.Module))
         self.imports = {name: path for name, path in imports.items() if name not in shadowed}
         self.rule = PyTorchTrainingRule()
         self.framework = PyTorchModelRule()
@@ -156,13 +173,15 @@ class _EntryVisitor(ast.NodeVisitor):
         self.branch_path: list[tuple[str, bool]] = []
         self.control_frontier: list[str] = []
         self.facts: dict[str, ReceiverFact] = {}
-        for argument in (*function.args.posonlyargs, *function.args.args,
-                         *function.args.kwonlyargs):
-            role = _parameter_role(argument.arg)
-            if role is not None:
-                self.facts[argument.arg] = ReceiverFact(
-                    role, Confidence.PROBABLE, (f"parameter name {argument.arg!r} suggests {role}",)
-                )
+        if not isinstance(function, ast.Module):
+            for argument in (*function.args.posonlyargs, *function.args.args,
+                             *function.args.kwonlyargs):
+                role = _parameter_role(argument.arg)
+                if role is not None:
+                    self.facts[argument.arg] = ReceiverFact(
+                        role, Confidence.PROBABLE,
+                        (f"parameter name {argument.arg!r} suggests {role}",)
+                    )
         self.no_grad_context_calls = {
             id(item.context_expr) for statement in ast.walk(function)
             if isinstance(statement, (ast.With, ast.AsyncWith)) for item in statement.items
@@ -225,6 +244,9 @@ class _EntryVisitor(ast.NodeVisitor):
                                 (f"constructor resolves to model definition {target_id}",))
         canonical = self.framework.canonical_name(value.func, self.imports)
         if canonical is not None:
+            if canonical in ("torch.cuda.amp.GradScaler", "torch.amp.GradScaler"):
+                return ReceiverFact("grad_scaler", Confidence.PROBABLE,
+                                    (f"constructor {canonical}; scaler may skip an update",))
             if canonical.startswith("torch.optim.lr_scheduler.") and canonical.rsplit(".", 1)[-1] in _SCHEDULERS:
                 return ReceiverFact("scheduler", Confidence.EXACT, (f"constructor {canonical}",))
             if canonical.startswith("torch.optim.") and canonical.rsplit(".", 1)[-1] in _OPTIMIZERS:
@@ -412,12 +434,43 @@ class _EntryVisitor(ast.NodeVisitor):
 
     def visit_While(self, node: ast.While) -> None:
         self.visit(node.test)
+        clears_gradients = False
+        calls_model = False
+        for call in _executed_calls(node.body):
+            expression = call.func
+            if isinstance(expression, ast.Name):
+                receiver = self.facts.get(expression.id)
+                calls_model |= receiver is not None and receiver.role == "model"
+            elif (isinstance(expression, ast.Attribute) and expression.attr == "zero_grad"
+                  and isinstance(expression.value, ast.Name)):
+                receiver = self.facts.get(expression.value.id)
+                clears_gradients |= receiver is not None and receiver.role == "optimizer"
+        batch_loop = clears_gradients and calls_model
+        loop_event_index: int | None = None
+        if batch_loop:
+            source_node_id = self.control_blocks.get(
+                (self.entry.qualified_name, self.parsed.relative_path,
+                 node.lineno, node.col_offset)
+            )
+            self._event(TrainingRole.BATCH_LOOP, node, Confidence.PROBABLE,
+                        ("while loop contains a model call and gradient clearing; "
+                         "batch interpretation is inferred",),
+                        source_node_id, ast.unparse(node.test))
+            loop_event_index = len(self.events) - 1
+            self.loop_stack.append(self.events[-1].id)
         before = dict(self.facts)
         before_frontier = list(self.control_frontier)
         for statement in node.body:
             self.visit(statement)
+        after_body_frontier = list(self.control_frontier)
+        if loop_event_index is not None:
+            loop_event = self.events[loop_event_index]
+            self.events[loop_event_index] = replace(
+                loop_event, loop_back_predecessor_ids=tuple(
+                    item for item in after_body_frontier if item != loop_event.id))
+            self.loop_stack.pop()
         self.facts = self._merge_facts(before, (dict(self.facts), before))
-        self._join_frontiers(node, before_frontier, self.control_frontier)
+        self._join_frontiers(node, before_frontier, after_body_frontier)
         before_else = dict(self.facts)
         for statement in node.orelse:
             self.visit(statement)
@@ -478,7 +531,8 @@ class _EntryVisitor(ast.NodeVisitor):
                            tuple[TrainingControlJoin, ...]]:
         for statement in self.function.body:
             self.visit(statement)
-        entry = EntryPoint(self.entry.id, self.entry.name, self.kind,
+        name = self.parsed.relative_path if isinstance(self.function, ast.Module) else self.entry.name
+        entry = EntryPoint(self.entry.id, name, self.kind,
                            self.entry.source_anchor,
                            tuple(event.id for event in self.events),
                            tuple(self.used_model_ids))
@@ -529,6 +583,25 @@ def build_training_analysis(files: tuple[ParsedFile, ...], resolution: Resolutio
         if catalog.is_project_path("torch"):
             imports = {name: path for name, path in imports.items()
                        if not path.startswith("torch")}
+        module_kind = _entry_kind(parsed.module_name.rsplit(".", 1)[-1])
+        module_symbol = next((item for item in resolution.symbol_index.entries.values()
+                              if item.kind == NodeKind.MODULE
+                              and item.file_path == parsed.relative_path), None)
+        if module_kind is not None and module_symbol is not None:
+            try:
+                visitor = _EntryVisitor(parsed, parsed.tree, module_symbol, module_kind,
+                                        imports, model_ids, references,
+                                        call_sites, control_blocks)
+                entry, flow_events, flow_joins = visitor.run()
+                if flow_events:
+                    entries.append(entry)
+                    events.extend(flow_events)
+                    joins.extend(flow_joins)
+            except Exception as error:
+                issues.append(AnalysisIssue(
+                    "TRAINING_ERROR", f"{type(error).__name__}: {error}",
+                    parsed.relative_path, SourceAnchor(parsed.relative_path, 1),
+                ))
         for function in ast.walk(parsed.tree):
             if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue

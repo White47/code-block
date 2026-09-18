@@ -158,7 +158,7 @@ class ModelAnalysisTests(unittest.TestCase):
         )})
         self.assertEqual(result.model.instances, ())
 
-    def test_dynamic_container_count_is_reported_without_fabricated_repeat(self):
+    def test_dynamic_container_count_keeps_probable_template_without_fabricated_repeat(self):
         result = analyze_files({"model.py": (
             "import torch.nn as nn\n"
             "class Block(nn.Module): pass\n"
@@ -167,8 +167,46 @@ class ModelAnalysisTests(unittest.TestCase):
             "        self.layers = nn.ModuleList([Block() for _ in range(n)])\n"
         )})
         container = next(item for item in result.model.instances if item.name == "layers")
-        self.assertEqual(container.member_instance_ids, ())
+        self.assertEqual(len(container.member_instance_ids), 1)
+        template = next(item for item in result.model.instances
+                        if item.id == container.member_instance_ids[0])
+        self.assertEqual(template.layer_type, "model.Block")
+        self.assertEqual(template.confidence, Confidence.PROBABLE)
         self.assertIsNone(container.repeat_count)
+        self.assertIn("MODEL_CONTAINER_DYNAMIC", {issue.code for issue in result.issues})
+
+    def test_moduledict_builtin_dict_keywords_preserve_named_children(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Block(nn.Module): pass\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self, n):\n"
+            "        self.parts = nn.ModuleDict(dict(\n"
+            "            embed=nn.Embedding(8, 4),\n"
+            "            blocks=nn.ModuleList([Block() for _ in range(n)]),\n"
+            "        ))\n"
+        )})
+        parts = next(item for item in result.model.instances if item.name == "parts")
+        children = {item.name: item for item in result.model.instances
+                    if item.id in parts.member_instance_ids}
+        self.assertEqual(set(children), {"parts[embed]", "parts[blocks]"})
+        self.assertEqual(children["parts[blocks]"].container_kind, "ModuleList")
+        self.assertEqual(len(children["parts[blocks]"].member_instance_ids), 1)
+        self.assertFalse(any(issue.code == "MODEL_CONTAINER_DYNAMIC"
+                             and issue.source_anchor is not None
+                             and issue.source_anchor.start_line == 5
+                             for issue in result.issues))
+
+    def test_shadowed_dict_constructor_does_not_claim_exact_moduledict_members(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self, dict):\n"
+            "        self.parts = nn.ModuleDict(dict(embed=nn.Linear(2, 2)))\n"
+        )})
+        parts = next(item for item in result.model.instances if item.name == "parts")
+        self.assertEqual(parts.member_instance_ids, ())
+        self.assertEqual(parts.confidence, Confidence.PROBABLE)
         self.assertIn("MODEL_CONTAINER_DYNAMIC", {issue.code for issue in result.issues})
 
     def test_project_local_torch_package_is_not_framework_evidence(self):

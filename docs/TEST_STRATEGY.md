@@ -13,6 +13,7 @@
 - Search / Navigation / Phase 9：无显示器测试同名定义按 scope 消歧、中文 / 英文语义词、有限结果和空结果、模型 / 训练 / 普通符号 / 关键数据路由、1–5 hop / 方向 / 预算 / 来源锚点；有 Tk 显示时测试 Search→Reveal→Inspector→Split Source，并确认项目切换或再次 Analyze 不复用旧结果。
 - Persistence / Phase 10：白名单 JSON 往返、不保存 AST / 源码、内容指纹和配置 / 版本过期、原子写失败回滚、损坏缓存与独立标注、旧图仍可查、Tk 的过期提示与标签恢复；Windows 本机额外模拟 Linux 平台 mypy。
 - MVP / Phase 11：固定 `tests/fixtures/mvp_project` 含多模型、ModuleList / Sequential、训练与评估共享模型、同名 loss、动态调用、坏文件和不可执行陷阱；`test_mvp_acceptance.py` 验证三条黄金路径的领域与源码关系，`test_ui_tkapp.py` 以真实 Tk 点击串起同一 fixture；可选基线脚本只写临时目录，不执行目标项目。
+- 真实项目交叉验证：`REAL_REPOSITORY_VALIDATION.md` 固定 nanoGPT、PyTorch Examples、YOLOv5 的提交与范围；本地浅克隆只读测试架构、训练、搜索、源码行和规模，不让 CI 下载或执行第三方项目。发现的可复现语义缺口转成小型自有测试用例，纳入日常离线门禁。
 
 ## 必备 fixture
 

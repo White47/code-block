@@ -24,6 +24,84 @@ def analyze_files(files: dict[str, str]):
 
 
 class TrainingAnalysisTests(unittest.TestCase):
+    def test_while_loop_does_not_derive_batch_role_from_unexecuted_nested_definition(self):
+        result = analyze_files({"run.py": (
+            "def train(model, optimizer):\n"
+            "    while True:\n"
+            "        def helper():\n"
+            "            optimizer.zero_grad()\n"
+            "            model(batch)\n"
+            "        break\n"
+        )})
+        self.assertFalse(any(event.role == TrainingRole.BATCH_LOOP
+                             for event in result.training.events))
+
+    def test_grad_scaler_training_calls_are_probable_and_source_backed(self):
+        result = analyze_files({"run.py": (
+            "import torch\n"
+            "def train():\n"
+            "    optimizer = torch.optim.SGD([])\n"
+            "    scaler = torch.cuda.amp.GradScaler()\n"
+            "    loss = compute_loss()\n"
+            "    scaler.scale(loss).backward()\n"
+            "    scaler.step(optimizer)\n"
+        )})
+        events = {event.role: event for event in result.training.events}
+        self.assertIn(TrainingRole.BACKWARD_PASS, events)
+        self.assertIn(TrainingRole.PARAMETER_UPDATE, events)
+        self.assertEqual(events[TrainingRole.BACKWARD_PASS].confidence, Confidence.PROBABLE)
+        self.assertEqual(events[TrainingRole.PARAMETER_UPDATE].confidence, Confidence.PROBABLE)
+        self.assertEqual(events[TrainingRole.BACKWARD_PASS].source_anchor.start_line, 6)
+        self.assertEqual(events[TrainingRole.PARAMETER_UPDATE].source_anchor.start_line, 7)
+
+        unknown = analyze_files({"run.py": (
+            "def train(optimizer):\n"
+            "    scaler = factory()\n"
+            "    loss = compute_loss()\n"
+            "    scaler.scale(loss).backward()\n"
+            "    scaler.step(optimizer)\n"
+        )})
+        self.assertFalse(any(event.role in (TrainingRole.BACKWARD_PASS,
+                                            TrainingRole.PARAMETER_UPDATE)
+                             for event in unknown.training.events))
+
+    def test_top_level_train_script_is_entry_only_when_training_actions_exist(self):
+        result = analyze_files({
+            "model.py": "import torch.nn as nn\nclass Net(nn.Module): pass\n",
+            "train.py": (
+                "import torch\nfrom model import Net\n"
+                "model = Net()\n"
+                "optimizer = torch.optim.SGD(model.parameters(), lr=0.1)\n"
+                "while True:\n"
+                "    optimizer.zero_grad()\n"
+                "    prediction = model(batch)\n"
+                "    loss = prediction\n"
+                "    loss.backward()\n"
+                "    optimizer.step()\n"
+                "    break\n"
+            ),
+        })
+        entries = {item.name: item for item in result.training.entry_points}
+        self.assertIn("train.py", entries)
+        entry = entries["train.py"]
+        self.assertEqual(entry.kind, EntryPointKind.TRAIN)
+        component = next(item for item in result.semantic.graph.components
+                         if item.id == entry.id)
+        self.assertEqual(component.confidence, Confidence.PROBABLE)
+        roles = {event.role for event in result.training.events
+                 if event.entry_point_id == entry.id}
+        self.assertTrue({TrainingRole.BATCH_LOOP, TrainingRole.FORWARD_PASS,
+                         TrainingRole.BACKWARD_PASS,
+                         TrainingRole.PARAMETER_UPDATE} <= roles)
+        self.assertTrue(all(event.source_node_id in result.flow.graph.nodes
+                            for event in result.training.events
+                            if event.entry_point_id == entry.id
+                            and event.source_node_id is not None))
+        self.assertEqual(entry.source_anchor.file_path, "train.py")
+
+        inactive = analyze_files({"train.py": "def train():\n    return 1\n"})
+        self.assertEqual(len(inactive.training.entry_points), 1)
+
     def test_train_and_evaluate_have_independent_flows_and_shared_model_definition(self):
         result = analyze_files({
             "model.py": (
