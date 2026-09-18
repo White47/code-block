@@ -273,6 +273,7 @@ class TkAppLiveTests(unittest.TestCase):
             aggregate = next(node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
                              if node.member_ids)
             target = aggregate.member_ids[-1]
+            self.app._on_select(aggregate.id)
             self.app._on_drill_down(aggregate.id)
             row = next(item for item, entry in self.app._sidebar_targets.items()
                        if entry == ("reveal", target))
@@ -285,7 +286,9 @@ class TkAppLiveTests(unittest.TestCase):
                                if node.id == target)
             self.assertIn(target_name,
                           self.app._breadcrumbs[ViewKind.ARCHITECTURE].cget("text"))
-            self.app._go_back()
+            with patch.object(self.app.messagebox, "showerror") as showerror:
+                self.app._go_back()
+            showerror.assert_not_called()
             self.assertEqual(self.app.main_tabs.select(),
                              str(self.app._graph_tabs[ViewKind.ARCHITECTURE][0]))
             self.assertIsNone(self.app._selected_id)
