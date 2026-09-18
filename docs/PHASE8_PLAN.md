@@ -92,7 +92,7 @@ assert callable(main)
 **Files:** `README.md`、`docs/ARCHITECTURE.md`、`PROJECT_STRUCTURE.md`、`KNOWN_LIMITATIONS.md`、`TEST_STRATEGY.md`、`IMPLEMENTATION_PLAN.md`、`PHASE8_REPORT.md`。
 
 - [x] 更新真实能力与 Phase 9 / 10 边界，不把占位 Search / Symbols 说成可用功能。
-- [ ] 独立只读审查 Phase 8 实现，任何 Important 先用失败测试复现再修复；复审通过。
+- [x] 独立只读审查 Phase 8 实现，任何 Important 先用失败测试复现再修复；复审通过。
 - [ ] 记录 changed files、验证结果和下一阶段，仅在完整验收后合入 / 推送 `main`。
 
 ## Out of Scope
