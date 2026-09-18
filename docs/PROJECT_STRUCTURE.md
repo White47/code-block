@@ -1,6 +1,6 @@
 # 目标项目结构
 
-以下是目标职责分区。Phase 1 已建立 `src/codeviz/core/`；Phase 2–6 已建立 `src/codeviz/analysis/`，集中放置扫描、解析、Resolver、Full Graph / flow、模型和训练事实与项目级汇总；Phase 5–6 已建立 `src/codeviz/semantic/` 作为框架规则及组件图层。其余目录按真实需要创建，不提前铺空目录：
+以下是目标职责分区。Phase 1 已建立 `src/codeviz/core/`；Phase 2–6 已建立 `src/codeviz/analysis/`，集中放置扫描、解析、Resolver、Full Graph / flow、模型和训练事实与项目级汇总；Phase 5–6 已建立 `src/codeviz/semantic/` 作为框架规则及组件图层；Phase 7 已建立 `src/codeviz/views/` 负责局部可见图。其余目录按真实需要创建，不提前铺空目录：
 
 ```text
 src/codeviz/
@@ -8,7 +8,7 @@ src/codeviz/
   analysis/       # 已建立：discovery、python、symbols、imports、resolution、graph_build、control_flow、data_flow、flow、call_cycles、model、training、project
   graph/          # 后续：flow、query；Code Graph IR 已在 core/
   semantic/      # 已建立：ModelRule、PyTorch 模型/训练规则、组件图
-  views/         # View Builder、Visible Graph、layout hints
+  views/         # 已建立：语义图查询、关键代码数据投影、View Builder、layout hints、可序列化 ViewState
   persistence/   # Analysis Cache、View State、Annotations
   ui/             # Overview、views、Inspector、Search、Source
 tests/

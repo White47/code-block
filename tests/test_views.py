@@ -1,0 +1,317 @@
+"""Visible views are bounded, source-backed queries over analysis facts."""
+
+import json
+import unittest
+
+from tests.test_training import analyze_files
+
+from codeviz.core import (
+    EdgeType,
+    ViewKind,
+    VisibleAggregation,
+    VisibleGraph,
+    VisibleNode,
+)
+from codeviz.views import ViewRequest, ViewState, build_visible_graph
+
+
+class VisibleContractTests(unittest.TestCase):
+    def test_graph_enforces_budget_and_aggregation_provenance(self):
+        nodes = (VisibleNode("a", "A", code_node_ids=("a",)),
+                 VisibleNode("b", "B", code_node_ids=("b",)))
+        with self.assertRaises(ValueError):
+            VisibleGraph(ViewKind.ARCHITECTURE, nodes, max_nodes=1)
+        with self.assertRaises(ValueError):
+            VisibleAggregation("more", ())
+        with self.assertRaises(ValueError):
+            VisibleGraph(ViewKind.ARCHITECTURE, nodes,
+                         aggregations=(VisibleAggregation("missing", ("hidden",)),))
+
+    def test_view_state_json_data_round_trip_and_rejects_invalid_positions(self):
+        state = ViewState(expanded_ids=("model", "block"),
+                          positions={"block": (12.5, 24.0)})
+        restored = ViewState.from_dict(json.loads(json.dumps(state.to_dict())))
+        self.assertEqual(restored, state)
+        with self.assertRaises(ValueError):
+            ViewState(positions={"x": (float("nan"), 0.0)})
+
+
+class VisibleBuilderTests(unittest.TestCase):
+    def test_architecture_and_execution_choose_independent_roots(self):
+        result = analyze_files({
+            "model.py": (
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def __init__(self):\n"
+                "        self.layer = nn.Linear(2, 2)\n"
+                "    def forward(self, x): return self.layer(x)\n"
+            ),
+            "run.py": (
+                "def train(optimizer, loss):\n"
+                "    for epoch in range(2):\n"
+                "        loss.backward()\n"
+                "        optimizer.step()\n"
+                "def evaluate(model):\n"
+                "    model.eval()\n"
+            ),
+        })
+        model_id = result.model.definitions[0].symbol_id
+        train = next(entry for entry in result.training.entry_points if entry.name == "train")
+        architecture = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                               root_id=model_id))
+        execution = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION,
+                                                            root_id=train.id))
+        self.assertEqual(architecture.root_ids, (model_id,))
+        self.assertEqual(execution.root_ids, (train.id,))
+        all_executions = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION))
+        self.assertEqual(set(all_executions.root_ids),
+                         {entry.id for entry in result.training.entry_points})
+        self.assertTrue(any(node.display_name == "layer" for node in architecture.nodes))
+        self.assertTrue(any(node.display_name == "EpochLoop" for node in execution.nodes))
+        self.assertFalse(any(edge.type == EdgeType.GRADIENT_FLOW for edge in execution.edges))
+        self.assertTrue(all(node.semantic_component_ids or node.code_node_ids or node.source_anchors
+                            or node.member_ids for node in architecture.nodes + execution.nodes))
+        self.assertEqual(architecture.layout_kind, "hierarchical")
+        self.assertEqual(execution.layout_kind, "flowchart")
+
+    def test_expand_loop_reveals_internal_events_without_changing_facts(self):
+        result = analyze_files({"run.py": (
+            "def train(optimizer, loss):\n"
+            "    for epoch in range(2):\n"
+            "        loss.backward()\n"
+            "        optimizer.step()\n"
+        )})
+        loop_id = next(event.id for event in result.training.events
+                       if event.role.value == "EpochLoop")
+        original = result.semantic.graph
+        collapsed = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION))
+        expanded = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION),
+                                       ViewState(expanded_ids=(loop_id,)))
+        self.assertLess(len(collapsed.nodes), len(expanded.nodes))
+        self.assertTrue(collapsed.query_context["has_more"])
+        self.assertTrue(any(node.display_name == "BackwardPass" for node in expanded.nodes))
+        self.assertEqual(result.semantic.graph, original)
+
+    def test_source_anchor_and_manual_position_survive_view_query(self):
+        result = analyze_files({"run.py": "def train(optimizer):\n    optimizer.step()\n"})
+        entry_id = result.training.entry_points[0].id
+        state = ViewState(positions={entry_id: (123.0, 456.0)})
+        view = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION), state)
+        self.assertEqual(view.layout_hints[entry_id], (123.0, 456.0))
+        self.assertTrue(any(anchor.file_path == "run.py" and anchor.start_line == 2
+                            for node in view.nodes for anchor in node.source_anchors))
+        self.assertEqual(view.legend[0].type, EdgeType.CONTAINS)
+
+    def test_large_model_is_bounded_and_hidden_members_remain_addressable(self):
+        assignments = "".join(f"        self.layer_{index} = nn.Linear(2, 2)\n"
+                              for index in range(120))
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self):\n" + assignments +
+            "    def forward(self, x): return x\n"
+        )})
+        request = ViewRequest(ViewKind.ARCHITECTURE, max_nodes=10, max_edges=5)
+        first = build_visible_graph(result, request)
+        second = build_visible_graph(result, request)
+        self.assertEqual(first, second)
+        self.assertLessEqual(len(first.nodes), 10)
+        self.assertLessEqual(len(first.edges), 5)
+        self.assertEqual(len(first.aggregations), 1)
+        self.assertGreater(first.hidden_counts["nodes"], 100)
+        self.assertGreater(first.hidden_counts["edges"], 100)
+        self.assertEqual(set(first.aggregations[0].member_ids),
+                         {item.id for item in result.model.instances}
+                         - {node.id for node in first.nodes})
+
+    def test_selected_hidden_component_reveals_local_context_only(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self):\n"
+            "        self.a = nn.Linear(2, 2)\n"
+            "        self.b = nn.Linear(2, 2)\n"
+            "        self.c = nn.Linear(2, 2)\n"
+            "    def forward(self, x): return self.c(x)\n"
+        )})
+        selected = next(item.id for item in result.model.instances if item.name == "c")
+        view = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                       selected_id=selected, max_nodes=3))
+        self.assertIn(selected, {node.id for node in view.nodes})
+        self.assertIn(result.model.definitions[0].symbol_id, view.root_ids)
+        self.assertLessEqual(len(view.nodes), 3)
+
+    def test_tight_budget_keeps_selected_nested_component(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self):\n"
+            "        self.layers = nn.ModuleList([nn.Linear(2, 2)])\n"
+            "    def forward(self, x): return x\n"
+        )})
+        container = next(item for item in result.model.instances if item.name == "layers")
+        selected = container.member_instance_ids[0]
+        self.assertIsNotNone(selected)
+        view = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                       selected_id=selected, max_nodes=2))
+        self.assertIn(selected, {node.id for node in view.nodes})
+        self.assertEqual(view.root_ids, (result.model.definitions[0].symbol_id,))
+
+    def test_one_node_budget_keeps_selected_component(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self): self.layer = nn.Linear(2, 2)\n"
+            "    def forward(self, x): return x\n"
+        )})
+        selected = result.model.instances[0].id
+        view = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                       selected_id=selected, max_nodes=1))
+        self.assertEqual(tuple(node.id for node in view.nodes), (selected,))
+        self.assertTrue(view.query_context["has_more"])
+
+    def test_edge_budget_preserves_execution_main_flow(self):
+        result = analyze_files({"run.py": (
+            "def train(loss, optimizer):\n"
+            "    loss.backward()\n"
+            "    optimizer.step()\n"
+        )})
+        view = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION, max_edges=2))
+        self.assertLessEqual(len(view.edges), 2)
+        self.assertTrue(any(edge.type == EdgeType.CONTROL_FLOW for edge in view.edges))
+
+    def test_critical_code_data_flow_is_visible_without_inventing_runtime_edges(self):
+        result = analyze_files({
+            "model.py": (
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def forward(self, features):\n"
+                "        prediction = features\n"
+                "        return prediction\n"
+            ),
+            "run.py": (
+                "def train(input, target):\n"
+                "    prediction = input\n"
+                "    loss = prediction + target\n"
+                "    return loss\n"
+            ),
+        })
+        architecture = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE))
+        execution = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION))
+        for view in (architecture, execution):
+            data_edges = [edge for edge in view.edges if edge.type == EdgeType.DATA_FLOW]
+            self.assertTrue(data_edges)
+            self.assertTrue(all(edge.source_anchors and edge.confidence.value == "Probable"
+                                for edge in data_edges))
+            self.assertTrue(all(node.source_anchors and node.code_node_ids
+                                for node in view.nodes if node.role == "DataNode"))
+        self.assertNotEqual({node.id for node in architecture.nodes},
+                            {node.id for node in execution.nodes})
+
+    def test_selected_data_one_hop_outranks_unrelated_layers_under_budget(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self):\n"
+            "        self.first = nn.Linear(2, 2)\n"
+            "        self.second = nn.Linear(2, 2)\n"
+            "    def forward(self, features):\n"
+            "        prediction = features\n"
+            "        return prediction\n"
+        )})
+        data = {node.name: node.id for node in result.flow.data_nodes}
+        view = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                       selected_id=data["features"],
+                                                       hops=1, max_nodes=4))
+        visible = {node.id for node in view.nodes}
+        self.assertIn(data["features"], visible)
+        self.assertIn(data["prediction"], visible)
+        self.assertLessEqual(len(view.nodes), 4)
+
+    def test_selected_training_step_reveals_only_requested_hops(self):
+        result = analyze_files({"run.py": (
+            "def train(optimizer, loss, scheduler):\n"
+            "    for epoch in range(2):\n"
+            "        optimizer.zero_grad()\n"
+            "        loss.backward()\n"
+            "        optimizer.step()\n"
+            "        scheduler.step()\n"
+        )})
+        roles = {event.role.value: event.id for event in result.training.events}
+        request = ViewRequest(ViewKind.EXECUTION,
+                              selected_id=roles["ParameterUpdate"], hops=1)
+        view = build_visible_graph(result, request)
+        visible_ids = {node.id for node in view.nodes}
+        self.assertIn(roles["BackwardPass"], visible_ids)
+        self.assertIn(roles["LRUpdate"], visible_ids)
+        self.assertNotIn(roles["ClearGradients"], visible_ids)
+
+    def test_tight_edge_budget_keeps_selected_one_hop_connection(self):
+        result = analyze_files({"run.py": (
+            "def train(optimizer, loss, scheduler):\n"
+            "    optimizer.zero_grad()\n"
+            "    loss.backward()\n"
+            "    optimizer.step()\n"
+            "    scheduler.step()\n"
+        )})
+        roles = {event.role.value: event.id for event in result.training.events}
+        view = build_visible_graph(result, ViewRequest(
+            ViewKind.EXECUTION, selected_id=roles["LRUpdate"],
+            hops=1, max_edges=2))
+        self.assertTrue(any(edge.source == roles["ParameterUpdate"]
+                            and edge.target == roles["LRUpdate"]
+                            and edge.type == EdgeType.CONTROL_FLOW
+                            for edge in view.edges))
+
+    def test_invalid_root_and_unsupported_view_are_explicit(self):
+        result = analyze_files({"run.py": "def train(optimizer):\n    optimizer.step()\n"})
+        with self.assertRaises(ValueError):
+            build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                    root_id="not-a-model"))
+        with self.assertRaises(ValueError):
+            build_visible_graph(result, ViewRequest(ViewKind.CALLS))
+        with self.assertRaises(ValueError):
+            ViewRequest(ViewKind.EXECUTION, max_nodes=0)
+        with self.assertRaises(ValueError):
+            ViewRequest(ViewKind.EXECUTION, max_nodes=2.5)
+        with self.assertRaises(ValueError):
+            ViewRequest(ViewKind.EXECUTION, hops=True)
+
+    def test_repetition_does_not_look_like_shared_weights(self):
+        result = analyze_files({"model.py": (
+            "import torch.nn as nn\n"
+            "class Net(nn.Module):\n"
+            "    def __init__(self):\n"
+            "        self.layers = nn.ModuleList([nn.Linear(2, 2) for _ in range(3)])\n"
+            "        self.left = nn.Linear(2, 2)\n"
+            "        self.right = self.left\n"
+            "    def forward(self, x): return x\n"
+        )})
+        layers = next(item for item in result.model.instances if item.name == "layers")
+        view = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                       expanded_ids=(layers.id,)))
+        repeated = next(node for node in view.nodes if node.display_name.endswith("×3"))
+        shared = next(node for node in view.nodes if node.display_name == "right")
+        self.assertIsNone(repeated.metadata["shared_with_id"])
+        self.assertIsNotNone(shared.metadata["shared_with_id"])
+
+    def test_execution_layout_is_stable_and_loop_back_does_not_inflate_depth(self):
+        result = analyze_files({"run.py": (
+            "def train(optimizer, loss):\n"
+            "    for epoch in range(2):\n"
+            "        loss.backward()\n"
+            "        optimizer.step()\n"
+        )})
+        loop_id = next(event.id for event in result.training.events
+                       if event.role.value == "EpochLoop")
+        state = ViewState(expanded_ids=(loop_id,))
+        view = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION), state)
+        self.assertEqual(view, build_visible_graph(result, ViewRequest(ViewKind.EXECUTION), state))
+        self.assertTrue(any(item.type == EdgeType.LOOP_BACK for item in view.edges))
+        self.assertTrue(all(abs(x) < 10000 and abs(y) < 10000
+                            for x, y in view.layout_hints.values()))
+        self.assertGreaterEqual(len({item.style for item in view.legend}), 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

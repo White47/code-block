@@ -16,8 +16,10 @@ from .model import (
     SemanticGraph,
     SemanticRelation,
     ViewKind,
+    VisibleAggregation,
     VisibleEdge,
     VisibleGraph,
+    VisibleLegendItem,
     VisibleNode,
 )
 
@@ -25,6 +27,6 @@ __all__ = [
     "CodeEdge", "CodeGraph", "CodeNode", "Confidence", "DataNode", "DataRole",
     "EdgeType", "EntityRole", "EntryPoint", "EntryPointKind", "NodeKind",
     "NodeOrigin", "SemanticComponent", "SemanticGraph", "SemanticRelation",
-    "SourceAnchor", "ViewKind", "VisibleEdge", "VisibleGraph",
-    "VisibleNode", "stable_node_id",
+    "SourceAnchor", "ViewKind", "VisibleAggregation", "VisibleEdge", "VisibleGraph",
+    "VisibleLegendItem", "VisibleNode", "stable_node_id",
 ]
