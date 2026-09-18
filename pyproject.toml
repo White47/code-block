@@ -22,6 +22,7 @@ dev = [
 [tool.ruff]
 target-version = "py311"
 src = ["src"]
+extend-exclude = ["tests/fixtures"] # Includes intentionally invalid Python source.
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B"]

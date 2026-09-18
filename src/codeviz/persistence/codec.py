@@ -2,6 +2,7 @@
 
 from dataclasses import fields, is_dataclass
 from enum import Enum
+from functools import lru_cache
 from math import isfinite
 from types import UnionType
 from typing import Any, Union, cast, get_args, get_origin, get_type_hints
@@ -55,6 +56,12 @@ _ENUMS = {item.__name__: item for item in (
     EntryPointKind, TrainingRole,
 )}
 _MAX_DEPTH = 80
+
+
+@lru_cache(maxsize=None)
+def _field_hints(cls: type[object]) -> dict[str, Any]:
+    """Type annotations are schema facts, not per-node work."""
+    return get_type_hints(cls)
 
 
 def _encode(value: object, depth: int = 0) -> object:
@@ -204,7 +211,7 @@ def _decode(value: object, depth: int = 0) -> object:
         if type(name) is not str or name not in _TYPES or not isinstance(data, dict):
             raise ValueError("unknown analysis cache type")
         cls = _TYPES[name]
-        hints = get_type_hints(cls)
+        hints = _field_hints(cls)
         if set(data) != {field.name for field in fields(cls)}:
             raise ValueError("analysis cache fields do not match schema")
         decoded = {key: _decode(item, child) for key, item in data.items()}

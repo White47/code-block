@@ -8,7 +8,7 @@
 
 Open Project → Analyze → Project Overview → Select Model → Architecture → Drill Down → Internal Flow → Open Source。
 
-验收：多个模型分别可见；组件可以展开；重复结构可聚合；来自用户源码的可见节点最终打开正确文件与行范围；合成或外部节点显示来源或不可跳转原因；不确定命名有 confidence 与 evidence。
+验收：多个模型分别可见；可解析的自定义模块实例可以进入其目标定义的内部图并返回原模型；组件可以展开；重复结构可聚合；来自用户源码的可见节点最终打开正确文件与行范围；合成或外部节点显示来源或不可跳转原因；不确定命名有 confidence 与 evidence。
 
 ## 3. 黄金路径 B：训练
 
@@ -30,3 +30,9 @@ Search Symbol / Variable / Semantic keyword → Results → Reveal in Graph → 
 - 源码变化后旧结果标记 Outdated，不静默当作最新。
 - 默认不污染用户仓库，不保存完整源码副本。
 - 单张 Visible Graph 超过阈值时聚合、折叠或提示下钻。
+
+## 6. Phase 11 自动验收证据与人工边界
+
+固定夹具：`tests/fixtures/mvp_project/`。`tests/test_mvp_acceptance.py` 覆盖 A / B / C 的模型、入口、局部图、搜索、Inspector 与真实源码锚点，另检验坏文件隔离、默认忽略目录和“不执行用户模块”；`tests/test_ui_tkapp.py` 的 `test_mvp_fixture_three_paths_are_navigable_in_desktop` 在有 Tk 显示的环境通过真实按钮与标签导航三条路径。缓存与过期状态见 `tests/test_persistence_*.py`。
+
+这些是可重复的技术验收，不等同于第一次接触项目的真实用户已经看懂架构或训练流程；正式发布前仍需人工可用性观察与更大真实 PyTorch 项目试用。无图形显示的 CI 可跳过 Tk 实例测试，不能把跳过说成视觉验收通过。

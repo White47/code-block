@@ -427,6 +427,69 @@ class TkAppLiveTests(unittest.TestCase):
             self.assertIn(("run.py", False), self.app._source_tabs)
             self.assertEqual(self.app._selected_id, selected)
 
+    def test_mvp_fixture_three_paths_are_navigable_in_desktop(self):
+        project = Path(__file__).parent / "fixtures" / "mvp_project"
+        self.app._open_project_path(project)
+        self.app.controller.analyze()
+        self.app._render_overview()
+
+        model_button = next(button for button in self._buttons(self.app.overview_tab)
+                            if button.cget("text") == "model.Classifier")
+        model_button.invoke()
+        self.assertEqual(self.app._active_kind, ViewKind.ARCHITECTURE)
+        architecture = self.app._views[ViewKind.ARCHITECTURE]
+        classifier_id = self.app._roots[ViewKind.ARCHITECTURE]
+        encoder = next(node for node in architecture.nodes
+                       if node.code_name.endswith(".encoder"))
+        self.app._on_drill_down(encoder.id)
+        self.assertEqual(self.app._roots[ViewKind.ARCHITECTURE],
+                         encoder.metadata.get("target_definition_id"))
+        self.assertTrue(any(node.display_name.startswith("layers") for node in
+                            self.app._views[ViewKind.ARCHITECTURE].nodes))
+        self.app._go_back()
+        self.assertEqual(self.app._roots[ViewKind.ARCHITECTURE], classifier_id)
+        baseline_button = next(button for button in self._buttons(self.app.overview_tab)
+                               if button.cget("text") == "model.Baseline")
+        baseline_button.invoke()
+        self.app._go_back()
+        self.assertEqual(self.app.main_tabs.select(), str(self.app.overview_tab))
+
+        train_button = next(button for button in self._buttons(self.app.overview_tab)
+                            if button.cget("text") == "train_epoch")
+        train_button.invoke()
+        execution = self.app._views[ViewKind.EXECUTION]
+        epoch = next(node for node in execution.nodes if node.display_name == "EpochLoop")
+        self.app._on_drill_down(epoch.id)
+        batch = next(node for node in self.app._views[ViewKind.EXECUTION].nodes
+                     if node.display_name == "BatchLoop")
+        self.app._on_drill_down(batch.id)
+        update = next(node for node in self.app._views[ViewKind.EXECUTION].nodes
+                      if node.display_name == "ParameterUpdate")
+        self.app._on_select(update.id)
+        self.app.source_button.invoke()
+        source = self.app.controller.read_source(update.source_anchors[0])
+        self.assertEqual(source.text.splitlines()[source.start_line - 1].strip(),
+                         "optimizer.step()")
+        backward = next(node for node in self.app._views[ViewKind.EXECUTION].nodes
+                        if node.display_name == "BackwardPass")
+        self.app._on_select(backward.id)
+        self.app.source_button.invoke()
+        self.assertIn("loss.backward()", self.app._source_widgets[("run.py", False)].get(
+            "1.0", "end"))
+
+        self.app._set_activity("Search")
+        self.app.search_entry.insert(0, "loss")
+        self.app._refresh_search()
+        chosen = next(row for row in self.app.sidebar_tree.get_children()
+                      if "run.train_epoch.loss" in self.app.sidebar_tree.item(row, "text"))
+        self.app.sidebar_tree.selection_set(chosen)
+        self.app._reveal_search_result()
+        self.assertEqual(self.app._active_kind, ViewKind.DATA_FLOW)
+        self.assertIn("SOURCE", self.app.inspector_text.get("1.0", "end"))
+        self.app.side_button.invoke()
+        self.assertIn("loss = criterion", self.app._source_widgets[("run.py", True)].get(
+            "1.0", "end"))
+
     def test_aggregate_drill_down_exposes_hidden_member_choices(self):
         kind = ViewKind.ARCHITECTURE
         aggregate = VisibleNode("aggregate", "2 more", member_ids=("first", "second"))

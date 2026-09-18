@@ -137,7 +137,8 @@ def build_semantic_analysis(files: tuple[ParsedFile, ...], model: ModelAnalysis,
                 {"layer_type": instance.layer_type,
                  "container_kind": instance.container_kind,
                  "repeat_count": instance.repeat_count,
-                 "shared_with_id": instance.shared_with_id},
+                 "shared_with_id": instance.shared_with_id,
+                 "target_definition_id": instance.target_definition_id},
             ))
             parent = member_parent.get(instance.id, definition.symbol_id)
             relations.append(_relation(parent, instance.id, EdgeType.CONTAINS,
