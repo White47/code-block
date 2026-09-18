@@ -144,6 +144,8 @@ class SemanticRelation:
             raise ValueError("semantic relation endpoints are required")
         if not self.evidence or not self.source_anchors:
             raise ValueError("semantic relations require evidence and a source anchor")
+        if self.type == EdgeType.GRADIENT_FLOW and self.confidence == Confidence.EXACT:
+            raise ValueError("static semantic gradient relations cannot claim exact runtime flow")
 
 
 @dataclass(frozen=True, slots=True)

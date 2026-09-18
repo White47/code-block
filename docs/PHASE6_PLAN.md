@@ -2,7 +2,7 @@
 
 > 本计划细化已批准的 `IMPLEMENTATION_PLAN.md` Phase 6；只实现静态事实，不执行用户项目。每项先写失败测试，确认失败，再实现和复测。
 
-状态：实现与本地质量门禁完成；独立只读审查因额度限制待补，尚未推送。验证与已知边界见 `PHASE6_REPORT.md`。
+状态：实现、本地质量门禁与独立只读复审完成；验证与已知边界见 `PHASE6_REPORT.md`。
 
 **Goal:** 从现有 Flow / Model 事实构建多入口训练语义与可追溯组件图。
 
@@ -49,7 +49,7 @@
 
 - [x] 逐项核对 Phase 6 的 Goal / Deliverables / Tests / Acceptance Criteria；明确静态推断与真实梯度观察的边界。
 - [x] 运行 `python -m ruff check src tests`、`python -m mypy`、`python -B -m unittest discover -s tests -q`、离线 wheel 构建；区分基线失败与新增失败。
-- [ ] 独立只读审查因额度限制未取得反馈，待额度重置后补做；本轮已自行复查并修复误报、分支合流、遮蔽和重复 ID。审查完成后再决定推送及进入 Phase 7。
+- [x] 独立只读审查和多轮复审完成；先写失败测试，再修复误报、分支合流、循环出口、遮蔽、重复 ID 和平方级关系数；最终复审未发现 Important 阻碍。
 
 ## Out of Scope
 

@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from codeviz.analysis.project import analyze_project
+from codeviz.analysis.training import build_training_analysis
 from codeviz.core import Confidence, EntryPointKind
 from codeviz.semantic import TrainingRole
 from codeviz.semantic.pytorch import PyTorchModelRule
@@ -208,6 +209,67 @@ class TrainingAnalysisTests(unittest.TestCase):
         updates = [item for item in result.training.events
                    if item.role == TrainingRole.PARAMETER_UPDATE]
         self.assertFalse(any(item.confidence == Confidence.EXACT for item in updates))
+
+    def test_named_expression_rebinding_downgrades_optimizer_fact(self):
+        result = analyze_files({"run.py": (
+            "import torch\n"
+            "def train():\n"
+            "    optimizer = torch.optim.SGD([], lr=0.1)\n"
+            "    if (optimizer := factory()) is None: pass\n"
+            "    optimizer.step()\n"
+        )})
+        updates = [item for item in result.training.events
+                   if item.role == TrainingRole.PARAMETER_UPDATE]
+        self.assertEqual([item.confidence for item in updates], [Confidence.PROBABLE])
+
+    def test_delete_clears_optimizer_fact(self):
+        result = analyze_files({"run.py": (
+            "import torch\n"
+            "def train():\n"
+            "    optimizer = torch.optim.SGD([], lr=0.1)\n"
+            "    del optimizer\n"
+            "    optimizer.step()\n"
+        )})
+        self.assertFalse(any(item.role == TrainingRole.PARAMETER_UPDATE
+                             for item in result.training.events))
+
+    def test_unrelated_earlier_event_does_not_change_existing_event_id(self):
+        base = "def evaluate(model):\n    model.eval()\n"
+        inserted = "def evaluate(model):\n    for epoch in []: pass\n    model.eval()\n"
+        first = analyze_files({"run.py": base}).training.events
+        second = analyze_files({"run.py": inserted}).training.events
+        eval_first = next(item for item in first if item.role == TrainingRole.EVALUATION_MODE)
+        eval_second = next(item for item in second if item.role == TrainingRole.EVALUATION_MODE)
+        self.assertEqual(eval_first.source_node_id, eval_second.source_node_id)
+        self.assertEqual(eval_first.id, eval_second.id)
+
+    def test_multiple_entries_reuse_project_reference_and_flow_indexes(self):
+        class CountedList(list):
+            iterations = 0
+
+            def __iter__(self):
+                self.iterations += 1
+                return super().__iter__()
+
+        class CountedDict(dict):
+            scans = 0
+
+            def values(self):
+                self.scans += 1
+                return super().values()
+
+        source = "".join(f"def train_{name}(optimizer):\n    optimizer.step()\n"
+                         for name in ("a", "b", "c", "d"))
+        result = analyze_files({"run.py": source})
+        references = CountedList(result.resolution.symbol_index.references)
+        nodes = CountedDict(result.flow.graph.nodes)
+        result.resolution.symbol_index.references = references
+        result.flow.graph.nodes = nodes
+        training = build_training_analysis(result.files, result.resolution,
+                                           result.model, result.flow)
+        self.assertEqual(len(training.entry_points), 4)
+        self.assertLessEqual(references.iterations, 1)
+        self.assertLessEqual(nodes.scans, 1)
 
 
 if __name__ == "__main__":

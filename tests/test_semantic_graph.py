@@ -26,6 +26,10 @@ class SemanticGraphTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             relation_type("left", "right", core.EdgeType.CONTAINS,
                           core.Confidence.EXACT, (), (anchor,))
+        with self.assertRaises(ValueError):
+            relation_type("left", "right", core.EdgeType.GRADIENT_FLOW,
+                          core.Confidence.EXACT, ("static syntax is not runtime gradients",),
+                          (anchor,))
 
 
 if __name__ == "__main__":

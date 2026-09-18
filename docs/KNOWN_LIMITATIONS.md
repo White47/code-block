@@ -10,7 +10,7 @@ Phase 4 处理基础 if / for / while、顺序、break / continue、return / rai
 
 Phase 5 只在可追到显式且未被项目内同名 `torch` 路径遮蔽的有限导入语法上识别模型；不执行 PyTorch，也不验证运行时注册或 `super().__init__()` 是否成功。`__init__` 中常见条件 / 循环 / try 语句的 `self` 赋值可以记录为 Probable，但尚未做路径敏感的最终实例状态分析。`ModuleList.append`、复杂容器构造 / 切片、动态工厂、跨函数别名与重绑定尚未完整建模。`forward` 识别直接 `self.child(...)`、已知容器索引和简单 `for layer in self.layers`，其他间接调用仍留在通用代码图；容器动态索引不假定唯一目标。`ModuleList` 静态同构折叠次数不是运行时观察；动态次数为未知，推导式模板为 Probable。模型 Instance / Invocation 仍是独立事实；Phase 6 语义图引用部分模型事实，但没有把它们并入 Full Code Graph。模块调用目标仍可在运行时变化，因此只给 Probable 或 Unresolved。未知工厂若在 forward 中被调用，仅保留带锚点的 Unresolved 候选，不猜测 PyTorch 角色。
 
-Phase 6 的入口检测主要依赖函数名，可能漏掉通过 CLI、装饰器或配置注册的入口。训练角色只覆盖有限的显式 PyTorch 调用与接收者赋值；`torch.no_grad` 装饰器、autocast / GradScaler、gradient clipping、复杂异常路径 / match 分支和深层数据依赖尚未建模。事件顺序是词法顺序而不是完整执行轨迹；条件内调用可能不发生。`torch.save/load` 只表示 Probable checkpoint 意图。Attention-like 是基于 Q/K/V、矩阵得分和 softmax 的保守结构候选，不证明模型实际执行该算法。语义图的梯度边只表达同一循环内 Backward→Optimizer 的静态模式，不是 autograd 图。完整语义插件生态与图查询/可见图留待后续阶段。
+Phase 6 的入口检测主要依赖函数名，可能漏掉通过 CLI、装饰器或配置注册的入口。训练角色只覆盖有限的显式 PyTorch 调用与接收者赋值；`torch.no_grad` 装饰器、autocast / GradScaler、gradient clipping、复杂异常路径 / match 分支和深层数据依赖尚未建模。事件顺序是词法顺序而不是完整执行轨迹；条件内调用可能不发生。`torch.save/load` 只表示 Probable checkpoint 意图。Attention-like 是基于 Q/K/V、矩阵得分和 softmax 的保守结构候选，不证明模型实际执行该算法。语义图的梯度边只表达同一循环、同一静态 `if`／条件表达式分支路径内 Backward→Optimizer 的模式；跨分支可能关系暂不推断，也不是 autograd 图。控制关系的分支汇合仍为静态近似，异常、提前返回等复杂路径不保证完整。完整语义插件生态与图查询/可见图留待后续阶段。
 
 ## MVP 限制
 
