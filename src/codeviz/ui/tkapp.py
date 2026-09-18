@@ -41,6 +41,7 @@ class CodeVizApp:
         self._selected_id: str | None = None
         self._selections: dict[ViewKind, str | None] = {}
         self._expansion_history: dict[ViewKind, list[str]] = {}
+        self._navigation_actions: dict[ViewKind, list[tuple[str, str | None]]] = {}
         self._active_kind: ViewKind | None = None
         self._side_open = False
         self._source_tabs: dict[tuple[str, bool], Any] = {}
@@ -187,6 +188,9 @@ class CodeVizApp:
             self._refresh_explorer()
 
     def _refresh_explorer(self) -> None:
+        if self._analyzing:
+            self.sidebar_tree.insert("", "end", text="Analyzing project…")
+            return
         analysis = self.controller.analysis
         if analysis is None:
             if self.controller.project_root is not None:
@@ -228,6 +232,9 @@ class CodeVizApp:
         elif kind == "problems":
             self._open_problems()
         elif kind == "reveal" and self._hidden_kind is not None:
+            previous = self._selections.get(self._hidden_kind)
+            self._navigation_actions.setdefault(self._hidden_kind, []).append(
+                ("reveal", previous))
             self._selections[self._hidden_kind] = value
             self._open_graph(self._hidden_kind, self._roots.get(self._hidden_kind))
 
@@ -255,6 +262,7 @@ class CodeVizApp:
         self._selected_id = None
         self._selections.clear()
         self._expansion_history.clear()
+        self._navigation_actions.clear()
         self._active_kind = None
         self._hidden_kind = None
         self._set_inspector_message("Select a model, step or data node to inspect its source.")
@@ -285,6 +293,7 @@ class CodeVizApp:
                 return
         self._reset_editors()
         self._analyzing = True
+        self._set_activity("Explorer")
         self.analyze_button.configure(state="disabled")
         self.status_label.configure(text="Analyzing Python source · no project code is executed")
         self._render_overview()
@@ -313,7 +322,7 @@ class CodeVizApp:
                     issue_count = len(analysis.issues) if analysis else 0
                     self.status_label.configure(
                         text=f"{self.controller.status.value} · {issue_count} analysis issues")
-                    self._set_activity("Explorer")
+                self._set_activity("Explorer")
                 self._render_overview()
         except Empty:
             pass
@@ -458,6 +467,7 @@ class CodeVizApp:
             return
         if root_id != self._roots.get(kind):
             history = self._expansion_history.pop(kind, [])
+            self._navigation_actions.pop(kind, None)
             for node_id in history:
                 self.controller.collapse(node_id)
             self._selections[kind] = None
@@ -496,6 +506,9 @@ class CodeVizApp:
                      ("All Models" if kind == ViewKind.ARCHITECTURE else "All Entries"))
         parts.extend(names.get(item, "Expanded component")
                      for item in self._expansion_history.get(kind, ()))
+        if (self._selected_id is not None and any(
+                action == "reveal" for action, _ in self._navigation_actions.get(kind, ()))):
+            parts.append(names.get(self._selected_id, "Revealed member"))
         self._breadcrumbs[kind].configure(text=" › ".join(parts))
         self.main_tabs.select(frame)
         self.status_label.configure(
@@ -543,6 +556,7 @@ class CodeVizApp:
             history = self._expansion_history.setdefault(kind, [])
             if node_id not in history:
                 history.append(node_id)
+                self._navigation_actions.setdefault(kind, []).append(("expand", node_id))
             self._selected_id = node_id
             self._selections[kind] = node_id
             self._open_graph(kind, self._roots.get(kind))
@@ -569,11 +583,18 @@ class CodeVizApp:
 
     def _go_back(self) -> None:
         kind = self._active_kind
-        history = self._expansion_history.get(kind, []) if kind is not None else []
-        if kind is None or not history:
+        actions = self._navigation_actions.get(kind, []) if kind is not None else []
+        if kind is None or not actions:
             self.main_tabs.select(self.overview_tab)
             return
-        self.controller.collapse(history.pop())
+        action, node_id = actions.pop()
+        if action == "reveal":
+            self._selections[kind] = node_id
+            self._open_graph(kind, self._roots.get(kind))
+            return
+        if node_id is not None:
+            self.controller.collapse(node_id)
+            self._expansion_history[kind].remove(node_id)
         self._selected_id = None
         self._selections[kind] = None
         self._open_graph(kind, self._roots.get(kind))

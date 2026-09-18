@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from codeviz.core import SourceAnchor, ViewKind, VisibleGraph, VisibleNode
+from codeviz.ui.controller import AnalysisStatus
 from codeviz.ui.presenter import build_overview, build_problems
 from codeviz.ui.tkapp import CodeVizApp, main
 
@@ -200,6 +201,47 @@ class TkAppLiveTests(unittest.TestCase):
             self.assertFalse(any(button.cget("text") == model_name
                                  for button in self._buttons(self.app.overview_tab)))
 
+    def test_reanalysis_clears_old_explorer_entries(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "model.py").write_text(
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def forward(self, x): return x\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_activity("Explorer")
+            before = [self.app.sidebar_tree.item(item, "text")
+                      for parent in self.app.sidebar_tree.get_children()
+                      for item in self.app.sidebar_tree.get_children(parent)]
+            self.assertTrue(any("Net" in text for text in before))
+            with patch("codeviz.ui.tkapp.Thread"):
+                self.app._start_analyze()
+            self.assertFalse(self.app._sidebar_targets)
+            self.assertIn("Analyzing", self.app.sidebar_tree.item(
+                self.app.sidebar_tree.get_children()[0], "text"))
+
+    def test_failed_reanalysis_restores_explorer_empty_state(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "model.py").write_text(
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def forward(self, x): return x\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_activity("Explorer")
+            with patch("codeviz.ui.tkapp.Thread"):
+                self.app._start_analyze()
+            self.app.controller.analysis = None
+            self.app.controller.status = AnalysisStatus.FAILED
+            self.app._messages.put(("error", "scan failed"))
+            with patch.object(self.app.messagebox, "showerror"):
+                self.app._poll_messages()
+            self.assertEqual(self.app.sidebar_tree.item(
+                self.app.sidebar_tree.get_children()[0], "text"), "Click Analyze Project")
+            self.assertFalse(self.app._sidebar_targets)
+
     def test_aggregate_drill_down_exposes_hidden_member_choices(self):
         kind = ViewKind.ARCHITECTURE
         aggregate = VisibleNode("aggregate", "2 more", member_ids=("first", "second"))
@@ -238,6 +280,17 @@ class TkAppLiveTests(unittest.TestCase):
             self.app._activate_sidebar(None)
             self.assertIn(target, {node.id for node in
                                    self.app._views[ViewKind.ARCHITECTURE].nodes})
+            target_name = next(node.display_name for node in
+                               self.app._views[ViewKind.ARCHITECTURE].nodes
+                               if node.id == target)
+            self.assertIn(target_name,
+                          self.app._breadcrumbs[ViewKind.ARCHITECTURE].cget("text"))
+            self.app._go_back()
+            self.assertEqual(self.app.main_tabs.select(),
+                             str(self.app._graph_tabs[ViewKind.ARCHITECTURE][0]))
+            self.assertIsNone(self.app._selected_id)
+            self.assertNotIn(target, {node.id for node in
+                                      self.app._views[ViewKind.ARCHITECTURE].nodes})
 
     def test_terminal_node_drill_does_not_implicitly_open_source(self):
         kind = ViewKind.EXECUTION
