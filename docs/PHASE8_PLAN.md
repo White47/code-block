@@ -83,7 +83,7 @@ from codeviz.ui.tkapp import main
 assert callable(main)
 ```
 
-- [x] 绘制 Activity Bar（Explorer、Search、Architecture、Execution、Symbols、Settings）、Sidebar、Overview Tab、Graph Tab、Source Tab、右侧 Split Notebook、Inspector、Problems 和状态栏；Search / Symbols 完整功能明确标 Phase 9。按 `filedialog.askdirectory` 选择本地项目，点击 Analyze 才启动后台线程；工作线程只写 `queue.Queue`，主线程以 `after` 轮询并更新 Tk。
+- [x] 绘制 Activity Bar（Explorer、Search、Architecture、Execution、Symbols、Settings）、Sidebar、Overview Tab、Graph Tab、Source Tab、右侧 Split Notebook、Inspector、Problems 和状态栏；Search / Symbols 完整功能明确标 Phase 9。按 `filedialog.askdirectory` 选择本地项目，点击 Analyze 才启动后台线程；工作线程调用 Controller 分析并将完成 / 错误消息写入 `queue.Queue`，Tk 控件只由主线程通过 `after` 轮询更新。
 - [x] Graph Canvas 单击 Select + Inspector + 邻居高亮，双击 / Enter 展开；Open Source 与 Open to Side 仅通过安全导航接口。Source Text 只读，定位到 anchor 行；Problems 展示 issue，Partial 不丢可用结果。
 - [x] 运行全量 unittest、Ruff、mypy、wheel；在当前 Windows 桌面做可见烟测，确认 Overview、Architecture、Execution、Split、Inspector、源码定位。离线无隔离构建因本机缺少 setuptools 失败，按 CI 隔离构建成功。
 
