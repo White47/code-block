@@ -2,7 +2,7 @@
 
 Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
 
-当前已有本地桌面阅读、搜索与 Phase 10 本地缓存：首次显式 Analyze 后，重新打开未变化的项目会直接加载分析结果；源码、Ignore Paths 或版本变化时旧图标为 Outdated，并可 Re-analyze。Recent Projects、图布局、标签与选中节点保存在应用数据目录，Annotations 独立保存。Overview 中可选择模型或入口，浏览 Architecture / Training Flow 局部图；Search / Symbols 可查定义与语义节点，再 Reveal 到局部图、Inspector、只读源码或 Open to Side。Analysis Issues 有独立标签页。底层 `analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`；`build_visible_graph(...)` 只生成有预算的 Architecture / Execution / Symbol / Data Flow 局部图。Q/K/V → 矩阵得分 → softmax 只给出 Attention-like 候选；梯度关系是 Probable 静态模式，不是真实 autograd 图。源码只读，不导入或执行被分析代码。
+当前已有本地桌面阅读、搜索与 Phase 10 本地缓存：首次显式 Analyze 后，重新打开未变化的项目会直接加载分析结果；源码、Ignore Paths 或版本变化时旧图标为 Outdated，并可 Re-analyze。Recent Projects、图布局、标签与选中节点保存在应用数据目录，Annotations 独立保存。Overview 中可选择模型或入口，浏览 Architecture / Training Flow 局部图；Search / Symbols 可查定义与语义节点，再 Reveal 到局部图、Inspector、只读源码或 Open to Side。Analysis Issues 有独立标签页。图默认自上而下排列，长图可纵向滚动，也可重置当前项目的手动布局；除概览外的图、源码和问题标签都可通过右侧 `×` 或 `Ctrl+W` 关闭。底层 `analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`；`build_visible_graph(...)` 只生成有预算的 Architecture / Execution / Symbol / Data Flow 局部图。Q/K/V → 矩阵得分 → softmax 只给出 Attention-like 候选；梯度关系是 Probable 静态模式，不是真实 autograd 图。源码只读，不导入或执行被分析代码。
 
 安装后启动桌面应用（需要带 Tk 8.6 的 Python 和图形桌面）：
 
@@ -10,7 +10,7 @@ Python-first 的代码模块可视化与程序理解项目。目标是从源码�
 .\.venv\Scripts\codeviz.exe
 ```
 
-点击 **Open Folder** 选择目录；首次点击 **Analyze Project** 才解析 `.py` 文件，之后若有效缓存存在则自动加载，不执行用户代码。发现变更时仍可查看带 Outdated 警告的旧图，并点 **Re-analyze** 更新。Search 输入名称或“反向传播”等语义词后按 Find，选择结果按 Reveal 进入局部图；Symbols 用于浏览全部定义。图上可用 Upstream / Downstream / + hop 扩展局部上下文。Ignore Paths 当前可通过 `AppController(ignore_paths=(...))` 配置，桌面 Settings 表单尚未提供。
+默认使用简体中文，可在左侧 **设置 / Settings → Language** 中切换“简体中文”或“English”，选择保存在应用数据目录，不会修改被分析项目。点击 **打开文件夹 / Open Folder** 选择目录；首次点击 **分析项目 / Analyze Project** 才解析 `.py` 文件，之后若有效缓存存在则自动加载，不执行用户代码。发现变更时仍可查看带 Outdated 警告的旧图，并点 **重新分析 / Re-analyze** 更新。Search 输入名称或“反向传播”等语义词后按 Find，选择结果按 Reveal 进入局部图；Symbols 用于浏览全部定义。图上可用 Upstream / Downstream / + hop 扩展局部上下文。Ignore Paths 当前可通过 `AppController(ignore_paths=(...))` 配置，桌面 Settings 当前只提供语言设置。
 
 最小查询示例：
 

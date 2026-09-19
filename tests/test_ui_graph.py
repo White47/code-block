@@ -41,6 +41,29 @@ class GraphSceneTests(unittest.TestCase):
             graph._on_page_key(SimpleNamespace(keysym="Next"))
             scroll.assert_called_with(1, "pages")
 
+    def test_canvas_translates_legend_and_empty_state_only_for_display(self):
+        import tkinter as tk
+
+        from codeviz.ui.i18n import translate
+
+        try:
+            root = tk.Tk()
+        except tk.TclError:
+            self.skipTest("Tk display unavailable")
+        self.addCleanup(root.destroy)
+        graph = GraphCanvas(root, on_select=lambda _id: None,
+                            on_drill_down=lambda _id: None,
+                            on_move=lambda _id, _point: None,
+                            translate=lambda phrase: translate("zh-CN", phrase))
+        view = VisibleGraph(ViewKind.EXECUTION, (), legend=(
+            VisibleLegendItem(EdgeType.CONTROL_FLOW, "Control Flow", "control-solid"),))
+        graph.render(view)
+        labels = [graph.canvas.itemcget(item, "text") for item in graph.canvas.find_all()
+                  if graph.canvas.type(item) == "text"]
+        self.assertTrue(any("控制流" in label for label in labels))
+        self.assertTrue(any("未发现执行入口" in label for label in labels))
+        self.assertEqual(view.legend[0].label, "Control Flow")
+
     def test_flow_edge_connects_bottom_to_top_in_vertical_layout(self):
         nodes = (VisibleNode("first", "First", code_node_ids=("first",)),
                  VisibleNode("second", "Second", code_node_ids=("second",)))
