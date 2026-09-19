@@ -13,10 +13,38 @@ from codeviz.core import (
     VisibleLegendItem,
     VisibleNode,
 )
+from codeviz.ui.canvas_scene import (
+    Point,
+    Rect,
+    Viewport,
+    scene_to_screen,
+    screen_to_scene,
+    zoom_about,
+)
 from codeviz.ui.graph_canvas import GraphCanvas, edge_paint, graph_scene
 
 
 class GraphSceneTests(unittest.TestCase):
+    def test_viewport_transform_round_trips_and_zoom_keeps_pointer_anchor(self):
+        viewport = Viewport(zoom=1.5, pan=Point(20.0, -10.0))
+        scene_point = Point(80.0, 50.0)
+        screen_point = scene_to_screen(scene_point, viewport)
+        self.assertEqual(screen_to_scene(screen_point, viewport), scene_point)
+        changed = zoom_about(viewport, screen_point, 2.0)
+        self.assertEqual(scene_to_screen(scene_point, changed), screen_point)
+        self.assertEqual(changed.zoom, 2.0)
+
+    def test_zoom_is_clamped_to_supported_range(self):
+        viewport = Viewport()
+        self.assertEqual(zoom_about(viewport, Point(0.0, 0.0), 0.01).zoom, 0.25)
+        self.assertEqual(zoom_about(viewport, Point(0.0, 0.0), 9.0).zoom, 2.5)
+
+    def test_rect_intersection_can_include_a_margin(self):
+        left = Rect(0.0, 0.0, 20.0, 20.0)
+        right = Rect(25.0, 0.0, 20.0, 20.0)
+        self.assertFalse(left.intersects(right))
+        self.assertTrue(left.intersects(right, margin=5.0))
+
     def test_single_column_is_centered_when_viewport_is_wide(self):
         node = VisibleNode("only", "Only", code_node_ids=("only",))
         view = VisibleGraph(ViewKind.ARCHITECTURE, (node,),
