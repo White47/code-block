@@ -9,7 +9,7 @@ from codeviz.analysis.project import analyze_project
 from codeviz.core import ViewKind
 from codeviz.persistence.fingerprint import fingerprint_project, outdated_reasons
 from codeviz.persistence.store import CacheError, CacheStore
-from codeviz.views import ViewState
+from codeviz.views import DetailIslandState, ViewportState, ViewState
 
 
 class CacheStoreTests(unittest.TestCase):
@@ -109,7 +109,61 @@ class CacheStoreTests(unittest.TestCase):
             state = ViewState(active_view=ViewKind.ARCHITECTURE,
                               selected_id="model-a",
                               open_tabs=("graph:Architecture", "source:0:model.py"),
-                              graph_roots={"Architecture": "model-a"})
+                              graph_roots={"Architecture": "model-a"},
+                              viewport_by_view={
+                                  "Architecture": ViewportState(1.4, (25.0, -10.0)),
+                              },
+                              detail_islands=(DetailIslandState(
+                                  "Architecture:model-a", ViewKind.ARCHITECTURE,
+                                  "model-a", (620.0, 180.0)),))
             store.save_view_state(project, state)
             self.assertEqual(store.load_view_state(project), state)
             self.assertFalse(store.analysis_path(project).exists())
+
+    def test_legacy_view_state_defaults_new_canvas_fields(self):
+        legacy = {"expanded_ids": [], "positions": {}, "zoom": 1.2,
+                  "pan": [4.0, -2.0]}
+        restored = ViewState.from_dict(legacy)
+        self.assertEqual(restored.viewport_by_view, {})
+        self.assertEqual(restored.detail_islands, ())
+        self.assertEqual(restored.zoom, 1.2)
+        self.assertEqual(restored.pan, (4.0, -2.0))
+
+    def test_canvas_state_rejects_invalid_numeric_values(self):
+        for zoom in (0.24, 2.51, float("nan"), float("inf"), True):
+            with self.subTest(zoom=zoom), self.assertRaises(ValueError):
+                ViewportState(zoom=zoom)  # type: ignore[arg-type]
+        for pan in ((float("nan"), 0.0), (True, 0.0), (0.0, float("inf"))):
+            with self.subTest(pan=pan), self.assertRaises(ValueError):
+                ViewportState(pan=pan)  # type: ignore[arg-type]
+        with self.assertRaises(ValueError):
+            DetailIslandState("Architecture:model", ViewKind.ARCHITECTURE,
+                              "model", (float("nan"), 0.0))
+
+    def test_canvas_state_loader_strictly_rejects_malformed_records(self):
+        base: dict[str, object] = {"expanded_ids": [], "positions": {}}
+        invalid_payloads = (
+            {**base, "viewport_by_view": {"Unknown": {"zoom": 1.0,
+                                                         "pan": [0.0, 0.0]}}},
+            {**base, "viewport_by_view": {"Architecture": {
+                "zoom": 1.0, "pan": [0.0, 0.0], "extra": True}}},
+            {**base, "detail_islands": [{
+                "id": "x", "view_kind": "Unknown", "source_node_id": "x",
+                "position": None}]},
+            {**base, "detail_islands": [{
+                "id": "x", "view_kind": "Architecture", "source_node_id": "x",
+                "position": None}] * 2},
+            {**base, "detail_islands": [{
+                "id": f"Architecture:{index}", "view_kind": "Architecture",
+                "source_node_id": str(index), "position": None}
+                for index in range(4)]},
+            {**base, "detail_islands": [{
+                "id": "x" * 4001, "view_kind": "Architecture",
+                "source_node_id": "x", "position": None}]},
+            {**base, "detail_islands": [{
+                "id": "x", "view_kind": "Architecture", "source_node_id": "x",
+                "position": [0.0, float("inf")]}]},
+        )
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                ViewState.from_dict(payload)

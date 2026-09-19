@@ -11,7 +11,13 @@ from codeviz.core import SourceAnchor, ViewKind, VisibleGraph
 from codeviz.persistence.fingerprint import fingerprint_project, outdated_reasons
 from codeviz.persistence.store import CacheError, CacheStore
 from codeviz.source_handles import opened_file_path
-from codeviz.views import ViewRequest, ViewState, build_visible_graph
+from codeviz.views import (
+    DetailIslandState,
+    ViewportState,
+    ViewRequest,
+    ViewState,
+    build_visible_graph,
+)
 
 
 class AnalysisStatus(StrEnum):
@@ -182,9 +188,74 @@ class AppController:
         self.view_state = replace(self.view_state, positions=positions)
         self._persist_view_state()
 
+    def save_viewport(self, kind: ViewKind, zoom: float,
+                      pan: tuple[float, float]) -> None:
+        viewports = {**self.view_state.viewport_by_view,
+                     kind.value: ViewportState(zoom, pan)}
+        self.view_state = replace(self.view_state, viewport_by_view=viewports,
+                                  positions=dict(self.view_state.positions))
+        self._persist_view_state()
+
+    def open_detail_island(self, kind: ViewKind, source_node_id: str,
+                           position: tuple[float, float] | None) -> DetailIslandState:
+        island_id = f"{kind.value}:{source_node_id}"
+        for island in self.view_state.detail_islands:
+            if island.id == island_id:
+                return island
+        if len(self.detail_islands(kind)) >= 3:
+            raise ValueError("close a detail island before opening another")
+        island = DetailIslandState(island_id, kind, source_node_id, position)
+        self.view_state = replace(
+            self.view_state,
+            detail_islands=(*self.view_state.detail_islands, island),
+            positions=dict(self.view_state.positions),
+            viewport_by_view=dict(self.view_state.viewport_by_view),
+        )
+        self._persist_view_state()
+        return island
+
+    def move_detail_island(self, island_id: str,
+                           position: tuple[float, float]) -> None:
+        found = False
+        islands: list[DetailIslandState] = []
+        for island in self.view_state.detail_islands:
+            if island.id == island_id:
+                island = replace(island, position=position)
+                found = True
+            islands.append(island)
+        if not found:
+            raise ValueError("detail island is not open")
+        self.view_state = replace(
+            self.view_state, detail_islands=tuple(islands),
+            positions=dict(self.view_state.positions),
+            viewport_by_view=dict(self.view_state.viewport_by_view),
+        )
+        self._persist_view_state()
+
+    def close_detail_island(self, island_id: str) -> None:
+        islands = tuple(island for island in self.view_state.detail_islands
+                        if island.id != island_id)
+        if len(islands) == len(self.view_state.detail_islands):
+            return
+        self.view_state = replace(
+            self.view_state, detail_islands=islands,
+            positions=dict(self.view_state.positions),
+            viewport_by_view=dict(self.view_state.viewport_by_view),
+        )
+        self._persist_view_state()
+
+    def detail_islands(self, kind: ViewKind) -> tuple[DetailIslandState, ...]:
+        return tuple(island for island in self.view_state.detail_islands
+                     if island.view_kind is kind)
+
     def reset_positions(self) -> None:
         """Restore automatic positions for this project's graphs only."""
-        self.view_state = replace(self.view_state, positions={})
+        islands = tuple(replace(island, position=None)
+                        for island in self.view_state.detail_islands)
+        self.view_state = replace(
+            self.view_state, positions={}, detail_islands=islands,
+            viewport_by_view=dict(self.view_state.viewport_by_view),
+        )
         self._persist_view_state()
 
     def read_source(self, anchor: SourceAnchor, *, max_bytes: int = 5_000_000) -> SourceDocument:
