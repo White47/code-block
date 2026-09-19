@@ -19,16 +19,20 @@ def _forward_edges(edges: tuple[VisibleEdge, ...]) -> tuple[VisibleEdge, ...]:
 def _ranks(node_ids: tuple[str, ...], edges: tuple[VisibleEdge, ...],
            roots: tuple[str, ...]) -> dict[str, int]:
     rank = {node_id: 0 for node_id in roots}
+    root_ids = set(roots)
     for _ in range(len(node_ids)):
         changed = False
         for edge in edges:
+            if edge.target in root_ids:
+                continue
             candidate = rank.get(edge.source, 0) + 1
             if candidate > rank.get(edge.target, 0) and candidate < len(node_ids):
                 rank[edge.target] = candidate
                 changed = True
         if not changed:
             break
-    return {node_id: min(rank.get(node_id, 0), len(node_ids) - 1)
+    return {node_id: 0 if node_id in root_ids
+            else min(rank.get(node_id, 0), len(node_ids) - 1)
             for node_id in node_ids}
 
 

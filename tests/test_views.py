@@ -62,19 +62,20 @@ class VisibleContractTests(unittest.TestCase):
                 else:
                     self.assertLess(positions["middle"][1], positions["leaf"][1])
 
-    def test_layered_layout_assigns_each_node_once_when_flow_contains_a_cycle(self):
+    def test_layered_layout_pins_root_when_allowed_edges_form_a_cycle(self):
         nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
                       for name in ("root", "body", "tail"))
         edges = (
             VisibleEdge("root", "body", EdgeType.CONTROL_FLOW, code_edge_ids=("a",)),
-            VisibleEdge("body", "tail", EdgeType.CONTROL_FLOW, code_edge_ids=("b",)),
-            VisibleEdge("tail", "body", EdgeType.LOOP_BACK, code_edge_ids=("c",)),
+            VisibleEdge("body", "tail", EdgeType.CONTAINS, code_edge_ids=("b",)),
+            VisibleEdge("tail", "root", EdgeType.CONTROL_FLOW, code_edge_ids=("c",)),
         )
 
         positions = layout_positions(nodes, edges, ("root",), "flowchart", ViewState())
 
         self.assertEqual(set(positions), {node.id for node in nodes})
         self.assertEqual(len(positions), len(nodes))
+        self.assertEqual(positions["root"][1], 0.0)
         self.assertGreater(positions["tail"][1], positions["body"][1])
 
     def test_layout_state_position_overrides_automatic_placement(self):
