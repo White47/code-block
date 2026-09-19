@@ -7,7 +7,9 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from codeviz.core import SourceAnchor, ViewKind
+from codeviz.persistence.store import CacheStore
 from codeviz.ui.controller import AnalysisStatus, AppController
+from codeviz.views import ViewportState
 
 
 class ControllerTests(unittest.TestCase):
@@ -165,12 +167,59 @@ class ControllerTests(unittest.TestCase):
             controller.open_project(root)
             analysis = controller.analyze()
             controller.move_node("custom-node", (220.0, 100.0))
-            controller.save_layout(ViewKind.ARCHITECTURE, None,
-                                   ("graph:Architecture",), {})
+            controller.expand("expanded-node")
+            controller.save_layout(ViewKind.ARCHITECTURE, "selected-node",
+                                   ("graph:Architecture",),
+                                   {"Architecture": "model-a"})
+            controller.save_viewport(ViewKind.ARCHITECTURE, 1.4, (25.0, -10.0))
+            island = controller.open_detail_island(
+                ViewKind.ARCHITECTURE, "model-a", (620.0, 180.0))
             controller.reset_positions()
             self.assertEqual(controller.view_state.positions, {})
+            self.assertEqual(controller.view_state.expanded_ids, ("expanded-node",))
+            self.assertEqual(controller.view_state.active_view, ViewKind.ARCHITECTURE)
+            self.assertEqual(controller.view_state.selected_id, "selected-node")
             self.assertEqual(controller.view_state.open_tabs, ("graph:Architecture",))
+            self.assertEqual(controller.view_state.graph_roots,
+                             {"Architecture": "model-a"})
+            self.assertEqual(controller.view_state.viewport_by_view["Architecture"],
+                             ViewportState(1.4, (25.0, -10.0)))
+            self.assertEqual(controller.view_state.detail_islands,
+                             (island.__class__(island.id, island.view_kind,
+                                               island.source_node_id, None),))
             self.assertIs(controller.analysis, analysis)
+
+    def test_canvas_state_mutations_are_bounded_and_persisted(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            store = CacheStore(Path(data_dir))
+            controller = AppController(store)
+            controller.open_project(project)
+
+            controller.save_viewport(ViewKind.ARCHITECTURE, 1.4, (25.0, -10.0))
+            first = controller.open_detail_island(
+                ViewKind.ARCHITECTURE, "model-a", (620.0, 180.0))
+            self.assertIs(controller.open_detail_island(
+                ViewKind.ARCHITECTURE, "model-a", None), first)
+            controller.open_detail_island(ViewKind.ARCHITECTURE, "model-b", None)
+            controller.open_detail_island(ViewKind.ARCHITECTURE, "model-c", None)
+            with self.assertRaisesRegex(
+                    ValueError, "close a detail island before opening another"):
+                controller.open_detail_island(ViewKind.ARCHITECTURE, "model-d", None)
+
+            controller.move_detail_island(first.id, (700.0, 220.0))
+            self.assertEqual(controller.detail_islands(ViewKind.ARCHITECTURE)[0].position,
+                             (700.0, 220.0))
+            with self.assertRaisesRegex(ValueError, "detail island is not open"):
+                controller.move_detail_island("Architecture:missing", (0.0, 0.0))
+            controller.close_detail_island("Architecture:model-b")
+            controller.close_detail_island("Architecture:missing")
+
+            restored = store.load_view_state(project)
+            self.assertEqual(restored.viewport_by_view["Architecture"],
+                             ViewportState(1.4, (25.0, -10.0)))
+            self.assertEqual(restored.detail_islands,
+                             controller.detail_islands(ViewKind.ARCHITECTURE))
 
 
 
