@@ -107,7 +107,8 @@ class GraphCanvas:
 
     def __init__(self, parent: Any, *, on_select: Callable[[str], None],
                  on_drill_down: Callable[[str], None],
-                 on_move: Callable[[str, tuple[float, float]], None]) -> None:
+                 on_move: Callable[[str, tuple[float, float]], None],
+                 translate: Callable[[str], str] | None = None) -> None:
         import tkinter as tk
 
         self.widget = tk.Frame(parent, bg=theme.BACKGROUND)
@@ -123,6 +124,7 @@ class GraphCanvas:
         self._on_select = on_select
         self._on_drill_down = on_drill_down
         self._on_move = on_move
+        self._translate = translate or (lambda phrase: phrase)
         self._view: VisibleGraph | None = None
         self._selected_id: str | None = None
         self._drag_id: str | None = None
@@ -148,7 +150,8 @@ class GraphCanvas:
                        "No execution entry points detected · inspect Analysis Issues"
                        if view.view_kind == ViewKind.EXECUTION else
                        "No local code context available · open source instead")
-            self.canvas.create_text(80, 110, text=message, anchor="w", fill=theme.MUTED,
+            self.canvas.create_text(80, 110, text=self._translate(message), anchor="w",
+                                    fill=theme.MUTED,
                                     font=(theme.UI_FONT, 12), tags=("empty-state",))
         for edge in scene.edges:
             paint = edge_paint(edge.style)
@@ -178,7 +181,7 @@ class GraphCanvas:
             self.canvas.tag_bind(tag, "<ButtonRelease-1>", self._release)
             self.canvas.tag_bind(tag, "<Double-Button-1>",
                                  partial(self._double_click, node_id=node.id))
-        legend = "  ·  ".join(item.label for item in view.legend)
+        legend = "  ·  ".join(self._translate(item.label) for item in view.legend)
         self.canvas.create_text(12, 16, text=legend, anchor="w", fill=theme.MUTED,
                                 font=(theme.UI_FONT, 9))
         self.canvas.configure(scrollregion=(0, 0, max(scene.width, 400.0),

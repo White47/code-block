@@ -17,6 +17,59 @@ from codeviz.ui.tkapp import CodeVizApp, main
 
 
 class TkAppImportTests(unittest.TestCase):
+    def test_initial_geometry_keeps_titlebar_inside_common_screens(self):
+        import codeviz.ui.tkapp as desktop
+
+        self.assertTrue(hasattr(desktop, "initial_geometry"))
+        for screen_width, screen_height in ((1366, 768), (1920, 1080), (1024, 768)):
+            with self.subTest(screen=(screen_width, screen_height)):
+                width, height, left, top = desktop.initial_geometry(
+                    screen_width, screen_height)
+                self.assertLessEqual(width, screen_width - 40)
+                self.assertLessEqual(height, screen_height - 80)
+                self.assertGreaterEqual(left, 0)
+                self.assertGreaterEqual(top, 0)
+                self.assertLessEqual(left + width, screen_width)
+                self.assertLessEqual(top + height, screen_height - 40)
+
+    def test_corrupt_preferences_show_warning_without_blocking_window(self):
+        with TemporaryDirectory() as temporary:
+            (Path(temporary) / "preferences.json").write_text("{bad json", encoding="utf-8")
+            try:
+                with patch("codeviz.ui.tkapp.CacheStore",
+                           return_value=CacheStore(Path(temporary))):
+                    app = CodeVizApp()
+            except Exception as error:
+                import tkinter
+
+                if isinstance(error, tkinter.TclError):
+                    self.skipTest("Tk display unavailable")
+                raise
+            try:
+                self.assertEqual(app.language, "zh-CN")
+                self.assertIn("语言设置", app.status_label.cget("text"))
+            finally:
+                app.close()
+
+    def test_fresh_app_defaults_to_chinese_chrome(self):
+        with TemporaryDirectory() as temporary:
+            try:
+                with patch("codeviz.ui.tkapp.CacheStore",
+                           return_value=CacheStore(Path(temporary))):
+                    app = CodeVizApp()
+            except Exception as error:
+                import tkinter
+
+                if isinstance(error, tkinter.TclError):
+                    self.skipTest("Tk display unavailable")
+                raise
+            try:
+                self.assertEqual(app.language, "zh-CN")
+                self.assertEqual(app.main_tabs.tab(str(app.overview_tab), "text"), "项目概览")
+                self.assertEqual(app.root.title(), "代码地图 — Python 项目理解")
+            finally:
+                app.close()
+
     def test_app_entry_points_are_lazy_callables(self):
         self.assertTrue(callable(CodeVizApp))
         self.assertTrue(callable(main))
@@ -92,6 +145,8 @@ class TkAppLiveTests(unittest.TestCase):
     def setUp(self):
         self.cache_dir = TemporaryDirectory()
         self.addCleanup(self.cache_dir.cleanup)
+        (Path(self.cache_dir.name) / "preferences.json").write_text(
+            '{"version":1,"language":"en"}', encoding="utf-8")
         try:
             with patch("codeviz.ui.tkapp.CacheStore",
                        return_value=CacheStore(Path(self.cache_dir.name))):
@@ -127,7 +182,7 @@ class TkAppLiveTests(unittest.TestCase):
             self.app._open_graph(ViewKind.ARCHITECTURE)
             self.app.controller.move_node("custom-node", (400.0, 120.0))
             button = next(button for button in self._buttons(self.app.root)
-                          if button.cget("text") == "重置项目布局")
+                          if button.cget("text") == "Reset Project Layout")
             button.invoke()
             self.assertEqual(self.app.controller.view_state.positions, {})
             self.assertIs(self.app.controller.analysis, analysis)
@@ -172,6 +227,107 @@ class TkAppLiveTests(unittest.TestCase):
             self.assertNotIn(("run.py", True), self.app._source_tabs)
             self.app._open_source(SourceAnchor("run.py", 1), True)
             self.assertTrue(self.app._side_open)
+            self.app._open_source(SourceAnchor("run.py", 1), False)
+            main_frame = self.app._source_tabs[("run.py", False)]
+            self.app._open_source(SourceAnchor("run.py", 1), True)
+            self.assertEqual(
+                self.app._close_active_tab(SimpleNamespace(widget=self.app.main_tabs)), "break")
+            self.assertFalse(self.app._side_open)
+            self.assertIn(str(main_frame), self.app.main_tabs.tabs())
+
+    def test_settings_switches_language_without_reanalyzing_or_editing_source(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "run.py"
+            source.write_text("def train(): return 1\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            analysis = self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            self.app._open_source(SourceAnchor("run.py", 1), False)
+            self.app._open_problems()
+            self.assertEqual(self.app.problems_tree.heading("code", "text"), "CODE")
+            before = self.app._source_widgets[("run.py", False)].get("1.0", "end")
+            self.app._set_activity("Settings")
+            self.assertEqual(tuple(self.app.language_selector["values"]),
+                             ("简体中文", "English"))
+            self.app._set_language("zh-CN")
+            self.assertEqual(self.app.main_tabs.tab(str(self.app.overview_tab), "text"),
+                             "项目概览")
+            self.assertEqual(self.app.main_tabs.tab(
+                str(self.app._graph_tabs[ViewKind.ARCHITECTURE][0]), "text"), "架构图")
+            self.assertTrue(self.app._breadcrumbs[ViewKind.ARCHITECTURE].cget(
+                "text").startswith("架构图"))
+            self.assertEqual(self.app.problems_tree.heading("code", "text"), "代码")
+            self.assertIn("选择图中的节点", self.app.inspector_text.get("1.0", "end"))
+            self.assertEqual(self.app.source_button.cget("text"), "打开源码")
+            self.assertEqual(self.app._source_widgets[("run.py", False)].get("1.0", "end"),
+                             before)
+            self.assertIs(self.app.controller.analysis, analysis)
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            self.assertIn("节点", self.app.status_label.cget("text"))
+            self.assertNotIn("visible nodes", self.app.status_label.cget("text"))
+            graph_frame = self.app._graph_tabs[ViewKind.ARCHITECTURE][0]
+            self.app._close_tab(self.app.main_tabs, str(graph_frame))
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            self.assertEqual(self.app.main_tabs.tab(
+                str(self.app._graph_tabs[ViewKind.ARCHITECTURE][0]), "text"), "架构图")
+            self.app._set_language("en")
+            self.assertEqual(self.app.main_tabs.tab(str(self.app.overview_tab), "text"),
+                             "Project Overview")
+            self.assertIn("visible nodes", self.app.status_label.cget("text"))
+            self.assertEqual(source.read_text(encoding="utf-8"), "def train(): return 1\n")
+
+    def test_failed_language_save_keeps_session_choice_and_warns(self):
+        with patch.object(self.app.preferences, "save", side_effect=OSError("denied")):
+            self.app._set_language("zh-CN")
+        self.assertEqual(self.app.language, "zh-CN")
+        self.assertIn("未能保存", self.app.status_label.cget("text"))
+
+    def test_chinese_inspector_overview_and_search_keep_code_names(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "Architecture"
+            root.mkdir()
+            (root / "model.py").write_text(
+                "import torch.nn as nn\nclass Architecture(nn.Module):\n"
+                "    def forward(self, x): return x\n", encoding="utf-8")
+            self.app.controller.open_project(root)
+            self.app.controller.analyze()
+            self.app._set_language("zh-CN")
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            self.assertTrue(self.app._breadcrumbs[ViewKind.ARCHITECTURE].cget(
+                "text").startswith("架构图"))
+            model = next(node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
+                         if node.role == "ModelDefinition")
+            self.app._on_select(model.id)
+            inspector = self.app.inspector_text.get("1.0", "end")
+            self.assertIn("真实代码名", inspector)
+            self.assertIn("Architecture", inspector)
+            self.assertIn("概览", inspector)
+            self.assertNotIn("OVERVIEW", inspector)
+            self.assertIn("model.Architecture", [button.cget("text")
+                                                  for button in self._buttons(
+                                                      self.app.overview_tab)])
+            self.assertIn("Architecture", [label.cget("text")
+                                            for label in self._labels(self.app.overview_tab)])
+            labels = [label.cget("text") for label in self._labels(self.app.overview_tab)]
+            self.assertTrue(any("文件" in label for label in labels))
+            self.app._set_activity("Explorer")
+            self.assertIn("模型", [self.app.sidebar_tree.item(item, "text")
+                                   for item in self.app.sidebar_tree.get_children()])
+            self.app._open_problems()
+            self.assertEqual(self.app.problems_tree.heading("code", "text"), "代码")
+            self.assertEqual(self.app.problems_tree.heading("location", "text"), "位置")
+            self.assertEqual(self.app.problems_tree.heading("message", "text"), "消息")
+
+    def test_chinese_search_prompt_and_source_error_title(self):
+        self.app._set_language("zh-CN")
+        self.app._set_activity("Search")
+        self.app._reveal_search_result()
+        self.assertIn("请先选择搜索结果", self.app.status_label.cget("text"))
+        with patch.object(self.app.messagebox, "showerror") as showerror:
+            self.app._open_source(SourceAnchor("missing.py", 1), False)
+        self.assertEqual(showerror.call_args.args[0], "无法打开源码")
+
 
     def test_close_marker_click_and_shortcut_leave_overview_open(self):
         with TemporaryDirectory() as temporary:
