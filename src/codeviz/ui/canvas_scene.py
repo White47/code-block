@@ -33,6 +33,86 @@ class Rect:
         )
 
 
+def place_detail_island(source: Rect, size: tuple[float, float],
+                        occupied: tuple[Rect, ...], margin: float = 36.0) -> Rect:
+    """Place a detail island in the first deterministic free direction."""
+    width, height = size
+    candidates = (
+        Rect(source.x + source.width + margin, source.y, width, height),
+        Rect(source.x - width - margin, source.y, width, height),
+        Rect(source.x, source.y + source.height + margin, width, height),
+        Rect(source.x, source.y - height - margin, width, height),
+    )
+    for candidate in candidates:
+        if not any(candidate.intersects(item, margin=24.0) for item in occupied):
+            return candidate
+    bottom = max((item.y + item.height for item in occupied), default=source.y)
+    return Rect(source.x, bottom + margin, width, height)
+
+
+def _segment_intersects_rect(start: Point, end: Point, rect: Rect) -> bool:
+    if start.x == end.x:
+        return (rect.x <= start.x <= rect.x + rect.width
+                and max(min(start.y, end.y), rect.y)
+                <= min(max(start.y, end.y), rect.y + rect.height))
+    if start.y == end.y:
+        return (rect.y <= start.y <= rect.y + rect.height
+                and max(min(start.x, end.x), rect.x)
+                <= min(max(start.x, end.x), rect.x + rect.width))
+
+    delta_x = end.x - start.x
+    delta_y = end.y - start.y
+    minimum, maximum = 0.0, 1.0
+    for start_value, delta, lower, upper in (
+        (start.x, delta_x, rect.x, rect.x + rect.width),
+        (start.y, delta_y, rect.y, rect.y + rect.height),
+    ):
+        if delta == 0:
+            if start_value < lower or start_value > upper:
+                return False
+            continue
+        first = (lower - start_value) / delta
+        second = (upper - start_value) / delta
+        minimum = max(minimum, min(first, second))
+        maximum = min(maximum, max(first, second))
+        if minimum > maximum:
+            return False
+    return True
+
+
+def _path_is_clear(points: tuple[Point, ...], obstacles: tuple[Rect, ...]) -> bool:
+    expanded = tuple(Rect(item.x - 12.0, item.y - 12.0,
+                          item.width + 24.0, item.height + 24.0)
+                     for item in obstacles)
+    return all(not _segment_intersects_rect(start, end, obstacle)
+               for start, end in zip(points, points[1:], strict=False)
+               for obstacle in expanded)
+
+
+def route_edge(source: Rect, target: Rect,
+               obstacles: tuple[Rect, ...]) -> tuple[Point, ...]:
+    """Route an edge directly or around obstacles using deterministic doglegs."""
+    start = Point(source.x + source.width / 2, source.y + source.height)
+    end = Point(target.x + target.width / 2, target.y)
+    blockers = tuple(item for item in obstacles if item != source and item != target)
+    direct = (start, end)
+    if _path_is_clear(direct, blockers):
+        return direct
+
+    clearance = 13.0
+    right = max((item.x + item.width for item in blockers),
+                default=max(source.x + source.width, target.x + target.width)) + clearance
+    right = max(right, source.x + source.width + clearance,
+                target.x + target.width + clearance)
+    left = min((item.x for item in blockers), default=min(source.x, target.x)) - clearance
+    left = min(left, source.x - clearance, target.x - clearance)
+    for lane in (right, left):
+        candidate = (start, Point(lane, start.y), Point(lane, end.y), end)
+        if _path_is_clear(candidate, blockers):
+            return candidate
+    return direct
+
+
 @dataclass(frozen=True, slots=True)
 class Viewport:
     zoom: float = 1.0
@@ -85,6 +165,15 @@ class GraphScene:
     edges: tuple[SceneEdge, ...]
     width: float
     height: float
+
+
+@dataclass(frozen=True, slots=True)
+class DetailIslandScene:
+    id: str
+    source_node_id: str
+    title: str
+    bounds: Rect
+    graph: GraphScene
 
 
 @dataclass(frozen=True, slots=True)

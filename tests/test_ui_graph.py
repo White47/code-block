@@ -14,9 +14,13 @@ from codeviz.core import (
     VisibleNode,
 )
 from codeviz.ui.canvas_scene import (
+    DetailIslandScene,
+    GraphScene,
     Point,
     Rect,
     Viewport,
+    place_detail_island,
+    route_edge,
     scene_to_screen,
     screen_to_scene,
     zoom_about,
@@ -44,6 +48,52 @@ class GraphSceneTests(unittest.TestCase):
         right = Rect(25.0, 0.0, 20.0, 20.0)
         self.assertFalse(left.intersects(right))
         self.assertTrue(left.intersects(right, margin=5.0))
+
+    def test_detail_island_scene_keeps_source_and_nested_graph(self):
+        graph = GraphScene((), (), 340.0, 300.0)
+        island = DetailIslandScene("detail:model", "model", "Model",
+                                   Rect(10.0, 20.0, 340.0, 300.0), graph)
+        self.assertEqual(island.source_node_id, "model")
+        self.assertIs(island.graph, graph)
+
+    def test_detail_island_prefers_right_then_avoids_occupied_rectangles(self):
+        source = Rect(100.0, 100.0, 170.0, 66.0)
+        occupied = (source, Rect(310.0, 70.0, 340.0, 300.0))
+        placed = place_detail_island(source, (340.0, 300.0), occupied)
+        self.assertFalse(any(placed.intersects(item, margin=24.0) for item in occupied))
+        self.assertLess(placed.x, source.x)
+
+    def test_direct_route_ignores_source_and_target_as_obstacles(self):
+        source = Rect(20.0, 20.0, 100.0, 60.0)
+        target = Rect(20.0, 240.0, 100.0, 60.0)
+        self.assertEqual(route_edge(source, target, (source, target)),
+                         (Point(70.0, 80.0), Point(70.0, 240.0)))
+
+    def test_routed_edge_does_not_cross_blocking_node(self):
+        source = Rect(20.0, 20.0, 100.0, 60.0)
+        target = Rect(20.0, 240.0, 100.0, 60.0)
+        blocker = Rect(0.0, 130.0, 140.0, 50.0)
+        points = route_edge(source, target, (blocker,))
+        self.assertGreater(max(point.x for point in points), blocker.x + blocker.width)
+
+    def test_routed_edge_uses_left_dogleg_when_right_route_is_blocked(self):
+        source = Rect(20.0, 20.0, 100.0, 60.0)
+        target = Rect(20.0, 240.0, 100.0, 60.0)
+        middle = Rect(0.0, 130.0, 140.0, 50.0)
+        right_barrier = Rect(95.0, 85.0, 80.0, 20.0)
+        points = route_edge(source, target, (middle, right_barrier))
+        self.assertLess(min(point.x for point in points), middle.x)
+
+    def test_routed_edge_falls_back_to_direct_when_all_candidates_are_blocked(self):
+        source = Rect(20.0, 20.0, 100.0, 60.0)
+        target = Rect(20.0, 240.0, 100.0, 60.0)
+        obstacles = (
+            Rect(0.0, 130.0, 140.0, 50.0),
+            Rect(95.0, 85.0, 80.0, 20.0),
+            Rect(-60.0, 85.0, 60.0, 20.0),
+        )
+        self.assertEqual(route_edge(source, target, obstacles),
+                         (Point(70.0, 80.0), Point(70.0, 240.0)))
 
     def test_single_column_is_centered_when_viewport_is_wide(self):
         node = VisibleNode("only", "Only", code_node_ids=("only",))
