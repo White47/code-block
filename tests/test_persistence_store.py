@@ -1,5 +1,6 @@
 """Local cache content, invalidation and corruption boundaries."""
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -128,6 +129,24 @@ class CacheStoreTests(unittest.TestCase):
         self.assertEqual(restored.detail_islands, ())
         self.assertEqual(restored.zoom, 1.2)
         self.assertEqual(restored.pan, (4.0, -2.0))
+
+    def test_viewport_serialization_does_not_depend_on_insertion_order(self):
+        architecture = ViewportState(1.4, (25.0, -10.0))
+        execution = ViewportState(0.8, (-8.0, 12.0))
+        first = ViewState(viewport_by_view={
+            ViewKind.ARCHITECTURE.value: architecture,
+            ViewKind.EXECUTION.value: execution,
+        })
+        second = ViewState(viewport_by_view={
+            ViewKind.EXECUTION.value: execution,
+            ViewKind.ARCHITECTURE.value: architecture,
+        })
+
+        self.assertEqual(first.to_dict(), second.to_dict())
+        self.assertEqual(
+            json.dumps(first.to_dict(), ensure_ascii=False, separators=(",", ":")),
+            json.dumps(second.to_dict(), ensure_ascii=False, separators=(",", ":")),
+        )
 
     def test_canvas_state_rejects_invalid_numeric_values(self):
         for zoom in (0.24, 2.51, float("nan"), float("inf"), True):

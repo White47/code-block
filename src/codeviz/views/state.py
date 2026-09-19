@@ -115,8 +115,9 @@ class ViewState:
                 "pan": list(self.pan),
                 "filters": list(self.filters),
                 "viewport_by_view": {
-                    kind: {"zoom": viewport.zoom, "pan": list(viewport.pan)}
-                    for kind, viewport in self.viewport_by_view.items()
+                    kind: {"zoom": self.viewport_by_view[kind].zoom,
+                           "pan": list(self.viewport_by_view[kind].pan)}
+                    for kind in sorted(self.viewport_by_view)
                 },
                 "detail_islands": [
                     {"id": island.id, "view_kind": island.view_kind.value,
