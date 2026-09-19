@@ -166,6 +166,20 @@ class AppController:
                               hops=hops, direction=direction)
         return build_visible_graph(self.analysis, request, self.view_state)
 
+    def detail_view(self, kind: ViewKind, root_id: str | None,
+                    source_node_id: str) -> VisibleGraph:
+        if self.analysis is None:
+            raise RuntimeError("analyze the project before opening node details")
+        request = ViewRequest(
+            kind, root_id=root_id, selected_id=source_node_id,
+            expanded_ids=(source_node_id,), hops=1, max_nodes=18, max_edges=40,
+        )
+        detail_state = ViewState(expanded_ids=(source_node_id,))
+        result = build_visible_graph(self.analysis, request, detail_state)
+        if source_node_id not in {node.id for node in result.nodes}:
+            raise ValueError("node has no local detail graph")
+        return result
+
     def expand(self, node_id: str) -> None:
         if not node_id:
             raise ValueError("node ID cannot be empty")

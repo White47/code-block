@@ -2,6 +2,7 @@
 
 import builtins
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -13,6 +14,8 @@ from codeviz.views import ViewportState
 
 
 class ControllerTests(unittest.TestCase):
+    fixture_root = Path(__file__).parent / "fixtures" / "mvp_project"
+
     def test_open_project_rejects_switch_during_analysis(self):
         with TemporaryDirectory() as first, TemporaryDirectory() as second:
             controller = AppController()
@@ -158,6 +161,60 @@ class ControllerTests(unittest.TestCase):
             controller.move_node(loop.id, (90.0, 120.0))
             self.assertEqual(controller.view(ViewKind.EXECUTION).layout_hints[loop.id],
                              (90.0, 120.0))
+
+    def test_detail_view_is_bounded_source_backed_and_isolated_from_main_state(self):
+        controller = AppController(ignore_paths=("data",))
+        controller.open_project(self.fixture_root)
+        analysis = controller.analyze()
+        architecture = controller.view(ViewKind.ARCHITECTURE)
+        source = next(node for node in architecture.nodes
+                      if node.metadata.get("has_children"))
+        self.assertIn(source.id, architecture.root_ids)
+        root_id = source.id
+        controller.expand("main-only-expansion")
+        controller.move_node(source.id, (901.0, 777.0))
+        controller.save_viewport(ViewKind.ARCHITECTURE, 1.6, (31.0, -17.0))
+        analysis_before = deepcopy(analysis.semantic.graph)
+        state_before = controller.view_state
+
+        detail = controller.detail_view(ViewKind.ARCHITECTURE, root_id, source.id)
+
+        self.assertIn(source.id, {node.id for node in detail.nodes})
+        self.assertLessEqual(len(detail.nodes), 18)
+        self.assertLessEqual(len(detail.edges), 40)
+        self.assertTrue(all(node.source_anchors or node.member_ids
+                            for node in detail.nodes))
+        self.assertEqual(analysis.semantic.graph, analysis_before)
+        self.assertEqual(controller.view_state, state_before)
+        self.assertNotEqual(detail.layout_hints.get(source.id), (901.0, 777.0))
+
+    def test_detail_view_rejects_node_outside_requested_view(self):
+        controller = AppController(ignore_paths=("data",))
+        controller.open_project(self.fixture_root)
+        controller.analyze()
+
+        with self.assertRaises(ValueError):
+            controller.detail_view(ViewKind.ARCHITECTURE, None, "outside-node")
+
+    def test_detail_view_supports_symbol_context(self):
+        controller = AppController(ignore_paths=("data",))
+        controller.open_project(self.fixture_root)
+        analysis = controller.analyze()
+        symbol = next(entry for entry in analysis.symbol_index.entries.values()
+                      if entry.name == "train_epoch")
+
+        detail = controller.detail_view(ViewKind.SYMBOL, None, symbol.id)
+
+        self.assertIn(symbol.id, {node.id for node in detail.nodes})
+        self.assertLessEqual(len(detail.nodes), 18)
+        self.assertLessEqual(len(detail.edges), 40)
+
+    def test_detail_view_requires_analysis(self):
+        controller = AppController()
+
+        with self.assertRaisesRegex(
+                RuntimeError, "^analyze the project before opening node details$"):
+            controller.detail_view(ViewKind.ARCHITECTURE, None, "model")
 
     def test_reset_positions_keeps_analysis_and_navigation_state(self):
         with TemporaryDirectory() as temporary:
