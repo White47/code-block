@@ -188,13 +188,15 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(controller.view_state, state_before)
         self.assertNotEqual(detail.layout_hints.get(source.id), (901.0, 777.0))
 
-    def test_detail_view_rejects_node_outside_requested_view(self):
+    def test_detail_view_normalizes_invalid_semantic_and_code_context_nodes(self):
         controller = AppController(ignore_paths=("data",))
         controller.open_project(self.fixture_root)
         controller.analyze()
 
-        with self.assertRaises(ValueError):
-            controller.detail_view(ViewKind.ARCHITECTURE, None, "outside-node")
+        for kind in (ViewKind.ARCHITECTURE, ViewKind.SYMBOL):
+            with self.subTest(kind=kind), self.assertRaisesRegex(
+                    ValueError, r"^node has no local detail graph$"):
+                controller.detail_view(kind, None, "outside-node")
 
     def test_detail_view_supports_symbol_context(self):
         controller = AppController(ignore_paths=("data",))

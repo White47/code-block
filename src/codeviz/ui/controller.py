@@ -175,7 +175,10 @@ class AppController:
             expanded_ids=(source_node_id,), hops=1, max_nodes=18, max_edges=40,
         )
         detail_state = ViewState(expanded_ids=(source_node_id,))
-        result = build_visible_graph(self.analysis, request, detail_state)
+        try:
+            result = build_visible_graph(self.analysis, request, detail_state)
+        except ValueError as error:
+            raise ValueError("node has no local detail graph") from error
         if source_node_id not in {node.id for node in result.nodes}:
             raise ValueError("node has no local detail graph")
         return result
