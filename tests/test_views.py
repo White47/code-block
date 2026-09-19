@@ -18,6 +18,28 @@ from codeviz.views.layout import layout_positions
 
 
 class VisibleContractTests(unittest.TestCase):
+    def test_layered_layout_is_stable_and_centers_a_merge_under_its_inputs(self):
+        nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
+                      for name in ("root", "left", "right", "merge"))
+        edges = (
+            VisibleEdge("root", "left", EdgeType.CONTAINS, code_edge_ids=("a",)),
+            VisibleEdge("root", "right", EdgeType.CONTAINS, code_edge_ids=("b",)),
+            VisibleEdge("left", "merge", EdgeType.CONTROL_FLOW, code_edge_ids=("c",)),
+            VisibleEdge("right", "merge", EdgeType.CONTROL_FLOW, code_edge_ids=("d",)),
+        )
+
+        first = layout_positions(nodes, edges, ("root",), "hierarchical", ViewState())
+        reversed_edges = layout_positions(nodes, tuple(reversed(edges)), ("root",),
+                                          "hierarchical", ViewState())
+
+        self.assertEqual(first, reversed_edges)
+        self.assertEqual(first["root"][1], 0.0)
+        self.assertEqual(first["left"][1], first["right"][1])
+        self.assertNotEqual(first["left"][0], first["right"][0])
+        self.assertGreater(first["merge"][1], first["left"][1])
+        self.assertAlmostEqual(first["merge"][0],
+                               (first["left"][0] + first["right"][0]) / 2)
+
     def test_default_architecture_and_execution_layouts_read_downward(self):
         nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
                       for name in ("root", "middle", "leaf"))
@@ -33,9 +55,37 @@ class VisibleContractTests(unittest.TestCase):
                             ("flowchart", execution_edges)):
             with self.subTest(kind=kind):
                 positions = layout_positions(nodes, edges, ("root",), kind, ViewState())
-                self.assertEqual(len({point[0] for point in positions.values()}), 1)
                 self.assertLess(positions["root"][1], positions["middle"][1])
-                self.assertLess(positions["middle"][1], positions["leaf"][1])
+                if kind == "hierarchical":
+                    self.assertEqual(positions["middle"][1], positions["leaf"][1])
+                    self.assertNotEqual(positions["middle"][0], positions["leaf"][0])
+                else:
+                    self.assertLess(positions["middle"][1], positions["leaf"][1])
+
+    def test_layered_layout_assigns_each_node_once_when_flow_contains_a_cycle(self):
+        nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
+                      for name in ("root", "body", "tail"))
+        edges = (
+            VisibleEdge("root", "body", EdgeType.CONTROL_FLOW, code_edge_ids=("a",)),
+            VisibleEdge("body", "tail", EdgeType.CONTROL_FLOW, code_edge_ids=("b",)),
+            VisibleEdge("tail", "body", EdgeType.LOOP_BACK, code_edge_ids=("c",)),
+        )
+
+        positions = layout_positions(nodes, edges, ("root",), "flowchart", ViewState())
+
+        self.assertEqual(set(positions), {node.id for node in nodes})
+        self.assertEqual(len(positions), len(nodes))
+        self.assertGreater(positions["tail"][1], positions["body"][1])
+
+    def test_layout_state_position_overrides_automatic_placement(self):
+        nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
+                      for name in ("root", "child"))
+        edges = (VisibleEdge("root", "child", EdgeType.CONTAINS, code_edge_ids=("a",)),)
+        state = ViewState(positions={"child": (123.0, 456.0)})
+
+        positions = layout_positions(nodes, edges, ("root",), "hierarchical", state)
+
+        self.assertEqual(positions["child"], (123.0, 456.0))
 
     def test_graph_enforces_budget_and_aggregation_provenance(self):
         nodes = (VisibleNode("a", "A", code_node_ids=("a",)),
