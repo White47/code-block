@@ -19,6 +19,13 @@ from codeviz.views import (
     build_visible_graph,
 )
 
+_DETAIL_UNAVAILABLE_ERRORS = frozenset({
+    "requested root is not available in this view",
+    "selected component is outside the requested view",
+    "selected code node is not available",
+    "data context must focus a critical data node",
+})
+
 
 class AnalysisStatus(StrEnum):
     NOT_ANALYZED = "NotAnalyzed"
@@ -178,6 +185,8 @@ class AppController:
         try:
             result = build_visible_graph(self.analysis, request, detail_state)
         except ValueError as error:
+            if str(error) not in _DETAIL_UNAVAILABLE_ERRORS:
+                raise
             raise ValueError("node has no local detail graph") from error
         if source_node_id not in {node.id for node in result.nodes}:
             raise ValueError("node has no local detail graph")
