@@ -317,6 +317,12 @@ class GraphSceneTests(unittest.TestCase):
         self.assertNotEqual(edge_paint("data-solid"), edge_paint("loop-curved"))
         self.assertNotEqual(edge_paint("gradient-reverse"), edge_paint("control-solid"))
 
+    def test_branch_and_call_edges_have_distinct_non_color_patterns(self):
+        paints = tuple(edge_paint(style)
+                       for style in ("branch-true", "branch-false", "calls-dashed"))
+
+        self.assertEqual(len({(paint.dash, paint.width) for paint in paints}), 3)
+
     def test_scene_routes_flow_around_intermediate_node(self):
         nodes = tuple(VisibleNode(node_id, node_id.title(), code_node_ids=(node_id,))
                       for node_id in ("source", "blocker", "target"))
@@ -462,6 +468,37 @@ class GraphSceneTests(unittest.TestCase):
                          if item["kind"] == "rectangle" and
                          "node:probable" in item["tags"])
         self.assertTrue(rectangle["dash"])
+
+    def test_selected_main_and_island_nodes_have_thick_border_and_marker(self):
+        graph, canvas = _graph_canvas()
+        main, state, detail = _interactive_views()
+        graph.render(main, selected_id="root", details=((state, detail),))
+
+        main_selected = next(item for item in canvas.items.values()
+                             if item["kind"] == "rectangle" and
+                             {"node:root", "context:main"} <= set(item["tags"]))
+        main_unselected = next(item for item in canvas.items.values()
+                               if item["kind"] == "rectangle" and
+                               {"node:leaf", "context:main"} <= set(item["tags"]))
+        main_markers = [item for item in canvas.items.values()
+                        if {"selection-marker", "context:main"} <= set(item["tags"])]
+        self.assertGreaterEqual(main_selected["width"], 3)
+        self.assertLess(main_unselected["width"], main_selected["width"])
+        self.assertEqual(len(main_markers), 1)
+
+        graph._press(SimpleNamespace(x=400, y=180), node_id="inner",
+                     context_id=state.id)
+        graph._release(SimpleNamespace())
+
+        island_selected = next(item for item in canvas.items.values()
+                               if item["kind"] == "rectangle" and
+                               {"node:inner", f"context:{state.id}"} <=
+                               set(item["tags"]))
+        island_markers = [item for item in canvas.items.values()
+                          if {"selection-marker", f"context:{state.id}"} <=
+                          set(item["tags"])]
+        self.assertGreaterEqual(island_selected["width"], 3)
+        self.assertEqual(len(island_markers), 1)
 
     def test_legacy_one_argument_selection_and_drill_down_stay_compatible(self):
         selections: list[str] = []
