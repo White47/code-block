@@ -162,31 +162,84 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(controller.view(ViewKind.EXECUTION).layout_hints[loop.id],
                              (90.0, 120.0))
 
-    def test_detail_view_is_bounded_source_backed_and_isolated_from_main_state(self):
+    def test_detail_view_is_bounded_source_backed_and_isolated_in_all_contexts(self):
         controller = AppController(ignore_paths=("data",))
         controller.open_project(self.fixture_root)
         analysis = controller.analyze()
+        self.assertIsNotNone(analysis.semantic)
+        self.assertIsNotNone(analysis.flow)
+        assert analysis.semantic is not None
+        assert analysis.flow is not None
+
         architecture = controller.view(ViewKind.ARCHITECTURE)
-        source = next(node for node in architecture.nodes
-                      if node.metadata.get("has_children"))
-        self.assertIn(source.id, architecture.root_ids)
-        root_id = source.id
+        architecture_focus = next(
+            node for node in architecture.nodes if node.metadata.get("has_children"))
+        self.assertIn(architecture_focus.id, architecture.root_ids)
+        execution_root = next(
+            component.id for component in analysis.semantic.graph.components
+            if component.role == "EntryPoint"
+        )
+        execution = controller.view(ViewKind.EXECUTION, execution_root)
+        execution_focus = next(
+            node for node in execution.nodes
+            if node.id != execution_root and node.role != "DataNode"
+        )
+        symbol_focus = next(
+            entry for entry in analysis.symbol_index.entries.values()
+            if entry.name == "train_epoch"
+        )
+        data_focus = analysis.flow.data_nodes[0]
+
         controller.expand("main-only-expansion")
-        controller.move_node(source.id, (901.0, 777.0))
+        controller.move_node(architecture_focus.id, (901.0, 777.0))
         controller.save_viewport(ViewKind.ARCHITECTURE, 1.6, (31.0, -17.0))
-        analysis_before = deepcopy(analysis.semantic.graph)
-        state_before = controller.view_state
+        cases = (
+            (ViewKind.ARCHITECTURE, architecture_focus.id, architecture_focus.id),
+            (ViewKind.EXECUTION, execution_root, execution_focus.id),
+            (ViewKind.SYMBOL, None, symbol_focus.id),
+            (ViewKind.DATA_FLOW, None, data_focus.id),
+        )
+        for kind, root_id, source_id in cases:
+            with self.subTest(kind=kind):
+                semantic_before = deepcopy(analysis.semantic.graph)
+                flow_graph_before = deepcopy(analysis.flow.graph.to_dict())
+                data_nodes_before = deepcopy(analysis.flow.data_nodes)
+                symbol_facts_before = deepcopy((
+                    analysis.symbol_index.entries,
+                    analysis.symbol_index.references,
+                    analysis.symbol_index.scope_declarations,
+                ))
+                state_before = controller.view_state
 
-        detail = controller.detail_view(ViewKind.ARCHITECTURE, root_id, source.id)
+                detail = controller.detail_view(kind, root_id, source_id)
 
-        self.assertIn(source.id, {node.id for node in detail.nodes})
-        self.assertLessEqual(len(detail.nodes), 18)
-        self.assertLessEqual(len(detail.edges), 40)
-        self.assertTrue(all(node.source_anchors or node.member_ids
-                            for node in detail.nodes))
-        self.assertEqual(analysis.semantic.graph, analysis_before)
-        self.assertEqual(controller.view_state, state_before)
-        self.assertNotEqual(detail.layout_hints.get(source.id), (901.0, 777.0))
+                self.assertIn(source_id, {node.id for node in detail.nodes})
+                self.assertLessEqual(len(detail.nodes), 18)
+                self.assertLessEqual(len(detail.edges), 40)
+                self.assertEqual(detail.query_context.get("hops"), 1)
+                self.assertEqual(detail.max_nodes, 18)
+                self.assertEqual(detail.max_edges, 40)
+                self.assertTrue(all(node.source_anchors or node.member_ids
+                                    for node in detail.nodes))
+                self.assertEqual(analysis.semantic.graph, semantic_before)
+                self.assertEqual(analysis.flow.graph.to_dict(), flow_graph_before)
+                self.assertEqual(analysis.flow.data_nodes, data_nodes_before)
+                self.assertEqual(
+                    (analysis.symbol_index.entries,
+                     analysis.symbol_index.references,
+                     analysis.symbol_index.scope_declarations),
+                    symbol_facts_before,
+                )
+                self.assertEqual(controller.view_state, state_before)
+
+        self.assertNotEqual(
+            controller.detail_view(
+                ViewKind.ARCHITECTURE,
+                architecture_focus.id,
+                architecture_focus.id,
+            ).layout_hints.get(architecture_focus.id),
+            (901.0, 777.0),
+        )
 
     def test_detail_view_normalizes_invalid_semantic_and_code_context_nodes(self):
         controller = AppController(ignore_paths=("data",))
@@ -198,18 +251,16 @@ class ControllerTests(unittest.TestCase):
                     ValueError, r"^node has no local detail graph$"):
                 controller.detail_view(kind, None, "outside-node")
 
-    def test_detail_view_supports_symbol_context(self):
+    def test_detail_view_preserves_unexpected_builder_value_error(self):
         controller = AppController(ignore_paths=("data",))
         controller.open_project(self.fixture_root)
-        analysis = controller.analyze()
-        symbol = next(entry for entry in analysis.symbol_index.entries.values()
-                      if entry.name == "train_epoch")
+        controller.analyze()
 
-        detail = controller.detail_view(ViewKind.SYMBOL, None, symbol.id)
-
-        self.assertIn(symbol.id, {node.id for node in detail.nodes})
-        self.assertLessEqual(len(detail.nodes), 18)
-        self.assertLessEqual(len(detail.edges), 40)
+        with patch(
+            "codeviz.ui.controller.build_visible_graph",
+            side_effect=ValueError("internal invariant broken"),
+        ), self.assertRaisesRegex(ValueError, r"^internal invariant broken$"):
+            controller.detail_view(ViewKind.ARCHITECTURE, None, "model")
 
     def test_detail_view_requires_analysis(self):
         controller = AppController()
