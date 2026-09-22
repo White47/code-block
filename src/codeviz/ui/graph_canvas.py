@@ -290,7 +290,8 @@ class GraphCanvas:
                            (2, 3) if node.confidence == Confidence.UNRESOLVED else ())
         self.canvas.create_rectangle(screen.x, screen.y, screen.x + screen.width,
                                      screen.y + screen.height, fill=fill, outline=outline,
-                                     width=2, dash=(5, 3) if node.member_count else confidence_dash,
+                                     width=3 if node.selected else 2,
+                                     dash=(5, 3) if node.member_count else confidence_dash,
                                      tags=tags)
         title = scene_to_screen(Point(rect.x + 12.0, rect.y + 20.0), self.viewport)
         subtitle = scene_to_screen(Point(rect.x + 12.0, rect.y + 47.0), self.viewport)
@@ -300,6 +301,11 @@ class GraphCanvas:
         self.canvas.create_text(subtitle.x, subtitle.y, text=node.subtitle, anchor="w",
                                 fill=theme.MUTED, width=max(screen.width - 24.0, 20.0),
                                 font=(theme.CODE_FONT, 9), tags=tags)
+        if node.selected:
+            marker = scene_to_screen(Point(rect.x + 7.0, rect.y + 7.0), self.viewport)
+            self.canvas.create_text(marker.x, marker.y, text="●", fill=theme.ACCENT,
+                                    font=(theme.UI_FONT, 7, "bold"),
+                                    tags=(*tags, "selection-marker"))
         self.canvas.tag_bind(hit_tag, "<ButtonPress-1>",
                              partial(self._press, node_id=node.id, context_id=context_id))
         if context_id is None:

@@ -190,10 +190,10 @@ def edge_paint(style: str) -> EdgePaint:
         "structural-dotted": EdgePaint(theme.MUTED, (3, 4), 1),
         "control-solid": EdgePaint(theme.ACCENT, None, 2),
         "branch-true": EdgePaint("#8acb99", (6, 3), 2),
-        "branch-false": EdgePaint(theme.WARNING, (6, 3), 2),
+        "branch-false": EdgePaint(theme.WARNING, (2, 3), 2),
         "data-solid": EdgePaint("#7fb3e8", None, 3),
         "loop-curved": EdgePaint(theme.WARNING, (4, 3), 2),
-        "calls-dashed": EdgePaint(theme.ACCENT, (6, 3), 2),
+        "calls-dashed": EdgePaint(theme.ACCENT, (9, 4), 2),
         "data-dashed": EdgePaint("#7fb3e8", (5, 3), 2),
         "gradient-reverse": EdgePaint("#d79be8", (2, 3), 3),
     }.get(style, EdgePaint(theme.MUTED, None, 1))
