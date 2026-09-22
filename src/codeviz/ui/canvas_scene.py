@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from codeviz.core import EdgeType, VisibleGraph
+from codeviz.core import Confidence, EdgeType, VisibleGraph
 
 from . import theme
 
@@ -148,6 +148,8 @@ class SceneNode:
     selected: bool
     neighbor: bool
     member_count: int
+    expandable: bool = False
+    confidence: Confidence = Confidence.UNRESOLVED
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +195,7 @@ def edge_paint(style: str) -> EdgePaint:
         "loop-curved": EdgePaint(theme.WARNING, (4, 3), 2),
         "calls-dashed": EdgePaint(theme.ACCENT, (6, 3), 2),
         "data-dashed": EdgePaint("#7fb3e8", (5, 3), 2),
+        "gradient-reverse": EdgePaint("#d79be8", (2, 3), 3),
     }.get(style, EdgePaint(theme.MUTED, None, 1))
 
 
@@ -213,9 +216,11 @@ def graph_scene(view: VisibleGraph, selected_id: str | None = None,
         positions.get(node.id, (0.0, 0.0))[0] + shift_x,
         positions.get(node.id, (0.0, 0.0))[1] + shift_y,
         170.0, 66.0, node.id == selected_id, node.id in neighbors,
-        len(node.member_ids),
+        len(node.member_ids), bool(node.member_ids or node.metadata.get("has_children")),
+        node.confidence,
     ) for node in view.nodes)
     by_id = {node.id: node for node in nodes}
+    node_rects = tuple(Rect(node.x, node.y, node.width, node.height) for node in nodes)
     styles = {item.type: item.style for item in view.legend}
     edges: list[SceneEdge] = []
     for edge in view.edges:
@@ -228,8 +233,11 @@ def graph_scene(view: VisibleGraph, selected_id: str | None = None,
                       target.x + target.width / 2, target.y - 22,
                       target.x + target.width / 2, target.y)
         else:
-            points = (source.x + source.width / 2, source.y + source.height,
-                      target.x + target.width / 2, target.y)
+            routed = route_edge(Rect(source.x, source.y, source.width, source.height),
+                                Rect(target.x, target.y, target.width, target.height),
+                                node_rects)
+            points = tuple(coordinate for point in routed
+                           for coordinate in (point.x, point.y))
         edges.append(SceneEdge(edge.source, edge.target, edge.type,
                                styles.get(edge.type, edge.type.value), points))
     width = max(max((node.x + node.width for node in nodes), default=0.0) + 80.0,
