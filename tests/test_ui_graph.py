@@ -59,9 +59,13 @@ class _FakeCanvas(_FakeWidget):
         self.width = 800
         self.height = 600
         self._next = 1
+        self.options: dict[str, object] = {}
 
-    def configure(self, **_kwargs):
-        pass
+    def configure(self, **kwargs):
+        self.options.update(kwargs)
+
+    def cget(self, option):
+        return self.options.get(option, "")
 
     def bind(self, event, callback):
         self.bindings[event] = callback
@@ -99,8 +103,21 @@ class _FakeCanvas(_FakeWidget):
     def find_withtag(self, tag):
         if tag == "current":
             return self.current
+        if tag == "all":
+            return tuple(self.items)
         return tuple(item for item, data in self.items.items()
                      if tag in data["tags"])
+
+    def bbox(self, tag):
+        items = self.find_withtag(tag)
+        coordinates = [self.items[item]["coords"] for item in items]
+        xs = [float(coords[index]) for coords in coordinates
+              for index in range(0, len(coords), 2)]
+        ys = [float(coords[index]) for coords in coordinates
+              for index in range(1, len(coords), 2)]
+        if not xs or not ys:
+            return None
+        return min(xs), min(ys), max(xs), max(ys)
 
     def gettags(self, item):
         return self.items[item]["tags"]
@@ -180,6 +197,20 @@ def _interactive_views():
     state = DetailIslandState("Architecture:root", ViewKind.ARCHITECTURE,
                               "root", (320.0, 80.0))
     return main, state, detail
+
+
+def _scrollregion(canvas):
+    raw = canvas.cget("scrollregion")
+    if isinstance(raw, str):
+        return tuple(float(value) for value in raw.split())
+    return tuple(float(value) for value in raw)
+
+
+def _assert_region_contains(test, region, bounds):
+    test.assertLessEqual(region[0], bounds[0])
+    test.assertLessEqual(region[1], bounds[1])
+    test.assertGreaterEqual(region[2], bounds[2])
+    test.assertGreaterEqual(region[3], bounds[3])
 
 
 class GraphSceneTests(unittest.TestCase):
@@ -417,6 +448,90 @@ class GraphSceneTests(unittest.TestCase):
                       if "detail-connector" in item["tags"]]
         self.assertEqual(len(connectors), 1)
         self.assertTrue(connectors[0]["dash"])
+
+    def test_scrollregion_contains_every_rendered_item(self):
+        graph, canvas = _graph_canvas()
+        main, state, detail = _interactive_views()
+
+        graph.render(main, details=((state, detail),))
+
+        bounds = canvas.bbox("all")
+        self.assertIsNotNone(bounds)
+        _assert_region_contains(self, _scrollregion(canvas), bounds)
+
+    def test_pan_refreshes_scrollregion_from_moved_items(self):
+        graph, canvas = _graph_canvas()
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+        before = _scrollregion(canvas)
+        canvas.current = ()
+
+        graph._blank_pan_start(SimpleNamespace(x=100, y=90))
+        graph._pan_move(SimpleNamespace(x=145, y=120))
+
+        bounds = canvas.bbox("all")
+        self.assertIsNotNone(bounds)
+        after = _scrollregion(canvas)
+        self.assertNotEqual(after, before)
+        _assert_region_contains(self, after, bounds)
+
+    def test_live_tk_scrollregion_contains_items_and_tracks_pan(self):
+        import tkinter as tk
+
+        try:
+            root = tk.Tk()
+        except tk.TclError:
+            self.skipTest("Tk display unavailable")
+        self.addCleanup(root.destroy)
+        graph = GraphCanvas(root, on_select=lambda _id: None,
+                            on_drill_down=lambda _id: None,
+                            on_move=lambda _id, _point: None)
+        graph.widget.pack(fill="both", expand=True)
+        root.geometry("640x480")
+        root.update_idletasks()
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+        root.update_idletasks()
+
+        initial_bounds = graph.canvas.bbox("all")
+        self.assertIsNotNone(initial_bounds)
+        _assert_region_contains(self, _scrollregion(graph.canvas), initial_bounds)
+
+        graph._pan_start(SimpleNamespace(x=120, y=100))
+        graph._pan_move(SimpleNamespace(x=170, y=135))
+        root.update_idletasks()
+        moved_bounds = graph.canvas.bbox("all")
+        self.assertIsNotNone(moved_bounds)
+        _assert_region_contains(self, _scrollregion(graph.canvas), moved_bounds)
+
+    def test_live_tk_zoom_uses_scrolled_canvas_pointer_coordinates(self):
+        import tkinter as tk
+
+        try:
+            root = tk.Tk()
+        except tk.TclError:
+            self.skipTest("Tk display unavailable")
+        self.addCleanup(root.destroy)
+        graph = GraphCanvas(root, on_select=lambda _id: None,
+                            on_drill_down=lambda _id: None,
+                            on_move=lambda _id, _point: None)
+        graph.widget.pack(fill="both", expand=True)
+        root.geometry("320x240")
+        root.update_idletasks()
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+        graph.canvas.configure(scrollregion=(-500, -400, 1800, 1400))
+        graph.canvas.xview_moveto(0.4)
+        graph.canvas.yview_moveto(0.35)
+        root.update_idletasks()
+        event = SimpleNamespace(x=90, y=70, delta=120, num=0)
+        canvas_anchor = Point(graph.canvas.canvasx(event.x),
+                              graph.canvas.canvasy(event.y))
+        scene_anchor = screen_to_scene(canvas_anchor, graph.viewport)
+
+        graph._on_zoom(event)
+
+        self.assertEqual(scene_to_screen(scene_anchor, graph.viewport), canvas_anchor)
 
     def test_single_click_selects_context_and_double_click_or_plus_opens_detail(self):
         selections: list[tuple[str, str | None]] = []

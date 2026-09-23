@@ -222,11 +222,7 @@ class GraphCanvas:
         self.canvas.create_text(legend_point.x, legend_point.y, text=legend, anchor="w",
                                 fill=theme.MUTED, font=(theme.UI_FONT, 9),
                                 tags=("legend", "context:main"))
-        bounds = self._content_bounds()
-        self.canvas.configure(scrollregion=(bounds.x - _SCENE_MARGIN,
-                                            bounds.y - _SCENE_MARGIN,
-                                            bounds.x + bounds.width + _SCENE_MARGIN,
-                                            bounds.y + bounds.height + _SCENE_MARGIN))
+        self._sync_scrollregion()
 
     def _draw_island(self, island: DetailIslandScene) -> None:
         bounds = self._screen_rect(island.bounds)
@@ -366,9 +362,6 @@ class GraphCanvas:
         return Point(island.bounds.x + 20.0 - min_x,
                      island.bounds.y + _DETAIL_HEADER_HEIGHT - min_y)
 
-    def _content_bounds(self) -> Rect:
-        return self._screen_rect(self._scene_content_bounds())
-
     def _scene_content_bounds(self) -> Rect:
         scene_rects = [self._node_rect(node) for node in self._main_scene.nodes]
         scene_rects.extend(island.bounds for island in self._detail_scenes.values())
@@ -379,6 +372,19 @@ class GraphCanvas:
         max_x = max(rect.x + rect.width for rect in scene_rects)
         max_y = max(rect.y + rect.height for rect in scene_rects)
         return Rect(min_x, min_y, max_x - min_x, max_y - min_y)
+
+    def _sync_scrollregion(self) -> None:
+        """Keep every rendered canvas item reachable with a safe outer margin."""
+        bounds = self.canvas.bbox("all")
+        if bounds is None:
+            width = max(float(self.canvas.winfo_width()), 400.0)
+            height = max(float(self.canvas.winfo_height()), 250.0)
+            region = (0.0, 0.0, width, height)
+        else:
+            left, top, right, bottom = (float(value) for value in bounds)
+            region = (left - _SCENE_MARGIN, top - _SCENE_MARGIN,
+                      right + _SCENE_MARGIN, bottom + _SCENE_MARGIN)
+        self.canvas.configure(scrollregion=region)
 
     def _invoke_select(self, node_id: str, context_id: str | None) -> None:
         try:
@@ -520,6 +526,7 @@ class GraphCanvas:
                                  Point(self.viewport.pan.x + dx,
                                        self.viewport.pan.y + dy))
         self.canvas.move("all", dx, dy)
+        self._sync_scrollregion()
         self._drag_total = Point(self._drag_total.x + dx, self._drag_total.y + dy)
         self._drag_point = point
 
