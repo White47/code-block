@@ -213,6 +213,43 @@ def _assert_region_contains(test, region, bounds):
     test.assertGreaterEqual(region[3], bounds[3])
 
 
+def _canvas_item_widget_point(canvas, item):
+    bounds = canvas.bbox(item)
+    if bounds is None:
+        raise AssertionError("canvas item has no bounds")
+    canvas_x = (bounds[0] + bounds[2]) / 2
+    canvas_y = (bounds[1] + bounds[3]) / 2
+    return (round(canvas_x - canvas.canvasx(0)),
+            round(canvas_y - canvas.canvasy(0)))
+
+
+def _event_click(root, canvas, item):
+    x, y = _canvas_item_widget_point(canvas, item)
+    canvas.event_generate("<Motion>", x=x, y=y)
+    root.update()
+    canvas.event_generate("<ButtonPress-1>", x=x, y=y)
+    root.update()
+    canvas.event_generate("<ButtonRelease-1>", x=x, y=y)
+    root.update()
+
+
+def _find_canvas_item(canvas, tag, kind=None):
+    return next(item for item in canvas.find_withtag(tag)
+                if kind is None or canvas.type(item) == kind)
+
+
+def _blank_widget_point(canvas):
+    width = canvas.winfo_width()
+    height = canvas.winfo_height()
+    for y in range(20, height - 20, 20):
+        for x in range(20, width - 20, 20):
+            canvas_x = canvas.canvasx(x)
+            canvas_y = canvas.canvasy(y)
+            if not canvas.find_overlapping(canvas_x, canvas_y, canvas_x, canvas_y):
+                return x, y
+    raise AssertionError("canvas has no blank point for pan test")
+
+
 class GraphSceneTests(unittest.TestCase):
     def test_viewport_transform_round_trips_and_zoom_keeps_pointer_anchor(self):
         viewport = Viewport(zoom=1.5, pan=Point(20.0, -10.0))
@@ -532,6 +569,95 @@ class GraphSceneTests(unittest.TestCase):
         graph._on_zoom(event)
 
         self.assertEqual(scene_to_screen(scene_anchor, graph.viewport), canvas_anchor)
+
+    def test_live_tk_generated_events_keep_canvas_controls_isolated(self):
+        import tkinter as tk
+
+        try:
+            root = tk.Tk()
+        except tk.TclError:
+            self.skipTest("Tk display unavailable")
+        self.addCleanup(root.destroy)
+        selected: list[tuple[str, str | None]] = []
+        opened: list[str] = []
+        closed: list[str] = []
+        sources: list[tuple[str, str | None]] = []
+        viewports: list[tuple[float, tuple[float, float]]] = []
+        graph = GraphCanvas(
+            root,
+            on_select=lambda node_id, context: selected.append((node_id, context)),
+            on_open_detail=opened.append,
+            on_move=lambda _id, _point: None,
+            on_close_island=closed.append,
+            on_open_source=lambda node_id, context: sources.append((node_id, context)),
+            on_viewport=lambda zoom, pan: viewports.append((zoom, pan)),
+        )
+        graph.widget.pack(fill="both", expand=True)
+        root.geometry("1000x800")
+        root.update()
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+        root.update()
+
+        root_rectangle = next(
+            item for item in graph.canvas.find_withtag("node:root")
+            if graph.canvas.type(item) == "rectangle" and
+            "context:main" in graph.canvas.gettags(item)
+        )
+        initial_viewport = graph.viewport
+        _event_click(root, graph.canvas, root_rectangle)
+        self.assertEqual(selected, [("root", None)])
+        self.assertEqual(opened, [])
+        self.assertEqual(closed, [])
+        self.assertEqual(sources, [])
+        self.assertEqual(viewports, [])
+        self.assertEqual(graph.viewport, initial_viewport)
+
+        selected.clear()
+        expand = _find_canvas_item(graph.canvas, "expand:root", "text")
+        _event_click(root, graph.canvas, expand)
+        self.assertEqual(opened, ["root"])
+        self.assertEqual(selected, [])
+        self.assertEqual(closed, [])
+        self.assertEqual(sources, [])
+        self.assertEqual(viewports, [])
+        self.assertEqual(graph.viewport, initial_viewport)
+
+        opened.clear()
+        close = _find_canvas_item(graph.canvas, f"close:{state.id}", "text")
+        _event_click(root, graph.canvas, close)
+        self.assertEqual(closed, [state.id])
+        self.assertEqual(selected, [])
+        self.assertEqual(opened, [])
+        self.assertEqual(sources, [])
+        self.assertEqual(viewports, [])
+
+        closed.clear()
+        source = _find_canvas_item(graph.canvas, "source:root", "text")
+        _event_click(root, graph.canvas, source)
+        self.assertEqual(sources, [("root", state.id)])
+        self.assertEqual(selected, [])
+        self.assertEqual(opened, [])
+        self.assertEqual(closed, [])
+        self.assertEqual(viewports, [])
+
+        sources.clear()
+        blank_x, blank_y = _blank_widget_point(graph.canvas)
+        graph.canvas.event_generate("<Motion>", x=blank_x, y=blank_y)
+        root.update()
+        graph.canvas.event_generate("<ButtonPress-1>", x=blank_x, y=blank_y)
+        root.update()
+        graph.canvas.event_generate("<B1-Motion>", x=blank_x + 45, y=blank_y + 30)
+        root.update()
+        graph.canvas.event_generate("<ButtonRelease-1>",
+                                    x=blank_x + 45, y=blank_y + 30)
+        root.update()
+        self.assertNotEqual(graph.viewport, initial_viewport)
+        self.assertEqual(len(viewports), 1)
+        self.assertEqual(selected, [])
+        self.assertEqual(opened, [])
+        self.assertEqual(closed, [])
+        self.assertEqual(sources, [])
 
     def test_single_click_selects_context_and_double_click_or_plus_opens_detail(self):
         selections: list[tuple[str, str | None]] = []
