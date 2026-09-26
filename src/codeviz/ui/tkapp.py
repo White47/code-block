@@ -1262,7 +1262,23 @@ class CodeVizApp:
         self._sync_layout()
 
     def _open_canvas_source(self, node_id: str, context_id: str | None) -> None:
-        self._on_select(node_id, context_id)
+        selection_context = context_id
+        kind = self._active_kind
+        if context_id is not None and kind is not None:
+            graph_tab = self._graph_tabs.get(kind)
+            try:
+                detail = graph_tab[1].detail_view(context_id) if graph_tab else None
+            except KeyError:
+                detail = None
+            if detail is None or not any(node.id == node_id for node in detail.nodes):
+                main = self._views.get(kind)
+                if main is None or not any(node.id == node_id for node in main.nodes):
+                    return
+                selection_context = None
+        self._on_select(node_id, selection_context)
+        if (self._selected_id != node_id or
+                self._selected_context != selection_context):
+            return
         self._open_selected_source(False)
 
     def _show_hidden_members(self, kind: ViewKind, member_ids: tuple[str, ...]) -> None:
