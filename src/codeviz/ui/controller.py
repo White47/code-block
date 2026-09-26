@@ -18,6 +18,7 @@ from codeviz.views import (
     ViewState,
     build_visible_graph,
 )
+from codeviz.views.query import GraphQuery
 
 _DETAIL_UNAVAILABLE_ERRORS = frozenset({
     "requested root is not available in this view",
@@ -177,18 +178,35 @@ class AppController:
                     source_node_id: str) -> VisibleGraph:
         if self.analysis is None:
             raise RuntimeError("analyze the project before opening node details")
+        detail_root = root_id
+        detail_focus = source_node_id
+        if kind is ViewKind.ARCHITECTURE and self.analysis.semantic is not None:
+            components = {item.id: item for item in
+                          self.analysis.semantic.graph.components}
+            source = components.get(source_node_id)
+            target_id = (source.metadata.get("target_definition_id")
+                         if source is not None else None)
+            target = components.get(target_id) if isinstance(target_id, str) else None
+            if target is not None and target.role == "ModelDefinition":
+                detail_root = target.id
+                detail_focus = target.id
+        expanded_ids: tuple[str, ...] = (detail_focus,)
+        if kind is ViewKind.EXECUTION and self.analysis.semantic is not None:
+            query = GraphQuery(self.analysis.semantic.graph)
+            if detail_focus in query.components:
+                expanded_ids = tuple(query.descendants((detail_focus,)))
         request = ViewRequest(
-            kind, root_id=root_id, selected_id=source_node_id,
-            expanded_ids=(source_node_id,), hops=1, max_nodes=18, max_edges=40,
+            kind, root_id=detail_root, selected_id=detail_focus,
+            expanded_ids=expanded_ids, hops=1, max_nodes=18, max_edges=40,
         )
-        detail_state = ViewState(expanded_ids=(source_node_id,))
+        detail_state = ViewState(expanded_ids=expanded_ids)
         try:
             result = build_visible_graph(self.analysis, request, detail_state)
         except ValueError as error:
             if str(error) not in _DETAIL_UNAVAILABLE_ERRORS:
                 raise
             raise ValueError("node has no local detail graph") from error
-        if source_node_id not in {node.id for node in result.nodes}:
+        if detail_focus not in {node.id for node in result.nodes}:
             raise ValueError("node has no local detail graph")
         return result
 

@@ -561,8 +561,10 @@ class CodeVizApp:
                         if str(frame) == tab:
                             tabs.append(f"source:{int(side)}:{path}")
                             break
+        main_selection = (self._selections.get(self._active_kind)
+                          if self._active_kind is not None else None)
         self.controller.save_layout(
-            self._active_kind, self._selected_id, tuple(tabs),
+            self._active_kind, main_selection, tuple(tabs),
             {kind.value: root for kind, root in self._roots.items()})
 
     def _restore_layout(self) -> None:
@@ -886,10 +888,7 @@ class CodeVizApp:
                 self._selected_id = root_id
         self._selections[kind] = self._selected_id
         try:
-            view = self.controller.view(
-                kind, root_id, self._selected_id,
-                hops=self._context_hops.get(kind, 1),
-                direction=self._context_direction.get(kind, "both"))
+            view = self._query_main_view(kind, root_id, self._selected_id)
         except (ValueError, RuntimeError) as error:
             self.messagebox.showerror(self._t("Cannot open view"), str(error))
             return
@@ -991,12 +990,23 @@ class CodeVizApp:
         self.controller.reset_positions()
         for kind, (_frame, _graph) in self._graph_tabs.items():
             selected = self._selections.get(kind)
-            view = self.controller.view(
-                kind, self._roots.get(kind), selected,
-                hops=self._context_hops.get(kind, 1),
-                direction=self._context_direction.get(kind, "both"))
+            view = self._query_main_view(kind, self._roots.get(kind), selected)
             self._views[kind] = view
             self._render_active_graph(kind)
+
+    def _query_main_view(self, kind: ViewKind, root_id: str | None,
+                         selected_id: str | None) -> VisibleGraph:
+        hops = self._context_hops.get(kind, 1)
+        direction = self._context_direction.get(kind, "both")
+        if kind not in (ViewKind.ARCHITECTURE, ViewKind.EXECUTION):
+            return self.controller.view(
+                kind, root_id, selected_id, hops=hops, direction=direction)
+        base = self.controller.view(
+            kind, root_id, hops=hops, direction=direction)
+        if selected_id is None or any(node.id == selected_id for node in base.nodes):
+            return base
+        return self.controller.view(
+            kind, root_id, selected_id, hops=hops, direction=direction)
 
     def _detail_pairs(
         self, kind: ViewKind
@@ -1007,6 +1017,8 @@ class CodeVizApp:
                 detail = self.controller.detail_view(
                     kind, self._roots.get(kind), state.source_node_id)
             except ValueError as error:
+                if str(error) == "node has no local detail graph":
+                    self.controller.close_detail_island(state.id)
                 self.status_label.configure(
                     text=f"{self._t('No local details available')} · "
                          f"{state.source_node_id}: {error}")
