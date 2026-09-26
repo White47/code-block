@@ -11,7 +11,7 @@ from codeviz.core import SourceAnchor, ViewKind, VisibleGraph, VisibleNode
 from codeviz.navigation import plan_reveal
 from codeviz.persistence.store import CacheStore
 from codeviz.search import search_project
-from codeviz.ui.controller import AnalysisStatus
+from codeviz.ui.controller import AnalysisStatus, AppController
 from codeviz.ui.presenter import build_overview, build_problems
 from codeviz.ui.tkapp import CodeVizApp, main
 
@@ -102,6 +102,89 @@ class TkAppImportTests(unittest.TestCase):
         with patch("codeviz.ui.tkapp.CodeVizApp", side_effect=ImportError("no tkinter")):
             with self.assertRaisesRegex(SystemExit, "Tkinter"):
                 main()
+
+
+class TkAppHeadlessTests(unittest.TestCase):
+    fixture_root = Path(__file__).parent / "fixtures" / "mvp_project"
+
+    def test_render_validation_prunes_three_stale_islands_before_valid_open(self):
+        with TemporaryDirectory() as data_dir:
+            app = CodeVizApp.__new__(CodeVizApp)
+            app.controller = AppController(CacheStore(Path(data_dir)))
+            app.controller.open_project(self.fixture_root)
+            app.controller.analyze()
+            kind = ViewKind.ARCHITECTURE
+            app._roots = {kind: None}
+            app.language = "en"
+            messages = []
+            app.status_label = SimpleNamespace(
+                configure=lambda **options: messages.append(options["text"]))
+            for index in range(3):
+                app.controller.open_detail_island(kind, f"stale-{index}", None)
+
+            pairs = app._detail_pairs(kind)
+
+            self.assertEqual(pairs, ())
+            self.assertEqual(app.controller.detail_islands(kind), ())
+            self.assertEqual(len(messages), 3)
+            valid = app.controller.view(kind).nodes[0]
+            opened = app.controller.open_detail_island(kind, valid.id, None)
+            self.assertEqual(opened.source_node_id, valid.id)
+
+    def test_layout_persists_main_selection_not_transient_detail_selection(self):
+        saved = []
+        app = CodeVizApp.__new__(CodeVizApp)
+        app._restoring_layout = False
+        app.controller = SimpleNamespace(
+            project_root=self.fixture_root,
+            save_layout=lambda *values: saved.append(values),
+        )
+        app.main_tabs = SimpleNamespace(tabs=lambda: ())
+        app.side_tabs = SimpleNamespace(tabs=lambda: ())
+        app.overview_tab = object()
+        app._graph_tabs = {}
+        app._problems_tab = None
+        app._source_tabs = {}
+        app._active_kind = ViewKind.EXECUTION
+        app._selected_id = "detail-parameter-update"
+        app._selected_context = "Execution:epoch-loop"
+        app._selections = {ViewKind.EXECUTION: "main-epoch-loop"}
+        app._roots = {ViewKind.EXECUTION: "train-entry"}
+
+        app._sync_layout()
+
+        self.assertEqual(saved[0][0], ViewKind.EXECUTION)
+        self.assertEqual(saved[0][1], "main-epoch-loop")
+
+    def test_restored_visible_execution_selection_keeps_main_graph_shape(self):
+        with TemporaryDirectory() as data_dir:
+            store = CacheStore(Path(data_dir))
+            controller = AppController(store, ignore_paths=("data",))
+            controller.open_project(self.fixture_root)
+            analysis = controller.analyze()
+            assert analysis.semantic is not None
+            entry = next(component for component in analysis.semantic.graph.components
+                         if component.display_name == "train_epoch")
+            main = controller.view(ViewKind.EXECUTION, entry.id)
+            epoch = next(node for node in main.nodes
+                         if node.display_name == "EpochLoop")
+            controller.save_layout(
+                ViewKind.EXECUTION, epoch.id, ("graph:Execution",),
+                {ViewKind.EXECUTION.value: entry.id})
+
+            restored_controller = AppController(store, ignore_paths=("data",))
+            restored_controller.open_project(self.fixture_root)
+            app = CodeVizApp.__new__(CodeVizApp)
+            app.controller = restored_controller
+            app._context_hops = {}
+            app._context_direction = {}
+            restored = app._query_main_view(
+                ViewKind.EXECUTION, entry.id,
+                restored_controller.view_state.selected_id)
+
+            self.assertEqual(restored.root_ids, main.root_ids)
+            self.assertEqual(tuple(node.id for node in restored.nodes),
+                             tuple(node.id for node in main.nodes))
 
 
 class TkAppLiveTests(unittest.TestCase):

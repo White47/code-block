@@ -241,6 +241,50 @@ class ControllerTests(unittest.TestCase):
             (901.0, 777.0),
         )
 
+    def test_architecture_instance_detail_navigates_to_target_definition_source(self):
+        controller = AppController(ignore_paths=("data",))
+        controller.open_project(self.fixture_root)
+        controller.analyze()
+        architecture = controller.view(ViewKind.ARCHITECTURE)
+        classifier = next(node for node in architecture.nodes
+                          if node.display_name == "Classifier")
+        classifier_view = controller.view(ViewKind.ARCHITECTURE, classifier.id)
+        encoder = next(node for node in classifier_view.nodes
+                       if node.display_name == "encoder")
+
+        detail = controller.detail_view(
+            ViewKind.ARCHITECTURE, classifier.id, encoder.id)
+
+        self.assertEqual(detail.root_ids, (encoder.metadata["target_definition_id"],))
+        layers = next(node for node in detail.nodes
+                      if node.display_name.startswith("layers"))
+        document = controller.read_source(layers.source_anchors[0])
+        self.assertIn("nn.ModuleList", document.text.splitlines()[
+            document.start_line - 1])
+
+    def test_execution_loop_detail_contains_nested_source_actions(self):
+        controller = AppController(ignore_paths=("data",))
+        controller.open_project(self.fixture_root)
+        analysis = controller.analyze()
+        assert analysis.semantic is not None
+        entry = next(component for component in analysis.semantic.graph.components
+                     if component.display_name == "train_epoch")
+        execution = controller.view(ViewKind.EXECUTION, entry.id)
+        epoch = next(node for node in execution.nodes
+                     if node.display_name == "EpochLoop")
+
+        detail = controller.detail_view(ViewKind.EXECUTION, entry.id, epoch.id)
+
+        names = {node.display_name: node for node in detail.nodes}
+        self.assertIn("BatchLoop", names)
+        for name, source_text in (("BackwardPass", "loss.backward()"),
+                                  ("ParameterUpdate", "optimizer.step()")):
+            with self.subTest(name=name):
+                node = names[name]
+                document = controller.read_source(node.source_anchors[0])
+                self.assertEqual(document.text.splitlines()[
+                    document.start_line - 1].strip(), source_text)
+
     def test_detail_view_normalizes_invalid_semantic_and_code_context_nodes(self):
         controller = AppController(ignore_paths=("data",))
         controller.open_project(self.fixture_root)
