@@ -186,6 +186,43 @@ class TkAppHeadlessTests(unittest.TestCase):
             self.assertEqual(tuple(node.id for node in restored.nodes),
                              tuple(node.id for node in main.nodes))
 
+    def test_island_header_source_falls_back_to_original_main_instance(self):
+        with TemporaryDirectory() as data_dir:
+            app = CodeVizApp.__new__(CodeVizApp)
+            app.controller = AppController(CacheStore(Path(data_dir)))
+            app.controller.open_project(self.fixture_root)
+            app.controller.analyze()
+            kind = ViewKind.ARCHITECTURE
+            architecture = app.controller.view(kind)
+            classifier = next(node for node in architecture.nodes
+                              if node.display_name == "Classifier")
+            main = app.controller.view(kind, classifier.id)
+            encoder = next(node for node in main.nodes
+                           if node.display_name == "encoder")
+            detail = app.controller.detail_view(kind, classifier.id, encoder.id)
+            stale = next(node for node in detail.nodes
+                         if node.id != detail.root_ids[0])
+            island_id = f"{kind.value}:{encoder.id}"
+            graph = SimpleNamespace(detail_view=lambda _island_id: detail)
+            app._active_kind = kind
+            app._views = {kind: main}
+            app._graph_tabs = {kind: (None, graph)}
+            app._selected_id = stale.id
+            app._selected_context = island_id
+            app._inspection_view = detail
+            app._selections = {kind: encoder.id}
+            app._update_inspector = lambda: None
+            app._sync_layout = lambda: None
+            opened = []
+            app._open_source = lambda anchor, to_side: opened.append((anchor, to_side))
+
+            app._open_canvas_source(encoder.id, island_id)
+
+            self.assertEqual(opened, [(encoder.source_anchors[0], False)])
+            self.assertEqual(app._selected_id, encoder.id)
+            self.assertIsNone(app._selected_context)
+            self.assertIs(app._inspection_view, main)
+
 
 class TkAppLiveTests(unittest.TestCase):
     def test_inspector_relations_use_names_and_bound_long_lists(self):
