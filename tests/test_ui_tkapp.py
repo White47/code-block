@@ -17,6 +17,24 @@ from codeviz.ui.tkapp import CodeVizApp, main
 
 
 class TkAppImportTests(unittest.TestCase):
+    def test_detail_canvas_labels_have_chinese_translations(self):
+        from codeviz.ui.i18n import translate
+
+        phrases = {
+            "Fit": "适应窗口",
+            "Detail": "详情",
+            "Close a detail view before opening another":
+                "请先关闭一个详情视图，再打开另一个",
+            "No local details available": "没有可用的局部详情",
+            "Zoom {percent}%": "缩放 {percent}%",
+            "Single-click inspects · double-click or + opens details · "
+            "source opens separately": "单击查看 · 双击或点击 + 打开详情 · 源码单独打开",
+        }
+        for english, chinese in phrases.items():
+            with self.subTest(english=english):
+                self.assertEqual(translate("en", english), english)
+                self.assertEqual(translate("zh-CN", english), chinese)
+
     def test_initial_geometry_keeps_titlebar_inside_common_screens(self):
         import codeviz.ui.tkapp as desktop
 
@@ -725,12 +743,16 @@ class TkAppLiveTests(unittest.TestCase):
         encoder = next(node for node in architecture.nodes
                        if node.code_name.endswith(".encoder"))
         self.app._on_drill_down(encoder.id)
-        self.assertEqual(self.app._roots[ViewKind.ARCHITECTURE],
-                         encoder.metadata.get("target_definition_id"))
-        self.assertTrue(any(node.display_name.startswith("layers") for node in
-                            self.app._views[ViewKind.ARCHITECTURE].nodes))
-        self.app._go_back()
+        architecture_island, = self.app.controller.detail_islands(
+            ViewKind.ARCHITECTURE)
+        architecture_detail = self.app._graph_tabs[ViewKind.ARCHITECTURE][1].detail_view(
+            architecture_island.id)
         self.assertEqual(self.app._roots[ViewKind.ARCHITECTURE], classifier_id)
+        self.assertTrue(any(node.display_name.startswith("layers") for node in
+                            architecture_detail.nodes))
+        self.app._close_detail_island(architecture_island.id)
+        self.app._go_back()
+        self.assertEqual(self.app.main_tabs.select(), str(self.app.overview_tab))
         baseline_button = next(button for button in self._buttons(self.app.overview_tab)
                                if button.cget("text") == "model.Baseline")
         baseline_button.invoke()
@@ -743,19 +765,21 @@ class TkAppLiveTests(unittest.TestCase):
         execution = self.app._views[ViewKind.EXECUTION]
         epoch = next(node for node in execution.nodes if node.display_name == "EpochLoop")
         self.app._on_drill_down(epoch.id)
-        batch = next(node for node in self.app._views[ViewKind.EXECUTION].nodes
-                     if node.display_name == "BatchLoop")
-        self.app._on_drill_down(batch.id)
-        update = next(node for node in self.app._views[ViewKind.EXECUTION].nodes
+        execution_island, = self.app.controller.detail_islands(ViewKind.EXECUTION)
+        execution_detail = self.app._graph_tabs[ViewKind.EXECUTION][1].detail_view(
+            execution_island.id)
+        self.assertTrue(any(node.display_name == "BatchLoop"
+                            for node in execution_detail.nodes))
+        update = next(node for node in execution_detail.nodes
                       if node.display_name == "ParameterUpdate")
-        self.app._on_select(update.id)
+        self.app._on_select(update.id, execution_island.id)
         self.app.source_button.invoke()
         source = self.app.controller.read_source(update.source_anchors[0])
         self.assertEqual(source.text.splitlines()[source.start_line - 1].strip(),
                          "optimizer.step()")
-        backward = next(node for node in self.app._views[ViewKind.EXECUTION].nodes
+        backward = next(node for node in execution_detail.nodes
                         if node.display_name == "BackwardPass")
-        self.app._on_select(backward.id)
+        self.app._on_select(backward.id, execution_island.id)
         self.app.source_button.invoke()
         self.assertIn("loss.backward()", self.app._source_widgets[("run.py", False)].get(
             "1.0", "end"))
@@ -773,12 +797,125 @@ class TkAppLiveTests(unittest.TestCase):
         self.assertIn("loss = criterion", self.app._source_widgets[("run.py", True)].get(
             "1.0", "end"))
 
+    def test_mvp_detail_island_inspects_source_and_closes_to_main_selection(self):
+        project = Path(__file__).parent / "fixtures" / "mvp_project"
+        self.app._open_project_path(project)
+        self.app.controller.analyze()
+        self.app._open_graph(ViewKind.ARCHITECTURE)
+
+        kind = ViewKind.ARCHITECTURE
+        main_view = self.app._views[kind]
+        root = self.app._roots[kind]
+        expandable = next(node for node in main_view.nodes
+                          if node.metadata.get("has_children"))
+        self.app._on_select(expandable.id, None)
+        self.assertEqual(self.app._selected_id, expandable.id)
+        self.assertEqual(self.app.controller.detail_islands(kind), ())
+
+        self.app._open_detail_island(expandable.id)
+        island, = self.app.controller.detail_islands(kind)
+        graph = self.app._graph_tabs[kind][1]
+        detail = graph.detail_view(island.id)
+        detail_node = next(node for node in detail.nodes
+                           if node.id != expandable.id and node.source_anchors)
+        self.assertIs(self.app._views[kind], main_view)
+        self.assertEqual(self.app._roots[kind], root)
+        self.assertEqual(self.app._expansion_history.get(kind, []), [])
+
+        self.app._on_select(detail_node.id, island.id)
+        self.assertIn(detail_node.display_name,
+                      self.app.inspector_text.get("1.0", "end"))
+        self.app._open_selected_source(False)
+        self.assertIn((detail_node.source_anchors[0].file_path, False),
+                      self.app._source_tabs)
+
+        self.app._close_detail_island(island.id)
+        self.assertEqual(self.app.controller.detail_islands(kind), ())
+        self.assertEqual(self.app._selected_id, expandable.id)
+        self.assertIsNone(self.app._selected_context)
+        self.assertIs(self.app._inspection_view, main_view)
+
+    def test_detail_island_limit_reports_localized_action(self):
+        project = Path(__file__).parent / "fixtures" / "mvp_project"
+        self.app._open_project_path(project)
+        self.app.controller.analyze()
+        self.app._open_graph(ViewKind.ARCHITECTURE)
+        expandable = [node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
+                      if node.metadata.get("has_children")]
+
+        for node in expandable[:3]:
+            self.app._open_detail_island(node.id)
+        self.app._open_detail_island(expandable[3].id)
+
+        self.assertEqual(len(self.app.controller.detail_islands(
+            ViewKind.ARCHITECTURE)), 3)
+        self.assertEqual(self.app.status_label.cget("text"),
+                         "Close a detail view before opening another")
+
+    def test_reopen_restores_islands_and_failed_detail_keeps_outdated_main_graph(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "model.py"
+            source.write_text(
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def __init__(self):\n"
+                "        self.layer = nn.Linear(2, 2)\n"
+                "    def forward(self, x): return self.layer(x)\n", encoding="utf-8")
+            self.app._open_project_path(root)
+            self.app.controller.analyze()
+            self.app._open_graph(ViewKind.ARCHITECTURE)
+            kind = ViewKind.ARCHITECTURE
+            model = next(node for node in self.app._views[kind].nodes
+                         if node.metadata.get("has_children"))
+            self.app._open_detail_island(model.id)
+            restored_id = self.app.controller.detail_islands(kind)[0].id
+            self.app.root.update()
+            self.app._sync_layout()
+
+            source.write_text(source.read_text(encoding="utf-8") + "\n# changed\n",
+                              encoding="utf-8")
+            self.app._open_project_path(root)
+
+            graph = self.app._graph_tabs[kind][1]
+            self.assertEqual(self.app.controller.status, AnalysisStatus.OUTDATED)
+            self.assertEqual(self.app.controller.detail_islands(kind)[0].id, restored_id)
+            self.assertEqual(graph.detail_view(restored_id).kind, kind)
+            self.assertIn("OUTDATED", self.app._graph_warnings[kind].cget("text"))
+
+            second = next(node for node in self.app._views[kind].nodes
+                          if node.id != model.id)
+            self.app._open_detail_island(second.id)
+            second_id = next(island.id for island in
+                             self.app.controller.detail_islands(kind)
+                             if island.source_node_id == second.id)
+            main_view = self.app._views[kind]
+            original_detail_view = self.app.controller.detail_view
+
+            def detail_view(view_kind, root_id, source_node_id):
+                if source_node_id == model.id:
+                    raise ValueError("detail query failed")
+                return original_detail_view(view_kind, root_id, source_node_id)
+
+            with patch.object(self.app.controller, "detail_view",
+                              side_effect=detail_view):
+                self.app._render_active_graph(kind)
+
+            self.assertIs(self.app._views[kind], main_view)
+            self.assertIs(graph.main_view, main_view)
+            self.assertEqual(graph.detail_view(second_id).kind, kind)
+            with self.assertRaises(KeyError):
+                graph.detail_view(restored_id)
+            self.assertIn("No local details available",
+                          self.app.status_label.cget("text"))
+            self.assertIn("OUTDATED", self.app._graph_warnings[kind].cget("text"))
+
     def test_aggregate_drill_down_exposes_hidden_member_choices(self):
         kind = ViewKind.ARCHITECTURE
         aggregate = VisibleNode("aggregate", "2 more", member_ids=("first", "second"))
         self.app._views[kind] = VisibleGraph(kind, (aggregate,))
         self.app._active_kind = kind
-        self.app._on_drill_down(aggregate.id)
+        self.app._open_detail_island(aggregate.id)
         self.assertEqual(self.app.sidebar_title.cget("text"), "HIDDEN MEMBERS")
         self.assertEqual({value for action, value in self.app._sidebar_targets.values()
                           if action == "reveal"}, {"first", "second"})
@@ -805,7 +942,7 @@ class TkAppLiveTests(unittest.TestCase):
                              if node.member_ids)
             target = aggregate.member_ids[-1]
             self.app._on_select(aggregate.id)
-            self.app._on_drill_down(aggregate.id)
+            self.app._open_detail_island(aggregate.id)
             row = next(item for item, entry in self.app._sidebar_targets.items()
                        if entry == ("reveal", target))
             self.app.sidebar_tree.selection_set(row)
@@ -832,10 +969,11 @@ class TkAppLiveTests(unittest.TestCase):
                            source_anchors=(SourceAnchor("run.py", 3),))
         self.app._views[kind] = VisibleGraph(kind, (node,))
         self.app._active_kind = kind
-        with patch.object(self.app, "_open_source") as open_source:
+        with (patch.object(self.app, "_open_source") as open_source,
+              patch.object(self.app, "_open_detail_island") as open_detail):
             self.app._on_drill_down(node.id)
         open_source.assert_not_called()
-        self.assertIn("Open Source", self.app.status_label.cget("text"))
+        open_detail.assert_called_once_with(node.id)
 
     def test_empty_architecture_has_visible_explanation(self):
         with TemporaryDirectory() as temporary:
@@ -849,7 +987,7 @@ class TkAppLiveTests(unittest.TestCase):
             self.assertTrue(items)
             self.assertIn("No model", graph.canvas.itemcget(items[0], "text"))
 
-    def test_back_in_execution_does_not_collapse_architecture(self):
+    def test_back_in_execution_does_not_close_architecture_detail(self):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "model.py").write_text(
@@ -866,15 +1004,15 @@ class TkAppLiveTests(unittest.TestCase):
             model = next(node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
                          if node.metadata.get("has_children"))
             self.app._on_drill_down(model.id)
-            self.assertIn(model.id, self.app.controller.view_state.expanded_ids)
-            self.assertIn(model.display_name,
-                          self.app._breadcrumbs[ViewKind.ARCHITECTURE].cget("text"))
+            island, = self.app.controller.detail_islands(ViewKind.ARCHITECTURE)
+            self.assertNotIn(model.id, self.app.controller.view_state.expanded_ids)
             self.app._open_graph(ViewKind.EXECUTION)
             self.app._go_back()
-            self.assertIn(model.id, self.app.controller.view_state.expanded_ids)
+            self.assertEqual(self.app.controller.detail_islands(ViewKind.ARCHITECTURE),
+                             (island,))
             self.assertEqual(self.app.main_tabs.select(), str(self.app.overview_tab))
 
-    def test_switching_model_root_clears_old_breadcrumb(self):
+    def test_switching_model_root_does_not_mutate_expansion_history(self):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             source = "import torch.nn as nn\n" + "".join(
@@ -891,7 +1029,7 @@ class TkAppLiveTests(unittest.TestCase):
             first = next(node for node in self.app._views[ViewKind.ARCHITECTURE].nodes
                          if node.id == models[0].id)
             self.app._on_drill_down(first.id)
-            self.assertIn(first.id, self.app.controller.view_state.expanded_ids)
+            self.assertNotIn(first.id, self.app.controller.view_state.expanded_ids)
             self.app._open_graph(ViewKind.ARCHITECTURE, models[1].id)
             self.assertNotIn(first.display_name,
                              self.app._breadcrumbs[ViewKind.ARCHITECTURE].cget("text"))

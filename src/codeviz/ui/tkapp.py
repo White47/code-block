@@ -1,5 +1,6 @@
 """Local read-only Tk desktop shell for project understanding."""
 
+from functools import partial
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
@@ -9,8 +10,10 @@ from codeviz.core import SourceAnchor, ViewKind, VisibleGraph
 from codeviz.navigation import plan_reveal
 from codeviz.persistence.store import CacheStore
 from codeviz.search import SearchResult, search_project
+from codeviz.views import DetailIslandState
 
 from . import theme
+from .canvas_scene import Point, Viewport
 from .controller import AnalysisStatus, AppController, SourceDocument
 from .graph_canvas import GraphCanvas
 from .i18n import translate
@@ -64,10 +67,13 @@ class CodeVizApp:
         self._analyzing = False
         self._views: dict[ViewKind, VisibleGraph] = {}
         self._graph_tabs: dict[ViewKind, tuple[Any, GraphCanvas]] = {}
+        self._zoom_labels: dict[ViewKind, Any] = {}
         self._breadcrumbs: dict[ViewKind, Any] = {}
         self._roots: dict[ViewKind, str | None] = {}
         self._root_history: dict[ViewKind, list[str | None]] = {}
         self._selected_id: str | None = None
+        self._selected_context: str | None = None
+        self._inspection_view: VisibleGraph | None = None
         self._selections: dict[ViewKind, str | None] = {}
         self._expansion_history: dict[ViewKind, list[str]] = {}
         self._navigation_actions: dict[ViewKind, list[tuple[str, str | None]]] = {}
@@ -204,7 +210,7 @@ class CodeVizApp:
                 "Select a model, step or data node to inspect its source.")
         for kind, (_frame, graph) in self._graph_tabs.items():
             first = graph.canvas.yview()[0]
-            graph.render(self._views[kind], self._selections.get(kind))
+            self._render_active_graph(kind)
             graph.canvas.yview_moveto(first)
             self._set_breadcrumb(kind, self._views[kind])
             self._graph_warnings[kind].configure(text=self._cache_warning())
@@ -513,6 +519,7 @@ class CodeVizApp:
             self._side_open = False
         self._views.clear()
         self._graph_tabs.clear()
+        self._zoom_labels.clear()
         self._breadcrumbs.clear()
         self._roots.clear()
         self._root_history.clear()
@@ -526,6 +533,8 @@ class CodeVizApp:
         self._context_hops.clear()
         self._context_direction.clear()
         self._selected_id = None
+        self._selected_context = None
+        self._inspection_view = None
         self._selections.clear()
         self._expansion_history.clear()
         self._navigation_actions.clear()
@@ -887,6 +896,8 @@ class CodeVizApp:
         self._views[kind] = view
         self._roots[kind] = root_id
         self._active_kind = kind
+        self._selected_context = None
+        self._inspection_view = view
         if kind not in self._graph_tabs:
             frame = self.tk.Frame(self.main_tabs, bg=theme.BACKGROUND)
             bar = self.tk.Frame(frame, bg=theme.PANEL)
@@ -902,6 +913,16 @@ class CodeVizApp:
             self._graph_warnings[kind] = warning
             self._button(bar, "Reset Project Layout", self._reset_project_layout).pack(
                 side="right", padx=4, pady=5)
+            self._button(bar, "100%", lambda view_kind=kind:
+                         self._reset_graph_zoom(view_kind)).pack(
+                             side="right", padx=2, pady=5)
+            self._button(bar, "Fit", lambda view_kind=kind:
+                         self._fit_graph(view_kind)).pack(side="right", padx=2, pady=5)
+            zoom_label = self._label(bar, "Zoom {percent}%", localize=False,
+                                     bg=theme.PANEL, fg=theme.MUTED,
+                                     font=(theme.UI_FONT, 9))
+            zoom_label.pack(side="right", padx=6)
+            self._zoom_labels[kind] = zoom_label
             if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
                 for label, direction in (("Both", "both"), ("Upstream", "upstream"),
                                          ("Downstream", "downstream")):
@@ -914,12 +935,16 @@ class CodeVizApp:
                                  side="left", padx=2, pady=5)
             else:
                 self._label(
-                    bar, "Double-click or Enter to drill down · source opens separately",
+                    bar, "Single-click inspects · double-click or + opens details · "
+                         "source opens separately",
                     bg=theme.PANEL, fg=theme.MUTED,
                     font=(theme.UI_FONT, 9)).pack(side="left", padx=12)
-            graph = GraphCanvas(frame, on_select=self._on_select,
-                                on_drill_down=self._on_drill_down, on_move=self._on_move,
-                                translate=self._t)
+            graph = GraphCanvas(
+                frame, on_select=self._on_select, on_open_detail=self._open_detail_island,
+                on_move=self._on_move, on_move_island=self._move_detail_island,
+                on_close_island=self._close_detail_island,
+                on_open_source=self._open_canvas_source,
+                on_viewport=partial(self._on_viewport, kind), translate=self._t)
             graph.widget.pack(fill="both", expand=True)
             self._graph_tabs[kind] = (frame, graph)
             tab_title = {ViewKind.ARCHITECTURE: "Architecture",
@@ -930,10 +955,10 @@ class CodeVizApp:
                                compound="right")
         frame, graph = self._graph_tabs[kind]
         self._graph_warnings[kind].configure(text=self._cache_warning())
-        graph.render(view, self._selected_id)
+        self._set_graph_status(kind, view)
+        self._render_active_graph(kind)
         self._set_breadcrumb(kind, view)
         self.main_tabs.select(frame)
-        self._set_graph_status(kind, view)
         if self._selected_id is not None:
             self._update_inspector()
         else:
@@ -964,14 +989,64 @@ class CodeVizApp:
 
     def _reset_project_layout(self) -> None:
         self.controller.reset_positions()
-        for kind, (_frame, graph) in self._graph_tabs.items():
+        for kind, (_frame, _graph) in self._graph_tabs.items():
             selected = self._selections.get(kind)
             view = self.controller.view(
                 kind, self._roots.get(kind), selected,
                 hops=self._context_hops.get(kind, 1),
                 direction=self._context_direction.get(kind, "both"))
             self._views[kind] = view
-            graph.render(view, selected)
+            self._render_active_graph(kind)
+
+    def _detail_pairs(
+        self, kind: ViewKind
+    ) -> tuple[tuple[DetailIslandState, VisibleGraph], ...]:
+        pairs: list[tuple[DetailIslandState, VisibleGraph]] = []
+        for state in self.controller.detail_islands(kind):
+            try:
+                detail = self.controller.detail_view(
+                    kind, self._roots.get(kind), state.source_node_id)
+            except ValueError as error:
+                self.status_label.configure(
+                    text=f"{self._t('No local details available')} · "
+                         f"{state.source_node_id}: {error}")
+                continue
+            pairs.append((state, detail))
+        return tuple(pairs)
+
+    def _render_active_graph(self, kind: ViewKind) -> None:
+        if kind not in self._graph_tabs or kind not in self._views:
+            return
+        graph = self._graph_tabs[kind][1]
+        saved = self.controller.view_state.viewport_by_view.get(kind.value)
+        viewport = (Viewport() if saved is None else
+                    Viewport(saved.zoom, Point(*saved.pan)))
+        selected = (self._selected_id if self._active_kind is kind else
+                    self._selections.get(kind))
+        graph.render(self._views[kind], selected, viewport=viewport,
+                     details=self._detail_pairs(kind))
+        self._set_zoom_label(kind, viewport.zoom)
+
+    def _set_zoom_label(self, kind: ViewKind, zoom: float) -> None:
+        label = self._zoom_labels.get(kind)
+        if label is not None:
+            label.configure(text=self._t("Zoom {percent}%").format(
+                percent=round(zoom * 100)))
+
+    def _fit_graph(self, kind: ViewKind) -> None:
+        tab = self._graph_tabs.get(kind)
+        if tab is not None:
+            tab[1].fit_to_window()
+
+    def _reset_graph_zoom(self, kind: ViewKind) -> None:
+        tab = self._graph_tabs.get(kind)
+        if tab is not None:
+            tab[1].reset_zoom()
+
+    def _on_viewport(self, kind: ViewKind, zoom: float,
+                     pan: tuple[float, float]) -> None:
+        self.controller.save_viewport(kind, zoom, pan)
+        self._set_zoom_label(kind, zoom)
 
     def _tab_changed(self, _event: Any) -> None:
         self._active_notebook = self.main_tabs
@@ -980,6 +1055,8 @@ class CodeVizApp:
             if str(frame) == selected:
                 self._active_kind = kind
                 self._selected_id = self._selections.get(kind)
+                self._selected_context = None
+                self._inspection_view = self._views.get(kind)
                 if self._selected_id is not None:
                     self._update_inspector()
                 else:
@@ -988,6 +1065,8 @@ class CodeVizApp:
                 return
         self._active_kind = None
         self._selected_id = None
+        self._selected_context = None
+        self._inspection_view = None
         self._set_inspector_message("Select a graph node to inspect its source.")
         self._sync_layout()
 
@@ -1039,7 +1118,8 @@ class CodeVizApp:
         for kind, (frame, _graph) in tuple(self._graph_tabs.items()):
             if str(frame) == tab:
                 for mapping in (self._views, self._graph_tabs, self._breadcrumbs,
-                                self._roots, self._root_history, self._selections,
+                                self._zoom_labels, self._roots, self._root_history,
+                                self._selections,
                                 self._expansion_history, self._navigation_actions,
                                 self._graph_warnings, self._context_hops,
                                 self._context_direction):
@@ -1073,21 +1153,38 @@ class CodeVizApp:
         self._sync_layout()
         return True
 
-    def _on_select(self, node_id: str) -> None:
+    def _on_select(self, node_id: str, context_id: str | None = None) -> None:
+        kind = self._active_kind
+        if kind is None:
+            return
+        if context_id is None:
+            inspection_view = self._views.get(kind)
+        else:
+            graph_tab = self._graph_tabs.get(kind)
+            if graph_tab is None:
+                return
+            try:
+                inspection_view = graph_tab[1].detail_view(context_id)
+            except KeyError:
+                return
+        if inspection_view is None or not any(
+                node.id == node_id for node in inspection_view.nodes):
+            return
         self._selected_id = node_id
-        if self._active_kind is not None:
-            self._selections[self._active_kind] = node_id
-            if self._active_kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
-                view = self._views.get(self._active_kind)
+        self._selected_context = context_id
+        self._inspection_view = inspection_view
+        if context_id is None:
+            self._selections[kind] = node_id
+            if kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
+                view = self._views.get(kind)
                 node = next((item for item in view.nodes if item.id == node_id), None) if view else None
                 analysis = self.controller.analysis
-                can_focus = (self._active_kind == ViewKind.SYMBOL or
+                can_focus = (kind == ViewKind.SYMBOL or
                              (analysis is not None and analysis.flow is not None and
                               node_id in analysis.flow.graph.nodes and
                               analysis.flow.graph.nodes[node_id].kind.value == "Data"))
                 if node is not None and not node.member_ids and can_focus:
-                    self._open_graph(self._active_kind, self._roots.get(self._active_kind),
-                                     reveal_id=node_id)
+                    self._open_graph(kind, self._roots.get(kind), reveal_id=node_id)
                     return
         self._update_inspector()
         self._sync_layout()
@@ -1101,37 +1198,60 @@ class CodeVizApp:
         self._open_graph(kind, self._roots.get(kind))
 
     def _on_drill_down(self, node_id: str) -> None:
+        self._open_detail_island(node_id)
+
+    def _open_detail_island(self, node_id: str) -> None:
         kind = self._active_kind
-        view = self._views.get(kind) if kind is not None else None
-        if kind is None or view is None:
+        if kind is None:
             return
-        node = next((item for item in view.nodes if item.id == node_id), None)
+        view = self._views.get(kind)
+        node = next((item for item in view.nodes if item.id == node_id), None) if view else None
         if node is None:
             return
         if node.member_ids:
             self._show_hidden_members(kind, node.member_ids)
-        elif kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
-            self._change_context(kind, hop_delta=1)
-        elif kind == ViewKind.ARCHITECTURE and isinstance(
-                target_id := node.metadata.get("target_definition_id"), str):
-            analysis = self.controller.analysis
-            if (analysis is not None and analysis.model is not None and
-                    any(item.symbol_id == target_id for item in analysis.model.definitions)):
-                previous_root = self._roots.get(kind)
-                self._open_graph(kind, target_id, retain_root_history=True)
-                if self._roots.get(kind) == target_id and target_id != previous_root:
-                    self._root_history.setdefault(kind, []).append(previous_root)
-        elif node.metadata.get("has_children"):
-            self.controller.expand(node_id)
-            history = self._expansion_history.setdefault(kind, [])
-            if node_id not in history:
-                history.append(node_id)
-                self._navigation_actions.setdefault(kind, []).append(("expand", node_id))
-            self._selected_id = node_id
-            self._selections[kind] = node_id
-            self._open_graph(kind, self._roots.get(kind))
-        else:
-            self._set_status("No deeper component · use Open Source to view the source file")
+            return
+        if kind not in self._graph_tabs:
+            return
+        graph = self._graph_tabs[kind][1]
+        try:
+            position = graph.suggest_island_position(node_id)
+            self.controller.open_detail_island(kind, node_id, position)
+        except ValueError as error:
+            message = ("Close a detail view before opening another"
+                       if "close a detail island" in str(error)
+                       else "No local details available")
+            self._set_status(message)
+            return
+        self._render_active_graph(kind)
+
+    def _move_detail_island(self, island_id: str,
+                            position: tuple[float, float]) -> None:
+        self.controller.move_detail_island(island_id, position)
+        if self._active_kind is not None:
+            self._render_active_graph(self._active_kind)
+
+    def _close_detail_island(self, island_id: str) -> None:
+        state = next((item for item in self.controller.view_state.detail_islands
+                      if item.id == island_id), None)
+        self.controller.close_detail_island(island_id)
+        kind = state.view_kind if state is not None else self._active_kind
+        if (state is not None and self._selected_context == island_id and
+                kind is not None and kind in self._views):
+            self._selected_id = state.source_node_id
+            self._selected_context = None
+            self._selections[kind] = state.source_node_id
+            self._inspection_view = self._views[kind]
+            self._update_inspector()
+        if kind is not None:
+            if kind in self._views:
+                self._set_graph_status(kind, self._views[kind])
+            self._render_active_graph(kind)
+        self._sync_layout()
+
+    def _open_canvas_source(self, node_id: str, context_id: str | None) -> None:
+        self._on_select(node_id, context_id)
+        self._open_selected_source(False)
 
     def _show_hidden_members(self, kind: ViewKind, member_ids: tuple[str, ...]) -> None:
         self._hidden_kind = kind
@@ -1185,10 +1305,10 @@ class CodeVizApp:
     def _update_inspector(self) -> None:
         kind = self._active_kind
         if (kind is None or self._selected_id is None or self.controller.analysis is None
-                or kind not in self._views):
+                or self._inspection_view is None):
             return
         try:
-            inspector = build_inspector(self._views[kind], self._selected_id,
+            inspector = build_inspector(self._inspection_view, self._selected_id,
                                         self.controller.analysis)
         except StopIteration:
             self._set_inspector_message("Select a visible node to inspect its source.")
@@ -1206,7 +1326,7 @@ class CodeVizApp:
                       self._t("{count} aggregated members").format(
                           count=len(inspector.member_ids)), ""))
         lines.append(self._t("RELATIONS"))
-        visible_names = {item.id: item.display_name for item in self._views[kind].nodes}
+        visible_names = {item.id: item.display_name for item in self._inspection_view.nodes}
         lines.extend(f"{self._t(item.direction)} · {self._t(item.type.value)} · "
                      f"{visible_names.get(item.other_id, self._t('Related component'))}"
                      for item in inspector.relations[:INSPECTOR_RELATION_LIMIT])
@@ -1248,10 +1368,10 @@ class CodeVizApp:
         self.side_button.configure(state=button_state)
 
     def _open_selected_source(self, to_side: bool) -> None:
-        kind = self._active_kind
-        if kind is None or self._selected_id is None or self.controller.analysis is None:
+        if (self._active_kind is None or self._selected_id is None or
+                self.controller.analysis is None or self._inspection_view is None):
             return
-        inspector = build_inspector(self._views[kind], self._selected_id,
+        inspector = build_inspector(self._inspection_view, self._selected_id,
                                     self.controller.analysis)
         if inspector.source_anchors:
             self._open_source(inspector.source_anchors[0], to_side)
