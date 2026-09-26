@@ -46,6 +46,13 @@ _CHINESE = {
     "Reveal": "在图中定位",
     "← Back": "← 返回",
     "Reset Project Layout": "重置项目布局",
+    "Fit": "适应窗口",
+    "Detail": "详情",
+    "Close a detail view before opening another": "请先关闭一个详情视图，再打开另一个",
+    "No local details available": "没有可用的局部详情",
+    "Zoom {percent}%": "缩放 {percent}%",
+    "Single-click inspects · double-click or + opens details · source opens separately":
+        "单击查看 · 双击或点击 + 打开详情 · 源码单独打开",
     "Language": "语言 Language",
     "Recent Projects": "最近打开的项目",
     "Models": "模型",
