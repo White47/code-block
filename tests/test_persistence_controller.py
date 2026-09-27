@@ -1,5 +1,6 @@
 """Controller cache lifecycle keeps old facts visible without claiming freshness."""
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,6 +12,62 @@ from codeviz.ui.controller import AnalysisStatus, AppController
 
 
 class CachedControllerTests(unittest.TestCase):
+    def test_malformed_canvas_state_does_not_discard_analysis_or_annotations(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def train(loss):\n    loss.backward()\n", encoding="utf-8")
+            store = CacheStore(Path(data_dir))
+            first = AppController(store)
+            first.open_project(project)
+            expected = first.analyze()
+            expected_symbol_ids = tuple(expected.symbol_index.entries)
+            expected_code_ids = tuple(expected.flow.graph.nodes)
+            assert expected.semantic is not None
+            expected_semantic_ids = tuple(
+                item.id for item in expected.semantic.graph.components)
+            store.save_annotations(project, {"review": "keep"})
+            state_path = store.analysis_path(project).parent / "view-state.json"
+            base = {"expanded_ids": [], "positions": {}}
+            invalid_states = (
+                {**base, "detail_islands": [{
+                    "id": f"Architecture:{index}",
+                    "view_kind": "Architecture", "source_node_id": str(index),
+                    "position": None,
+                } for index in range(4)]},
+                {**base, "viewport_by_view": {
+                    "Architecture": {"zoom": float("inf"), "pan": [0.0, 0.0]}}},
+                {**base, "detail_islands": [{
+                    "id": "x" * 10_000, "view_kind": "Architecture",
+                    "source_node_id": "missing", "position": None,
+                }]},
+            )
+
+            for invalid in invalid_states:
+                with self.subTest(case=tuple(invalid)):
+                    state_path.write_text(json.dumps({
+                        "schema_version": 1,
+                        "project_root": str(project.resolve()),
+                        "data": invalid,
+                    }), encoding="utf-8")
+                    reopened = AppController(store)
+                    reopened.open_project(project)
+
+                    self.assertIn("View state:", reopened.cache_issue or "")
+                    self.assertEqual(reopened.status, AnalysisStatus.READY)
+                    restored = reopened.analysis
+                    assert restored is not None
+                    self.assertEqual(
+                        tuple(restored.symbol_index.entries),
+                        expected_symbol_ids)
+                    self.assertEqual(tuple(restored.flow.graph.nodes), expected_code_ids)
+                    assert restored.semantic is not None
+                    self.assertEqual(
+                        tuple(item.id for item in restored.semantic.graph.components),
+                        expected_semantic_ids)
+                    self.assertEqual(store.load_annotations(project),
+                                     {"review": "keep"})
+
     def test_reopen_uses_matching_cache_then_marks_changed_source_outdated(self):
         with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
             project = Path(project_dir)

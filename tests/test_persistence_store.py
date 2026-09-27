@@ -32,6 +32,13 @@ class CacheStoreTests(unittest.TestCase):
                              len(analysis.symbol_index.entries))
             self.assertNotIn("PRIVATE_SOURCE_MARKER",
                              store.analysis_path(project).read_text(encoding="utf-8"))
+            store.save_view_state(project, ViewState(
+                selected_id="run.train", positions={"run.train": (10.0, 20.0)}))
+            store.save_annotations(project, {"run.train": "reviewed"})
+            cache_files = tuple(store.analysis_path(project).parent.glob("*.json"))
+            self.assertEqual(len(cache_files), 3)
+            self.assertTrue(all("PRIVATE_SOURCE_MARKER" not in path.read_text(
+                encoding="utf-8") for path in cache_files))
             self.assertEqual(set(project.iterdir()), before)
             self.assertEqual(outdated_reasons(fingerprint, fingerprint_project(project)), ())
             (project / "run.py").write_text("def train(): return 2\n", encoding="utf-8")
