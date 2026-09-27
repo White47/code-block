@@ -28,7 +28,7 @@
 ## 验证元数据
 
 - 日期：2026-09-27。
-- 平台：Microsoft Windows `10.0.26200.7171`，PowerShell；当前会话可用 Tk 图形显示，live-Tk / Canvas 测试已实际运行。
+- 平台：Microsoft Windows `10.0.26200.7171`，PowerShell；当前会话可用 Tk 图形显示，自动化 live-Tk / Canvas 测试已实际运行并通过；未执行交互式人工视觉验收。
 - Python：CPython 3.12.9，显式解释器 `<workspace>\.venv\Scripts\python.exe`；所有 Python gate 显式设置 `PYTHONPATH=<user-home>\Documents\Codex\code-block-final-review\src`，确保导入本地 C: clone，未修改原 E: worktree。
 - 最终复审基线为 `df157906e8623152cc435e3d76098c1ff63068a6`（`Ground canvas release docs in verified behavior`）；交互修复提交为 `41bce220117249d4325a30e201d8f4dceaba9ea9`（`Address interactive canvas review findings`）；布局诊断提交为 `38b98ad`（`Surface layout fallback diagnostics`）；最终代码 / 测试提交为 `54e610c7f789160612c1d66fa0b7806870ce8ac8`（`Fix live Tk restore assertions`）。最终验证范围为 `df157906..54e610c`；本报告在其后的独立文档提交中记录复验结果。
 - 本地门槛状态如下；GitHub Actions 状态未查询，因此不声称远程 CI 通过或失败。
@@ -52,7 +52,7 @@
 
 ## 人工视觉试用
 
-本环境没有可用 Tk 图形显示，因此没有启动桌面窗口，也没有执行或声称完成人工视觉试用。以下场景供具备 Tk/Tcl 与真实显示器的 Windows / Linux 桌面复现。先在仓库根目录按 `README.md` 启动：`.\.venv\Scripts\codeviz.exe`，在 Settings 中切换 English 以使用下述标签，并以 `tests/fixtures/mvp_project/` 为项目目录。
+本次复验具备可用 Tk 图形显示，自动化 live-Tk / Canvas 用例已启动窗口、执行交互并通过；但没有由人工操作应用并观察视觉结果，因此不声称完成人工视觉试用或交互式视觉验收。以下场景仍作为待执行的 Windows / Linux 桌面人工试用。先在仓库根目录按 `README.md` 启动：`.\.venv\Scripts\codeviz.exe`，在 Settings 中切换 English 以使用下述标签，并以 `tests/fixtures/mvp_project/` 为项目目录。
 
 ### 场景 1：基线 A+B 与源码
 
@@ -89,7 +89,7 @@ move detail island → select island node → Open Source → close island → r
 - 细节岛是单层、受限局部视图，不支持岛内继续展开、自由绘图、任意节点编辑或协作。
 - `.drawio` 导出、关系通用过滤器、增量索引 / file watcher 和运行时追踪尚未实现。
 - 本轮自动化不能替代真实显示器上的高 DPI、长中文名称、多岛避让、长训练流、三岛 / 第四岛拒绝、聚合成员侧栏和第一次使用者理解度观察。
-- Windows 文件符号链接与 Tk 显示相关路径仍需在具备相应系统能力的环境补验。
+- Windows 文件符号链接路径仍需在具备相应系统能力的环境补验；Tk 显示自动化路径已经验证，剩余任务是上述人工视觉试用与主观可用性观察。
 
 ## 规范一致性自审
 
