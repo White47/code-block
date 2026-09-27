@@ -1038,7 +1038,7 @@ class TkAppLiveTests(unittest.TestCase):
             graph = self.app._graph_tabs[kind][1]
             self.assertEqual(self.app.controller.status, AnalysisStatus.OUTDATED)
             self.assertEqual(self.app.controller.detail_islands(kind)[0].id, restored_id)
-            self.assertEqual(graph.detail_view(restored_id).kind, kind)
+            self.assertEqual(graph.detail_view(restored_id).view_kind, kind)
             self.assertIn("OUTDATED", self.app._graph_warnings[kind].cget("text"))
 
             second = next(node for node in self.app._views[kind].nodes
@@ -1061,7 +1061,7 @@ class TkAppLiveTests(unittest.TestCase):
 
             self.assertIs(self.app._views[kind], main_view)
             self.assertIs(graph.main_view, main_view)
-            self.assertEqual(graph.detail_view(second_id).kind, kind)
+            self.assertEqual(graph.detail_view(second_id).view_kind, kind)
             with self.assertRaises(KeyError):
                 graph.detail_view(restored_id)
             self.assertIn("No local details available",
