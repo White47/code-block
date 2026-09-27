@@ -10,11 +10,49 @@ from unittest.mock import patch
 from codeviz.core import SourceAnchor, ViewKind
 from codeviz.persistence.store import CacheStore
 from codeviz.ui.controller import AnalysisStatus, AppController
+from codeviz.ui.presenter import build_problems
 from codeviz.views import ViewportState
 
 
 class ControllerTests(unittest.TestCase):
     fixture_root = Path(__file__).parent / "fixtures" / "mvp_project"
+
+    def test_layout_fallback_issue_is_visible_bounded_and_not_an_analysis_fact(self):
+        controller = AppController()
+        controller.open_project(self.fixture_root)
+        analysis = controller.analyze()
+        analysis_issues = analysis.issues
+
+        with patch("codeviz.views.layout._ranks",
+                   side_effect=RuntimeError("forced layout failure")):
+            first = controller.view(ViewKind.ARCHITECTURE)
+            second = controller.view(ViewKind.ARCHITECTURE)
+
+        ordered = [first.layout_hints[node_id]
+                   for node_id in sorted(first.layout_hints)]
+        self.assertTrue(all(point[0] == 0.0 for point in ordered))
+        self.assertEqual([point[1] for point in ordered],
+                         sorted(point[1] for point in ordered))
+        self.assertEqual(first.issues, second.issues)
+        self.assertEqual(len(first.issues), 1)
+        self.assertEqual(len(controller.view_issues), 1)
+        self.assertEqual(analysis.issues, analysis_issues)
+        visible = build_problems(analysis, controller.view_issues)
+        self.assertTrue(any(issue.code == "LAYOUT_FALLBACK" for issue in visible))
+        self.assertTrue(any("Architecture" in issue.file_path for issue in visible
+                            if issue.code == "LAYOUT_FALLBACK"))
+        self.assertTrue(all(not issue.can_open_source for issue in visible
+                            if issue.code == "LAYOUT_FALLBACK"))
+
+    def test_normal_layout_adds_no_view_issue(self):
+        controller = AppController()
+        controller.open_project(self.fixture_root)
+        controller.analyze()
+
+        view = controller.view(ViewKind.ARCHITECTURE)
+
+        self.assertEqual(view.issues, ())
+        self.assertEqual(controller.view_issues, ())
 
     def test_open_project_rejects_switch_during_analysis(self):
         with TemporaryDirectory() as first, TemporaryDirectory() as second:

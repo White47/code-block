@@ -243,6 +243,17 @@ class VisibleLegendItem:
 
 
 @dataclass(frozen=True, slots=True)
+class ViewIssue:
+    code: str
+    message: str
+    view_kind: ViewKind
+
+    def __post_init__(self) -> None:
+        if not self.code or not self.message or not isinstance(self.view_kind, ViewKind):
+            raise ValueError("view issues require code, message and a known view kind")
+
+
+@dataclass(frozen=True, slots=True)
 class VisibleGraph:
     view_kind: ViewKind
     nodes: tuple[VisibleNode, ...]
@@ -256,6 +267,7 @@ class VisibleGraph:
     query_context: dict[str, object] = field(default_factory=dict)
     max_nodes: int = 100
     max_edges: int = 300
+    issues: tuple[ViewIssue, ...] = ()
 
     def __post_init__(self) -> None:
         ids = {node.id for node in self.nodes}
@@ -276,3 +288,5 @@ class VisibleGraph:
             raise ValueError("layout hints must refer to visible nodes")
         if any(count < 0 for count in self.hidden_counts.values()):
             raise ValueError("hidden counts cannot be negative")
+        if any(not isinstance(issue, ViewIssue) for issue in self.issues):
+            raise ValueError("visible graph issues must be structured view issues")

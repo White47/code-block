@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from codeviz.analysis.project import ProjectAnalysis
 from codeviz.core import (
     EdgeType,
+    ViewIssue,
     ViewKind,
     VisibleAggregation,
     VisibleEdge,
@@ -219,8 +220,9 @@ def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
     legend = tuple(VisibleLegendItem(kind, *_LEGEND[kind])
                    for kind in _LEGEND if any(edge.type == kind for edge in edges))
     shown_roots = tuple(root for root in roots if root in visible_ids)
+    layout_issues: list[ViewIssue] = []
     positions = layout_positions(nodes, edges, shown_roots, layout_kind, state,
-                                 view_kind=request.view_kind)
+                                 view_kind=request.view_kind, issues=layout_issues)
     return VisibleGraph(
         request.view_kind, nodes, shown_roots, edges,
         aggregations=aggregations, layout_kind=layout_kind, layout_hints=positions,
@@ -231,4 +233,5 @@ def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
                        "hops": request.hops, "has_more": bool(reachable - visible_ids),
                        "budget_truncated": bool(hidden_candidate_ids)},
         max_nodes=request.max_nodes, max_edges=request.max_edges,
+        issues=tuple(layout_issues),
     )

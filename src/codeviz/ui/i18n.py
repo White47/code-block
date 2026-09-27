@@ -170,6 +170,7 @@ _CHINESE = {
     "Language changed to {language}": "语言已切换为 {language}",
     "{view} · {visible} visible nodes · {hidden} hidden · {relations} relations":
         "{view} · {visible} 个可见节点 · {hidden} 个隐藏 · {relations} 条关系",
+    "Layout fallback · inspect Analysis Issues": "布局已回退 · 请查看分析问题",
 }
 
 

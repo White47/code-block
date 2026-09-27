@@ -233,6 +233,9 @@ class CodeVizApp:
                               view=self._t(kind.value), visible=len(view.nodes),
                               hidden=view.hidden_counts.get("nodes", 0),
                               relations=len(view.edges))
+        if view.issues:
+            summary = (f"{summary} · " +
+                       self._t("Layout fallback · inspect Analysis Issues"))
         self.status_label.configure(text=f"{notice} · {summary}" if notice else summary)
 
     def _set_status(self, message: str) -> None:
@@ -418,13 +421,16 @@ class CodeVizApp:
         for parsed in analysis.files:
             item = self.sidebar_tree.insert(files, "end", text=parsed.relative_path)
             self._sidebar_targets[item] = ("file", parsed.relative_path)
+        presented = build_problems(analysis, self.controller.view_issues)
         problems = self.sidebar_tree.insert(
-            "", "end", text=self._t("Problems ({count})").format(count=len(analysis.issues)))
+            "", "end", text=self._t("Problems ({count})").format(count=len(presented)))
         self._sidebar_targets[problems] = ("problems", "")
-        for problem in build_problems(analysis):
+        for problem in presented:
+            location = (f"{problem.file_path}:{problem.line or 1}"
+                        if problem.can_open_source else problem.file_path)
             item = self.sidebar_tree.insert(
-                problems, "end", text=f"{problem.code}: {problem.file_path}:{problem.line or 1}")
-            self._sidebar_targets[item] = ("problem", f"{problem.file_path}:{problem.line or 1}")
+                problems, "end", text=f"{problem.code}: {location}")
+            self._sidebar_targets[item] = ("problem", location)
 
     def _refresh_search(self) -> None:
         tree = self.sidebar_tree
@@ -690,7 +696,9 @@ class CodeVizApp:
                                               detail or self._t("Unknown error"))
                 else:
                     analysis = self.controller.analysis
-                    issue_count = len(analysis.issues) if analysis else 0
+                    issue_count = ((len(analysis.issues) +
+                                    len(self.controller.view_issues))
+                                   if analysis else 0)
                     self._set_status(self._cache_warning() or
                                      self._t("{status} · {count} analysis issues").format(
                                          status=self._t(self.controller.status.value),
@@ -826,14 +834,18 @@ class CodeVizApp:
                                compound="right")
         self.problems_tree.delete(*self.problems_tree.get_children())
         self._problem_anchors.clear()
-        for issue in build_problems(analysis):
+        for issue in build_problems(analysis, self.controller.view_issues):
+            location = (f"{issue.file_path}:{issue.line or 1}"
+                        if issue.can_open_source else issue.file_path)
             item = self.problems_tree.insert(
                 "", "end", values=(issue.code,
-                                   f"{issue.file_path}:{issue.line or 1}", issue.message))
-            try:
-                self._problem_anchors[item] = SourceAnchor(issue.file_path, issue.line or 1)
-            except ValueError:
-                pass
+                                   location, issue.message))
+            if issue.can_open_source:
+                try:
+                    self._problem_anchors[item] = SourceAnchor(
+                        issue.file_path, issue.line or 1)
+                except ValueError:
+                    pass
         self.main_tabs.select(self._problems_tab)
         self._localize_widgets()
         self._sync_layout()
