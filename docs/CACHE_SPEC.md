@@ -15,6 +15,6 @@
 - 缓存损坏时保留源码访问能力，删除 / 重建分析缓存不应丢失 Annotations。
 - View State 与 Analysis Cache 分文件保存、独立加载。viewport zoom 必须在 25%–250% 内，pan / 岛坐标必须为有限数值；视图名、记录字段、ID 长度、重复 ID 和每视图三岛上限都要校验。旧版 View State 缺少新字段时使用默认 viewport 和空岛列表。
 - View State 整体损坏、超限或格式错误时记录 `View state:` 问题并回退到默认视图状态，不能删除或阻止加载有效 Analysis Cache / Annotations。重新构建画布时，来源节点已不存在或无法生成局部图的陈旧岛会被单独清理，其他岛、主图和分析事实保持可用。
-- 关闭或移动岛、Fit / 100% / 缩放 / 平移只更新 View State，不重写 Analysis Cache。重置项目布局清除主节点手动位置并把岛位置设为自动放置，同时保留 viewport、分析、标签和展开状态。
+- 关闭或移动岛、拖动画布空白 / 中键产生的 canvas pan、`Ctrl+滚轮` 缩放、Fit 和 100% 更新 View State，不重写 Analysis Cache。Tk 原生滚动条、普通滚轮和 Page Up / Page Down 只改变当前 Canvas 的临时滚动偏移，不写入 viewport，也不在重启后恢复。重置项目布局清除主节点手动位置并把岛位置设为自动放置，同时保留 viewport、分析、标签和展开状态。
 
 Phase 10 依据真实标准库 + Tkinter 技术栈选择 JSON，详见 `adr/007-json-local-cache.md`。源码指纹采用发现的 `.py` 文件内容 SHA-256、Ignore Paths 与分析 / parser / semantic rule 版本；文件不可安全核验时不将旧缓存标为 Ready。View State、Annotations 和 Recent Projects 各自独立于 Analysis Cache。
