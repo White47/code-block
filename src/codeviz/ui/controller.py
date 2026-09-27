@@ -7,7 +7,7 @@ from pathlib import Path
 from stat import S_ISREG
 
 from codeviz.analysis.project import ProjectAnalysis, analyze_project
-from codeviz.core import SourceAnchor, ViewKind, VisibleGraph
+from codeviz.core import SourceAnchor, ViewIssue, ViewKind, VisibleGraph
 from codeviz.persistence.fingerprint import fingerprint_project, outdated_reasons
 from codeviz.persistence.store import CacheError, CacheStore
 from codeviz.source_handles import opened_file_path
@@ -26,6 +26,7 @@ _DETAIL_UNAVAILABLE_ERRORS = frozenset({
     "selected code node is not available",
     "data context must focus a critical data node",
 })
+_MAX_VIEW_ISSUES = 20
 
 
 class AnalysisStatus(StrEnum):
@@ -56,6 +57,7 @@ class AppController:
         self.view_state = ViewState()
         self.outdated_reasons: tuple[str, ...] = ()
         self.cache_issue: str | None = None
+        self.view_issues: tuple[ViewIssue, ...] = ()
 
     def open_project(self, project_root: Path) -> None:
         if self.status == AnalysisStatus.ANALYZING:
@@ -69,6 +71,7 @@ class AppController:
         self.view_state = ViewState()
         self.outdated_reasons = ()
         self.cache_issue = None
+        self.view_issues = ()
         if self.cache_store is None:
             return
         try:
@@ -123,6 +126,7 @@ class AppController:
             self.status = AnalysisStatus.FAILED
             raise
         self.analysis = result
+        self.view_issues = ()
         self.status = self._result_status(result)
         self.outdated_reasons = ()
         if self.cache_store is not None:
@@ -172,7 +176,13 @@ class AppController:
             raise RuntimeError("analyze the project before opening a graph")
         request = ViewRequest(kind, root_id=root_id, selected_id=selected_id,
                               hops=hops, direction=direction)
-        return build_visible_graph(self.analysis, request, self.view_state)
+        result = build_visible_graph(self.analysis, request, self.view_state)
+        self._record_view_issues(result.issues)
+        return result
+
+    def _record_view_issues(self, issues: tuple[ViewIssue, ...]) -> None:
+        combined = tuple(dict.fromkeys((*self.view_issues, *issues)))
+        self.view_issues = combined[:_MAX_VIEW_ISSUES]
 
     def detail_view(self, kind: ViewKind, root_id: str | None,
                     source_node_id: str) -> VisibleGraph:
@@ -208,6 +218,7 @@ class AppController:
             raise ValueError("node has no local detail graph") from error
         if detail_focus not in {node.id for node in result.nodes}:
             raise ValueError("node has no local detail graph")
+        self._record_view_issues(result.issues)
         return result
 
     def expand(self, node_id: str) -> None:

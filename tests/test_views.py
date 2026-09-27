@@ -8,6 +8,7 @@ from tests.test_training import analyze_files
 
 from codeviz.core import (
     EdgeType,
+    ViewIssue,
     ViewKind,
     VisibleAggregation,
     VisibleEdge,
@@ -107,10 +108,15 @@ class VisibleContractTests(unittest.TestCase):
     def test_layout_failure_falls_back_to_deterministic_vertical_positions(self):
         nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
                       for name in ("zeta", "alpha", "middle"))
+        issues: list[ViewIssue] = []
 
         with patch("codeviz.views.layout._ranks", side_effect=RuntimeError("boom")):
-            first = layout_positions(nodes, (), (), "directed", ViewState())
-            second = layout_positions(tuple(reversed(nodes)), (), (), "directed", ViewState())
+            first = layout_positions(
+                nodes, (), (), "directed", ViewState(),
+                view_kind=ViewKind.SYMBOL, issues=issues)
+            second = layout_positions(
+                tuple(reversed(nodes)), (), (), "directed", ViewState(),
+                view_kind=ViewKind.SYMBOL, issues=[])
 
         self.assertEqual(first, second)
         self.assertEqual(tuple(first), ("alpha", "middle", "zeta"))
@@ -118,6 +124,19 @@ class VisibleContractTests(unittest.TestCase):
         self.assertEqual(len({point[1] for point in first.values()}), len(nodes))
         graph = VisibleGraph(ViewKind.SYMBOL, nodes, layout_hints=first)
         self.assertTrue(all(node.code_node_ids for node in graph.nodes))
+        self.assertEqual([issue.code for issue in issues], ["LAYOUT_FALLBACK"])
+        self.assertEqual(issues[0].view_kind, ViewKind.SYMBOL)
+
+    def test_normal_layout_emits_no_issue(self):
+        node = VisibleNode("root", "Root", code_node_ids=("root",))
+        issues: list[ViewIssue] = []
+
+        positions = layout_positions(
+            (node,), (), ("root",), "hierarchical", ViewState(),
+            view_kind=ViewKind.ARCHITECTURE, issues=issues)
+
+        self.assertEqual(positions, {"root": (0.0, 0.0)})
+        self.assertEqual(issues, [])
 
     def test_graph_enforces_budget_and_aggregation_provenance(self):
         nodes = (VisibleNode("a", "A", code_node_ids=("a",)),

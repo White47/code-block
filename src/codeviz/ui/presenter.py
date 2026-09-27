@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from codeviz.analysis.project import ProjectAnalysis
-from codeviz.core import Confidence, EdgeType, SourceAnchor, VisibleGraph
+from codeviz.core import Confidence, EdgeType, SourceAnchor, ViewIssue, VisibleGraph
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +67,7 @@ class ProblemData:
     message: str
     file_path: str
     line: int | None
+    can_open_source: bool = True
 
 
 def build_overview(analysis: ProjectAnalysis, project_root: Path) -> OverviewData:
@@ -121,7 +122,15 @@ def build_inspector(view: VisibleGraph, selected_id: str,
                          node.source_anchors, node.member_ids, bool(node.source_anchors))
 
 
-def build_problems(analysis: ProjectAnalysis) -> tuple[ProblemData, ...]:
-    return tuple(ProblemData(item.code, item.message, item.file_path,
-                             item.source_anchor.start_line if item.source_anchor else None)
-                 for item in analysis.issues)
+def build_problems(
+    analysis: ProjectAnalysis,
+    view_issues: tuple[ViewIssue, ...] = (),
+) -> tuple[ProblemData, ...]:
+    analysis_problems = tuple(
+        ProblemData(item.code, item.message, item.file_path,
+                    item.source_anchor.start_line if item.source_anchor else None)
+        for item in analysis.issues)
+    view_problems = tuple(
+        ProblemData(item.code, item.message, f"{item.view_kind.value} view", None, False)
+        for item in view_issues)
+    return (*analysis_problems, *view_problems)

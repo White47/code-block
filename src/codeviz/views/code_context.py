@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from codeviz.analysis.project import ProjectAnalysis
 from codeviz.core import (
     EdgeType,
+    ViewIssue,
     ViewKind,
     VisibleAggregation,
     VisibleEdge,
@@ -112,8 +113,10 @@ def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
     ) for edge in shown)
     legend = tuple(VisibleLegendItem(kind, *_STYLES[kind]) for kind in _STYLES
                    if any(edge.type == kind for edge in shown))
-    layout = layout_positions(nodes, visible_edges, (focus,), "directed", state,
-                              view_kind=request.view_kind)
+    layout_issues: list[ViewIssue] = []
+    layout = layout_positions(
+        nodes, visible_edges, (focus,), "directed", state,
+        view_kind=request.view_kind, issues=layout_issues)
     return VisibleGraph(
         request.view_kind, nodes, (focus,), visible_edges,
         aggregations=aggregation, layout_kind="directed", layout_hints=layout,
@@ -123,4 +126,5 @@ def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
                        "hops": request.hops, "direction": request.direction,
                        "has_more": bool(hidden_ids), "budget_truncated": bool(hidden_ids)},
         max_nodes=request.max_nodes, max_edges=request.max_edges,
+        issues=tuple(layout_issues),
     )

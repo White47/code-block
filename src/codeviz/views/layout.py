@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from codeviz.core import EdgeType, ViewKind, VisibleEdge, VisibleNode
+from codeviz.core import EdgeType, ViewIssue, ViewKind, VisibleEdge, VisibleNode
 
 from .state import ViewState
 
@@ -68,7 +68,8 @@ def _layered_positions(
 def layout_positions(nodes: tuple[VisibleNode, ...], edges: tuple[VisibleEdge, ...],
                      root_ids: tuple[str, ...], kind: str,
                      state: ViewState, *,
-                     view_kind: ViewKind | None = None) -> dict[str, tuple[float, float]]:
+                     view_kind: ViewKind | None = None,
+                     issues: list[ViewIssue] | None = None) -> dict[str, tuple[float, float]]:
     """Lay out supported graph views in deterministic top-to-bottom layers."""
     del kind  # Both supported views use the same readable layered placement.
     node_ids = tuple(sorted({node.id for node in nodes}))
@@ -84,7 +85,15 @@ def layout_positions(nodes: tuple[VisibleNode, ...], edges: tuple[VisibleEdge, .
     ))
     try:
         positions = _layered_positions(node_ids, forward, roots)
-    except Exception:
+    except Exception as error:
+        if view_kind is None or issues is None:
+            raise
+        issues.append(ViewIssue(
+            "LAYOUT_FALLBACK",
+            f"Layered layout failed ({type(error).__name__}); "
+            "using deterministic vertical placement.",
+            view_kind,
+        ))
         positions = {node_id: (0.0, index * _Y_GAP)
                      for index, node_id in enumerate(node_ids)}
 
