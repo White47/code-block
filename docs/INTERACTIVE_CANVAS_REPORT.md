@@ -2,7 +2,7 @@
 
 ## 交付范围与用户可见行为
 
-- Architecture、Execution、Symbol 和 Data Flow 的主图保持为稳定的 A 区纵向流程；单击只选择节点、突出邻居并更新 Inspector。双击、Enter 或节点 `+` 在空白场景位置打开 B 区细节岛，主图不会被替换，根节点和展开历史不变。
+- Architecture、Execution、Symbol 和 Data Flow 的主图保持为稳定的 A 区纵向流程；单击只选择节点、突出邻居并更新 Inspector。普通且可展开节点的双击、Enter 或 `+` 在空白场景位置打开 B 区细节岛，主图不会被替换，根节点和展开历史不变。聚合节点改为打开隐藏成员侧栏供选择 / 重新定位；不可展开节点不响应展开动作，仍可通过 Inspector 打开源码。
 - 主图使用确定性的分层纵向布局：同层分支左右排列，汇合节点靠近前驱重心，回环不重复节点。关系以不同颜色、线型 / 标记和箭头表达，路由优先避开节点。
 - 每个视图最多保留三个细节岛。岛与来源节点以虚线相连，可移动、关闭；达到上限时给出本地化提示，不自动关闭旧岛。岛内只显示受限局部图，不能继续嵌套新岛。
 - 主图和岛内节点共享统一 Inspector。岛标题的 Open Source 打开来源节点；选择岛内节点后打开该节点源码。关闭当前岛后选择回到主图来源节点。
@@ -13,11 +13,11 @@
 
 ## 架构与改动模块
 
-- `src/codeviz/ui/canvas_scene.py`：新增 UI 无关的 Canvas Scene、场景 / 屏幕坐标变换、25%–250% viewport、细节岛放置、关系避障路由与绘制样式。
+- `src/codeviz/ui/canvas_scene.py`：新增 UI 无关的单图 Canvas Scene 投影、场景 / 屏幕坐标变换、25%–250% viewport、细节岛放置、关系避障路由与绘制样式；每次 `graph_scene()` 只转换一个 `VisibleGraph`。
 - `src/codeviz/views/layout.py`：把单列提示替换为可复现的分层纵向布局，保留手动位置优先级。
 - `src/codeviz/views/state.py`、`src/codeviz/views/__init__.py`：新增经校验的每视图 viewport 与细节岛状态，保留旧 View State 的兼容默认值。
 - `src/codeviz/ui/controller.py`：新增每岛最多 18 节点 / 40 边的独立局部查询、三岛上限，以及 viewport / 岛的保存、移动、关闭和布局重置命令。
-- `src/codeviz/ui/graph_canvas.py`：实现主图 + 岛绘制、上下文命中、选择 / 拖动 / 平移隔离、缩放、滚动、Fit、100%、关闭和源码动作。
+- `src/codeviz/ui/graph_canvas.py`：接收主图与细节图 / 状态对，分别建立单图场景后组合岛和来源连线，并实现上下文命中、选择 / 拖动 / 平移隔离、缩放、滚动、Fit、100%、关闭和源码动作。
 - `src/codeviz/ui/tkapp.py`、`src/codeviz/ui/i18n.py`：接通标签、Inspector、源码导航、Outdated 状态、恢复 / 陈旧岛清理、工具栏和中英文提示。
 - `tests/test_ui_graph.py`、`tests/test_views.py`、`tests/test_persistence_store.py`、`tests/test_persistence_controller.py`、`tests/test_ui_controller.py`、`tests/test_ui_tkapp.py`、`tests/test_mvp_acceptance.py`：覆盖场景数学、布局、输入隔离、A+B 路径、状态边界、失败隔离和三条黄金路径恢复。
 - 本轮 Task 9 对齐 `docs/UX_SPEC.md`、`docs/ARCHITECTURE.md`、`docs/CACHE_SPEC.md`、`docs/KNOWN_LIMITATIONS.md`、`docs/ROADMAP.md`；没有扩展 PRD / MVP 范围。
@@ -29,6 +29,7 @@
 - `python -m ruff check src tests`：通过，`All checks passed!`。
 - `python -m mypy`：通过，`Success: no issues found in 47 source files`。
 - `python -B -m unittest discover -s tests -v`：通过，运行 289 个测试，0 failures / 0 errors，48 skipped。
+- `python -m pip wheel . --no-deps -w dist`：通过，`Successfully built code-module-visualizer`；生成 `code_module_visualizer-0.1.0-py3-none-any.whl`（109849 bytes，SHA-256 `b9e02ac9ff102463621cc9fb9d8f4ebb5af7c4efd2f064984a915128d2ecd6b5`）。首次受限网络运行因隔离构建无法取得 `setuptools>=61` 而退出 1；授权构建依赖下载后，完全相同的 gate 退出 0。`dist/` 由 `.gitignore` 排除，wheel 未纳入提交。
 - `git diff --check`：通过，无输出。
 
 48 个跳过均为环境相关：2 个 Windows 符号链接能力用例因当前环境不能创建测试链接而跳过；其余 46 个需要可用 Tk 图形显示的 live-Tk / Canvas 用例因 `Tk display unavailable` 跳过。纯场景、控制器、持久化、验收和 headless Tk 协调测试已运行，不把跳过的 live-Tk 用例计为通过。
@@ -44,7 +45,7 @@ Open Project → Analyze → Architecture → single-click node → double-click
 move detail island → select island node → Open Source → close island → reopen project
 ```
 
-试用时同时确认：单击不改变主图；岛在空白处打开且主图保留；拖动后位置保存；岛内 Inspector 与源码行正确；关闭岛不清除分析；重新打开项目后 viewport 和仍有效的岛恢复；Fit、100%、普通滚轮、`Ctrl+滚轮`、Page Up / Page Down、空白拖动 / 中键平移均按 UX 规范工作；第四个岛被本地化提示拒绝；Outdated 警告不会被岛操作遮蔽。
+试用时同时确认：单击不改变主图；对普通可展开节点，岛在空白处打开且主图保留；聚合节点打开隐藏成员侧栏，不可展开节点不生成岛；拖动后位置保存；岛内 Inspector 与源码行正确；关闭岛不清除分析；重新打开项目后 viewport 和仍有效的岛恢复；Fit、100%、普通滚轮、`Ctrl+滚轮`、Page Up / Page Down、空白拖动 / 中键平移均按 UX 规范工作；第四个岛被本地化提示拒绝；Outdated 警告不会被岛操作遮蔽。
 
 ## 剩余限制
 

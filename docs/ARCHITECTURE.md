@@ -35,8 +35,8 @@ Project Source / Config
 - Semantic Graph：`semantic/components.py` 组合模型定义、实例、入口和事件；关系含源码锚点与证据。控制流边表达 AST 路径的静态近似，梯度边只表示 Probable 静态模式；Attention-like 是结构性 Probable 候选。
 - View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单；`views/code_context.py` 从已有 Full Code Graph 取 Symbol / Data Flow 的有向 1–5 hop 邻域。输出限制节点与边并保留聚合成员 ID；`views/layout.py` 以确定性的 rank、同层排序和分支列生成从上到下的位置，手动位置最后覆盖。完整代码图不直接交给 UI。
 - Search / Navigation：`search.py` 对索引定义及带锚点语义组件做有限结果查询，保留 scope、qualifiedName、SourceAnchor 与 confidence；`navigation.py` 将选中结果映射到 Architecture / Execution / Symbol / Data Flow 及真实根 ID，无法定位时返回显式原因，不猜测动态引用目标。
-- Canvas Scene：`ui/canvas_scene.py` 是纯 UI 投影边界，将一个主 `VisibleGraph` 与最多三个局部 `VisibleGraph` 组合为场景节点、关系路由、细节岛和 viewport 坐标。它负责可逆坐标变换、确定性岛放置与避障折线，不修改 Code Graph、Semantic Graph 或 Visible Graph。
-- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、每岛最多 18 节点 / 40 边的独立局部查询、View State 和受限只读源码访问；`ui/graph_canvas.py` 只把 Canvas Scene 绘制到 Tk Canvas 并分离选择、节点 / 岛拖动、平移、缩放、滚动、Fit、100% 与源码动作；`ui/tkapp.py` 协调标签、主图与岛上下文、统一 Inspector、源码导航、Outdated 警告和后台分析消息队列。
+- Canvas Scene：`ui/canvas_scene.py` 是纯 UI 投影边界；`graph_scene()` 每次把一个 `VisibleGraph` 转为场景节点、关系路由和尺寸，并提供可逆坐标变换、确定性岛放置与避障折线等纯几何函数。它不组合多个图，也不修改 Code Graph、Semantic Graph 或 Visible Graph。
+- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、每岛最多 18 节点 / 40 边的独立局部查询、View State 和受限只读源码访问；`ui/graph_canvas.py` 接收一个主 `VisibleGraph` 以及零到三个细节图 / 状态对，分别调用 Canvas Scene 投影，组合细节岛和来源连线，再绘制到 Tk Canvas，并分离选择、节点 / 岛拖动、平移、缩放、滚动、Fit、100% 与源码动作；`ui/tkapp.py` 协调标签、主图与岛上下文、统一 Inspector、源码导航、Outdated 警告和后台分析消息队列。
 - Cache：Analysis Cache、View State、Annotations 三者分离。View State 记录每视图 viewport 以及细节岛来源 / 位置；无效 View State 不能删除或阻止加载有效 Analysis Cache。
 
 ## 4. 关键边界

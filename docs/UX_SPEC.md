@@ -14,7 +14,7 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 ## 3. 交互
 
-- 主图采用 A+B 交互：A 是稳定的主纵向流程；单击只执行 Select、Inspector 和邻居高亮，不改变主图。双击、Enter 或节点上的 `+` 在画布空白处打开 B 细节岛，不替换主图，也不改变主图根节点或展开历史。
+- 主图采用 A+B 交互：A 是稳定的主纵向流程；单击只执行 Select、Inspector 和邻居高亮，不改变主图。对普通且可展开的节点，双击、Enter 或节点上的 `+` 在画布空白处打开 B 细节岛，不替换主图，也不改变主图根节点或展开历史。聚合节点执行同样动作时打开隐藏成员侧栏供选择 / 重新定位，不生成细节岛；不可展开节点不响应这些展开动作，用户可继续通过 Inspector 的 Open Source 查看源码。
 - 每个视图最多同时打开三个细节岛；岛可拖动、关闭，并以虚线连回来源节点。达到上限时提示先关闭一个，不自动淘汰已有岛。岛内节点可更新统一 Inspector 并打开对应源码，但不能继续嵌套新岛。
 - Open Source / Open to Side：独立动作，不与打开细节岛混淆。细节岛标题中的 Open Source 默认打开来源节点；先选择岛内节点后，该动作打开所选岛内节点的源码。
 - 关闭当前选中的细节岛后，选择返回主图来源节点；Escape 关闭当前活动岛，主图选择不受影响。
@@ -31,7 +31,7 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 ## 5. 视图语义
 
-Architecture 主关系为组件 + 数据流，Execution 主关系为控制流 + 数据流，Calls 主关系为 CALLS，Gradient 主关系为 GRADIENT_FLOW。Data Flow、Calls、Control、Loop、Gradient 使用不同视觉语义，并有 Legend / 过滤器。
+Architecture 主关系为组件 + 数据流，Execution 主关系为控制流 + 数据流，Calls 主关系为 CALLS，Gradient 主关系为 GRADIENT_FLOW。Data Flow、Calls、Control、Loop、Gradient 使用不同视觉语义，并有 Legend；通用关系过滤器仍属后续能力。
 
 Architecture、Execution、Symbol 和 Data Flow 使用确定性的分层纵向布局：入口在上、结果在下，同层分支向左右展开，汇合节点尽量回到前驱重心。布局顺序由关系与 Stable ID 决定，不使用随机坐标；回环不重复生成节点。用户拖动主节点后保存位置，手动位置优先于自动布局。
 
