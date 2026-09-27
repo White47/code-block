@@ -2,7 +2,7 @@
 
 ## 1. 当前约束
 
-Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。Phase 1–9 的领域层与 UI 均使用 Python 3.11+ 标准库；Phase 8 采用 Tkinter / ttk / Canvas 本地桌面壳，Phase 9 在此壳中加入搜索与局部代码图，不新增运行时依赖，见 ADR-005、ADR-006。持久化格式仍留 Phase 10 决定。
+Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。领域层与 UI 使用 Python 3.11+ 标准库；桌面壳采用 Tkinter / ttk / Canvas，持久化采用有大小限制的本地 JSON，见 ADR-005、ADR-006、ADR-007。交互式源码画布只借鉴 draw.io 的分层布局、画布导航和局部容器交互，不捆绑 draw.io、浏览器运行时、WebView 或网络布局服务。
 
 ## 2. 分层
 
@@ -16,8 +16,9 @@ Project Source / Config
   → Framework Semantic Rules
   → Semantic Component Graph
   → View Builder / Graph Query
-  → Visible Graph / Layout
-  → Search / Navigation / Inspector / Source
+  → Visible Graph / Deterministic Layered Layout
+  → Canvas Scene
+  → Tk Canvas / Search / Navigation / Inspector / Source
 ```
 
 ## 3. 模块责任
@@ -32,19 +33,20 @@ Project Source / Config
 - Model Analysis：`analysis/model.py` 在 Resolver 和 Flow 之后提取带源码锚点的模型 Definition、子模块 Instance、`forward` Invocation；通过 CallSite ID 与已有 Full Code Graph 关联。`ModuleList` 仅在静态可见的同构结构上给出折叠次数；模型事实不直接插入 Code Graph。
 - Training Analysis：`analysis/training.py` 将 AST 调用与 Resolver / Model / Flow 证据组合成独立入口、训练事件和循环归属；函数参数名称仅形成 Probable 线索。
 - Semantic Graph：`semantic/components.py` 组合模型定义、实例、入口和事件；关系含源码锚点与证据。控制流边表达 AST 路径的静态近似，梯度边只表示 Probable 静态模式；Attention-like 是结构性 Probable 候选。
-- View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单；`views/code_context.py` 从已有 Full Code Graph 取 Symbol / Data Flow 的有向 1–5 hop 邻域。输出限制节点与边并保留聚合成员 ID；`views/layout.py` 提供确定性位置，`views/state.py` 只序列化展开和手动位置。完整代码图不直接交给 UI，磁盘持久化留 Phase 10。
+- View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单；`views/code_context.py` 从已有 Full Code Graph 取 Symbol / Data Flow 的有向 1–5 hop 邻域。输出限制节点与边并保留聚合成员 ID；`views/layout.py` 以确定性的 rank、同层排序和分支列生成从上到下的位置，手动位置最后覆盖。完整代码图不直接交给 UI。
 - Search / Navigation：`search.py` 对索引定义及带锚点语义组件做有限结果查询，保留 scope、qualifiedName、SourceAnchor 与 confidence；`navigation.py` 将选中结果映射到 Architecture / Execution / Symbol / Data Flow 及真实根 ID，无法定位时返回显式原因，不猜测动态引用目标。
-- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、ViewState 和受限只读源码访问；`ui/graph_canvas.py` 只绘制 VisibleGraph；`ui/tkapp.py` 用 Tkinter 实现 Activity Bar、Search / Symbols 侧栏、Editor Tabs / Split、Inspector、Problems 和后台分析消息队列。
-- Cache：Analysis Cache、View State、Annotations 三者分离。
+- Canvas Scene：`ui/canvas_scene.py` 是纯 UI 投影边界，将一个主 `VisibleGraph` 与最多三个局部 `VisibleGraph` 组合为场景节点、关系路由、细节岛和 viewport 坐标。它负责可逆坐标变换、确定性岛放置与避障折线，不修改 Code Graph、Semantic Graph 或 Visible Graph。
+- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、每岛最多 18 节点 / 40 边的独立局部查询、View State 和受限只读源码访问；`ui/graph_canvas.py` 只把 Canvas Scene 绘制到 Tk Canvas 并分离选择、节点 / 岛拖动、平移、缩放、滚动、Fit、100% 与源码动作；`ui/tkapp.py` 协调标签、主图与岛上下文、统一 Inspector、源码导航、Outdated 警告和后台分析消息队列。
+- Cache：Analysis Cache、View State、Annotations 三者分离。View State 记录每视图 viewport 以及细节岛来源 / 位置；无效 View State 不能删除或阻止加载有效 Analysis Cache。
 
 ## 4. 关键边界
 
-Parser 只负责语法事实；Resolver 负责名称；Semantic Rules 负责解释；View Builder 负责展示取舍。任何层都必须保留回溯链：`Visual Node → Semantic Component → Code Symbol → Source Anchor`。
+Parser 只负责语法事实；Resolver 负责名称；Semantic Rules 负责解释；View Builder 负责展示取舍；Canvas Scene 只负责绘制几何。任何层都必须保留回溯链：`Visual Node → Semantic Component → Code Symbol → Source Anchor`。主图与细节岛都由受限 `VisibleGraph` 生成，画布交互不触发重新分析或语义图重建。
 
 ## 5. 运行状态
 
-项目分析状态为 Analyzing、Ready、Partial、Outdated、Failed。文件级失败只产生 Problem，不抹掉其他文件的可用结果。
+项目分析状态为 Analyzing、Ready、Partial、Outdated、Failed。文件级失败只产生 Problem，不抹掉其他文件的可用结果。Outdated 仍允许读取缓存图并显示原因；单个细节岛无法重建时只清理 / 跳过该岛，主图与源码导航继续可用。
 
 ## 6. 后续技术决策
 
-桌面壳、图绘制与源码查看由 ADR-006 的 Tkinter 方案落地；会话内 ViewState 仍沿用 Phase 7 数据类型。Phase 9 已实现 Symbol / Semantic Search 与 Reveal in Graph。Phase 10 再决定 Analysis Cache、Annotations 和 ViewState 的磁盘格式。若图形壳更换，保留 UI 无关的 Controller / Presenter 与 VisibleGraph 契约。
+桌面壳、图绘制与源码查看由 ADR-006 的 Tkinter 方案落地；Analysis Cache、Annotations、Recent Projects 和 View State 的 JSON 格式由 Phase 10 落地。若图形壳更换，保留 UI 无关的 Controller / Presenter、VisibleGraph 与 Canvas Scene 契约。`.drawio` 导出仍是独立后续能力，只能从 Visible Graph / Canvas Scene 生成，不能反向成为分析事实来源。

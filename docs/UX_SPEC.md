@@ -14,12 +14,14 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 ## 3. 交互
 
-- 单击：Select、Inspector、邻居高亮。
-- 双击 / Enter：Drill Down / 进入下一层。
-- Open Source / Open to Side：独立动作，不与 Drill Down 混淆。
-- 返回、面包屑和当前视图状态必须可用。
+- 主图采用 A+B 交互：A 是稳定的主纵向流程；单击只执行 Select、Inspector 和邻居高亮，不改变主图。双击、Enter 或节点上的 `+` 在画布空白处打开 B 细节岛，不替换主图，也不改变主图根节点或展开历史。
+- 每个视图最多同时打开三个细节岛；岛可拖动、关闭，并以虚线连回来源节点。达到上限时提示先关闭一个，不自动淘汰已有岛。岛内节点可更新统一 Inspector 并打开对应源码，但不能继续嵌套新岛。
+- Open Source / Open to Side：独立动作，不与打开细节岛混淆。细节岛标题中的 Open Source 默认打开来源节点；先选择岛内节点后，该动作打开所选岛内节点的源码。
+- 关闭当前选中的细节岛后，选择返回主图来源节点；Escape 关闭当前活动岛，主图选择不受影响。
+- 返回、面包屑和当前视图状态必须可用；细节查询失败或失效只移除 / 跳过对应岛并显示提示，不能清空主图。
 - 关闭标签：点击标签右侧 `×` 或按 `Ctrl+W`；Overview 不可关闭。
-- 纵向导航：鼠标滚轮、Page Up / Page Down 滚动长图；重置项目布局会清除手动节点位置，但不清除分析与展开状态。
+- 画布导航：`Ctrl+滚轮` 以指针为锚在 25%–250% 间缩放；普通滚轮和 Page Up / Page Down 纵向滚动，水平 / 垂直滚动条保持全部已绘制内容可达。左键拖动画布空白处或中键拖动可平移；拖动主节点或细节岛只移动对应对象。
+- 工具栏 Fit 将当前主图与细节岛适配到窗口，100% 恢复 1:1 缩放并尽量保留当前中心；缩放百分比实时显示。重置项目布局清除手动主节点位置，并把已打开岛恢复到自动放置，但不清除分析、展开状态、标签或各视图 viewport。
 
 ## 4. Inspector
 
@@ -31,7 +33,9 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 Architecture 主关系为组件 + 数据流，Execution 主关系为控制流 + 数据流，Calls 主关系为 CALLS，Gradient 主关系为 GRADIENT_FLOW。Data Flow、Calls、Control、Loop、Gradient 使用不同视觉语义，并有 Legend / 过滤器。
 
-首版中 Architecture、Execution、Symbol 和 Data Flow 均默认使用居中的单列纵向阅读顺序，优先让小图在一屏内完整可读；高度超出时通过纵向滚动查看，不缩小到难以阅读。回环与开发者手动移动的节点仍可使用水平空间。用户拖动后保存位置，不强制重排。
+Architecture、Execution、Symbol 和 Data Flow 使用确定性的分层纵向布局：入口在上、结果在下，同层分支向左右展开，汇合节点尽量回到前驱重心。布局顺序由关系与 Stable ID 决定，不使用随机坐标；回环不重复生成节点。用户拖动主节点后保存位置，手动位置优先于自动布局。
+
+每个图视图分别保存 zoom / pan，细节岛按视图保存来源节点与场景位置；重新打开项目时恢复有效状态。重新分析或加载旧结果时，引用已消失节点的岛会被安全清理。Outdated 状态允许继续浏览旧图，并在 Overview、图和源码区域保留警告。
 
 ## 6. 语言
 
