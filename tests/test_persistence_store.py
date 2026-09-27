@@ -118,6 +118,10 @@ class CacheStoreTests(unittest.TestCase):
                               selected_id="model-a",
                               open_tabs=("graph:Architecture", "source:0:model.py"),
                               graph_roots={"Architecture": "model-a"},
+                              positions_by_view={
+                                  "Architecture": {"shared": (10.0, 20.0)},
+                                  "Execution": {"shared": (30.0, 40.0)},
+                              },
                               viewport_by_view={
                                   "Architecture": ViewportState(1.4, (25.0, -10.0)),
                               },
@@ -134,8 +138,18 @@ class CacheStoreTests(unittest.TestCase):
         restored = ViewState.from_dict(legacy)
         self.assertEqual(restored.viewport_by_view, {})
         self.assertEqual(restored.detail_islands, ())
+        self.assertEqual(restored.positions_by_view, {})
         self.assertEqual(restored.zoom, 1.2)
         self.assertEqual(restored.pan, (4.0, -2.0))
+
+    def test_legacy_flat_positions_are_tolerated_by_every_view(self):
+        restored = ViewState.from_dict({
+            "expanded_ids": [], "positions": {"shared": [12.0, 18.0]}})
+
+        self.assertEqual(restored.positions_for(ViewKind.SYMBOL)["shared"],
+                         (12.0, 18.0))
+        self.assertEqual(restored.positions_for(ViewKind.DATA_FLOW)["shared"],
+                         (12.0, 18.0))
 
     def test_viewport_serialization_does_not_depend_on_insertion_order(self):
         architecture = ViewportState(1.4, (25.0, -10.0))

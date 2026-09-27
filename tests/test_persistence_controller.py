@@ -12,6 +12,24 @@ from codeviz.ui.controller import AnalysisStatus, AppController
 
 
 class CachedControllerTests(unittest.TestCase):
+    def test_main_node_positions_remain_isolated_by_view_after_reload(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text("value = 1\n", encoding="utf-8")
+            store = CacheStore(Path(data_dir))
+            first = AppController(store)
+            first.open_project(project)
+
+            first.move_node("shared", (10.0, 20.0), ViewKind.SYMBOL)
+            first.move_node("shared", (30.0, 40.0), ViewKind.DATA_FLOW)
+
+            reopened = AppController(store)
+            reopened.open_project(project)
+            self.assertEqual(reopened.view_state.positions_for(ViewKind.SYMBOL)["shared"],
+                             (10.0, 20.0))
+            self.assertEqual(reopened.view_state.positions_for(ViewKind.DATA_FLOW)["shared"],
+                             (30.0, 40.0))
+
     def test_malformed_canvas_state_does_not_discard_analysis_or_annotations(self):
         with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
             project = Path(project_dir)

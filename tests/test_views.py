@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from unittest.mock import patch
 
 from tests.test_training import analyze_files
 
@@ -87,6 +88,36 @@ class VisibleContractTests(unittest.TestCase):
         positions = layout_positions(nodes, edges, ("root",), "hierarchical", state)
 
         self.assertEqual(positions["child"], (123.0, 456.0))
+
+    def test_layout_uses_only_positions_for_requested_view(self):
+        node = VisibleNode("shared", "Shared", code_node_ids=("shared",))
+        state = ViewState(positions_by_view={
+            ViewKind.SYMBOL.value: {"shared": (123.0, 456.0)},
+            ViewKind.DATA_FLOW.value: {"shared": (789.0, 321.0)},
+        })
+
+        symbol = layout_positions((node,), (), ("shared",), "directed", state,
+                                  view_kind=ViewKind.SYMBOL)
+        data_flow = layout_positions((node,), (), ("shared",), "directed", state,
+                                     view_kind=ViewKind.DATA_FLOW)
+
+        self.assertEqual(symbol["shared"], (123.0, 456.0))
+        self.assertEqual(data_flow["shared"], (789.0, 321.0))
+
+    def test_layout_failure_falls_back_to_deterministic_vertical_positions(self):
+        nodes = tuple(VisibleNode(name, name, code_node_ids=(name,))
+                      for name in ("zeta", "alpha", "middle"))
+
+        with patch("codeviz.views.layout._ranks", side_effect=RuntimeError("boom")):
+            first = layout_positions(nodes, (), (), "directed", ViewState())
+            second = layout_positions(tuple(reversed(nodes)), (), (), "directed", ViewState())
+
+        self.assertEqual(first, second)
+        self.assertEqual(tuple(first), ("alpha", "middle", "zeta"))
+        self.assertEqual([first[node_id][0] for node_id in first], [0.0, 0.0, 0.0])
+        self.assertEqual(len({point[1] for point in first.values()}), len(nodes))
+        graph = VisibleGraph(ViewKind.SYMBOL, nodes, layout_hints=first)
+        self.assertTrue(all(node.code_node_ids for node in graph.nodes))
 
     def test_graph_enforces_budget_and_aggregation_provenance(self):
         nodes = (VisibleNode("a", "A", code_node_ids=("a",)),

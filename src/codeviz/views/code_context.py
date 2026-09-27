@@ -112,7 +112,8 @@ def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
     ) for edge in shown)
     legend = tuple(VisibleLegendItem(kind, *_STYLES[kind]) for kind in _STYLES
                    if any(edge.type == kind for edge in shown))
-    layout = layout_positions(nodes, visible_edges, (focus,), "directed", state)
+    layout = layout_positions(nodes, visible_edges, (focus,), "directed", state,
+                              view_kind=request.view_kind)
     return VisibleGraph(
         request.view_kind, nodes, (focus,), visible_edges,
         aggregations=aggregation, layout_kind="directed", layout_hints=layout,

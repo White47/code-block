@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import partial
 from inspect import signature
+from math import hypot
 from typing import Any, Callable
 
 from codeviz.core import Confidence, EdgeType, ViewKind, VisibleGraph
@@ -35,6 +36,7 @@ _DETAIL_MIN_WIDTH = 440.0
 _DETAIL_MIN_HEIGHT = 300.0
 _DETAIL_HEADER_HEIGHT = 64.0
 _SCENE_MARGIN = 24.0
+_DRAG_THRESHOLD_PX = 5.0
 _DEFAULT_VIEWPORT = Viewport()
 
 
@@ -63,6 +65,7 @@ class GraphCanvas:
 
         self.widget = tk.Frame(parent, bg=theme.BACKGROUND)
         self.canvas = tk.Canvas(self.widget, bg=theme.BACKGROUND, highlightthickness=0)
+        self.canvas.configure(takefocus=True)
         horizontal = tk.Scrollbar(self.widget, orient="horizontal", command=self.canvas.xview)
         vertical = tk.Scrollbar(self.widget, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(xscrollcommand=horizontal.set, yscrollcommand=vertical.set)
@@ -94,9 +97,15 @@ class GraphCanvas:
         self._drag_context: str | None = None
         self._drag_point: Point | None = None
         self._drag_total = Point(0.0, 0.0)
+        self._drag_started = False
+        self._keyboard_focus: tuple[str, str | None] | None = None
 
         self.canvas.bind("<Return>", self._enter)
         self.canvas.bind("<Escape>", self._escape)
+        for key in ("<Left>", "<Right>", "<Up>", "<Down>"):
+            self.canvas.bind(key, self._traverse)
+        self.canvas.bind("<KeyPress-o>", self._open_source_key)
+        self.canvas.bind("<KeyPress-O>", self._open_source_key)
         self.canvas.bind("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind("<Control-MouseWheel>", self._on_zoom)
         self.canvas.bind("<Button-4>", self._on_mousewheel)
@@ -153,6 +162,11 @@ class GraphCanvas:
 
         self._main_scene = graph_scene(view, selected_id, viewport_width=400.0)
         self._detail_scenes = self._compose_details(details)
+        if (self._keyboard_focus is not None and
+                self._keyboard_focus not in {(node_id, context_id)
+                                             for node_id, context_id in
+                                             self._keyboard_nodes()}):
+            self._keyboard_focus = None
         self._draw_all()
 
     def _compose_details(
@@ -289,6 +303,12 @@ class GraphCanvas:
                                      width=3 if node.selected else 2,
                                      dash=(5, 3) if node.member_count else confidence_dash,
                                      tags=tags)
+        if self._keyboard_focus == (node.id, context_id):
+            self.canvas.create_rectangle(
+                screen.x - 4.0, screen.y - 4.0,
+                screen.x + screen.width + 4.0, screen.y + screen.height + 4.0,
+                outline=theme.TEXT, width=2, dash=(3, 2),
+                tags=(*tags, "keyboard-focus"))
         title = scene_to_screen(Point(rect.x + 12.0, rect.y + 20.0), self.viewport)
         subtitle = scene_to_screen(Point(rect.x + 12.0, rect.y + 47.0), self.viewport)
         self.canvas.create_text(title.x, title.y, text=node.label, anchor="w",
@@ -398,11 +418,13 @@ class GraphCanvas:
         self.canvas.focus_set()
         self._selected_id = node_id
         self._selected_context = context_id
+        self._keyboard_focus = (node_id, context_id)
         self._drag_mode = "node" if context_id is None else None
         self._drag_id = node_id
         self._drag_context = context_id
         self._drag_point = Point(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
         self._drag_total = Point(0.0, 0.0)
+        self._drag_started = False
         self._invoke_select(node_id, context_id)
         return "break"
 
@@ -414,6 +436,7 @@ class GraphCanvas:
         self._drag_context = island_id
         self._drag_point = Point(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
         self._drag_total = Point(0.0, 0.0)
+        self._drag_started = False
         return "break"
 
     def _open_detail(self, _event: Any, *, node_id: str) -> str:
@@ -440,8 +463,47 @@ class GraphCanvas:
         return "break"
 
     def _enter(self, event: Any) -> str:
-        if self._selected_context is None and self._selected_id is not None:
-            self._double_click(event, node_id=self._selected_id)
+        focus = self._keyboard_focus
+        node_id = focus[0] if focus is not None else self._selected_id
+        context_id = focus[1] if focus is not None else self._selected_context
+        if context_id is None and node_id is not None:
+            self._double_click(event, node_id=node_id)
+        return "break"
+
+    def _open_source_key(self, _event: Any) -> str:
+        focus = self._keyboard_focus
+        node_id = focus[0] if focus is not None else self._selected_id
+        context_id = focus[1] if focus is not None else self._selected_context
+        if node_id is not None:
+            self._on_open_source(node_id, context_id)
+        return "break"
+
+    def _keyboard_nodes(self) -> tuple[tuple[str, str | None], ...]:
+        main = tuple((node.id, None) for node in sorted(
+            self._main_scene.nodes, key=lambda node: (node.y, node.x, node.id)))
+        details: list[tuple[str, str | None]] = []
+        for island in sorted(
+                self._detail_scenes.values(),
+                key=lambda item: (item.bounds.y, item.bounds.x, item.id)):
+            details.extend((node.id, island.id) for node in sorted(
+                island.graph.nodes, key=lambda node: (node.y, node.x, node.id)))
+        return (*main, *details)
+
+    def _traverse(self, event: Any) -> str:
+        nodes = self._keyboard_nodes()
+        if not nodes:
+            return "break"
+        step = -1 if event.keysym in {"Left", "Up"} else 1
+        try:
+            current = nodes.index(self._keyboard_focus)
+        except ValueError:
+            index = -1 if step > 0 else 0
+        else:
+            index = current
+        self._keyboard_focus = nodes[(index + step) % len(nodes)]
+        self._selected_id, self._selected_context = self._keyboard_focus
+        self._invoke_select(self._selected_id, self._selected_context)
+        self._refresh_selection_scenes()
         return "break"
 
     def _escape(self, _event: Any) -> str:
@@ -454,12 +516,18 @@ class GraphCanvas:
             return
         point = Point(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
         dx, dy = point.x - self._drag_point.x, point.y - self._drag_point.y
+        total = Point(self._drag_total.x + dx, self._drag_total.y + dy)
+        self._drag_point = point
+        self._drag_total = total
+        if not self._drag_started:
+            if hypot(total.x, total.y) < _DRAG_THRESHOLD_PX:
+                return
+            self._drag_started = True
+            dx, dy = total.x, total.y
         if self._drag_mode == "node" and self._drag_id is not None:
             self._move_context_items(f"node:{self._drag_id}", "context:main", dx, dy)
         elif self._drag_mode == "island" and self._drag_id is not None:
             self.canvas.move(f"island:{self._drag_id}", dx, dy)
-        self._drag_total = Point(self._drag_total.x + dx, self._drag_total.y + dy)
-        self._drag_point = point
 
     def _move_context_items(self, item_tag: str, context_tag: str,
                             dx: float, dy: float) -> None:
@@ -468,7 +536,8 @@ class GraphCanvas:
                 self.canvas.move(item, dx, dy)
 
     def _release(self, _event: Any) -> None:
-        moved = self._drag_total != Point(0.0, 0.0)
+        moved = (self._drag_started if self._drag_mode in {"node", "island"}
+                 else self._drag_total != Point(0.0, 0.0))
         scene_delta = Point(self._drag_total.x / self.viewport.zoom,
                             self._drag_total.y / self.viewport.zoom)
         if moved and self._drag_mode == "node" and self._drag_id is not None:
@@ -491,6 +560,7 @@ class GraphCanvas:
         self._drag_context = None
         self._drag_point = None
         self._drag_total = Point(0.0, 0.0)
+        self._drag_started = False
 
     def _refresh_selection_scenes(self) -> None:
         if self._main_view is None:
@@ -510,6 +580,7 @@ class GraphCanvas:
         self._drag_context = None
         self._drag_point = Point(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
         self._drag_total = Point(0.0, 0.0)
+        self._drag_started = False
         return "break"
 
     def _blank_pan_start(self, event: Any) -> str | None:
