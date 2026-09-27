@@ -131,6 +131,44 @@ class TkAppHeadlessTests(unittest.TestCase):
             opened = app.controller.open_detail_island(kind, valid.id, None)
             self.assertEqual(opened.source_node_id, valid.id)
 
+    def test_reopened_missing_source_island_is_pruned_without_losing_analysis(self):
+        with TemporaryDirectory() as data_dir:
+            store = CacheStore(Path(data_dir))
+            first = AppController(store)
+            first.open_project(self.fixture_root)
+            expected = first.analyze()
+            expected_symbol_ids = tuple(expected.symbol_index.entries)
+            expected_code_ids = tuple(expected.flow.graph.nodes)
+            assert expected.semantic is not None
+            expected_semantic_ids = tuple(
+                item.id for item in expected.semantic.graph.components)
+            first.open_detail_island(
+                ViewKind.ARCHITECTURE, "missing-source-node", (600.0, 160.0))
+            store.save_annotations(self.fixture_root, {"note": "separate boundary"})
+
+            reopened = AppController(store)
+            reopened.open_project(self.fixture_root)
+            app = CodeVizApp.__new__(CodeVizApp)
+            app.controller = reopened
+            app._roots = {ViewKind.ARCHITECTURE: None}
+            app.language = "en"
+            app.status_label = SimpleNamespace(configure=lambda **_options: None)
+
+            self.assertEqual(app._detail_pairs(ViewKind.ARCHITECTURE), ())
+            self.assertEqual(reopened.detail_islands(ViewKind.ARCHITECTURE), ())
+            restored = reopened.analysis
+            assert restored is not None
+            self.assertEqual(
+                tuple(restored.symbol_index.entries),
+                expected_symbol_ids)
+            self.assertEqual(tuple(restored.flow.graph.nodes), expected_code_ids)
+            assert restored.semantic is not None
+            self.assertEqual(
+                tuple(item.id for item in restored.semantic.graph.components),
+                expected_semantic_ids)
+            self.assertEqual(store.load_annotations(self.fixture_root),
+                             {"note": "separate boundary"})
+
     def test_layout_persists_main_selection_not_transient_detail_selection(self):
         saved = []
         app = CodeVizApp.__new__(CodeVizApp)

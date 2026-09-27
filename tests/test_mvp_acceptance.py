@@ -2,14 +2,18 @@
 
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
 from codeviz.analysis.project import analyze_project
 from codeviz.core import Confidence, EdgeType, NodeKind, ViewKind
 from codeviz.navigation import plan_reveal
+from codeviz.persistence.store import CacheStore
 from codeviz.search import search_project
 from codeviz.semantic import TrainingRole
 from codeviz.ui.controller import AnalysisStatus, AppController
 from codeviz.ui.presenter import build_inspector, build_overview
+from codeviz.ui.tkapp import CodeVizApp
 from codeviz.views import ViewRequest, build_visible_graph
 
 PROJECT = Path(__file__).parent / "fixtures" / "mvp_project"
@@ -98,6 +102,119 @@ class MvpAcceptanceTests(unittest.TestCase):
         semantic_target = plan_reveal(self.analysis, semantic[0])
         self.assertEqual(semantic_target.view_kind, ViewKind.EXECUTION)
         self.assertLessEqual(len(view.nodes), 100)
+
+    def test_three_golden_paths_restore_canvas_state_and_source_identity(self):
+        with TemporaryDirectory() as data_dir:
+            store = CacheStore(Path(data_dir))
+            controller = AppController(store)
+            controller.open_project(PROJECT)
+            analysis = controller.analyze()
+            expected_status = controller.status
+            overview = build_overview(analysis, PROJECT)
+            classifier = next(item for item in overview.models
+                              if item.name == "model.Classifier")
+            architecture = controller.view(ViewKind.ARCHITECTURE, classifier.id)
+            encoder = next(node for node in architecture.nodes
+                           if node.code_name.endswith(".encoder"))
+            assert analysis.training is not None
+            train = next(entry for entry in analysis.training.entry_points
+                         if entry.name == "train_epoch")
+            backward_event = next(
+                event for event in analysis.training.events
+                if event.role == TrainingRole.BACKWARD_PASS)
+            execution = controller.view(
+                ViewKind.EXECUTION, train.id, backward_event.id)
+            backward = next(node for node in execution.nodes
+                            if node.id == backward_event.id)
+            loss = next(item for item in search_project(analysis, "loss").results
+                        if item.qualified_name == "run.train_epoch.loss")
+            reveal = plan_reveal(analysis, loss)
+            assert reveal.view_kind is not None and reveal.selected_id is not None
+            data_flow = controller.view(
+                reveal.view_kind, reveal.root_id, reveal.selected_id)
+            loss_node = next(node for node in data_flow.nodes
+                             if node.id == reveal.selected_id)
+
+            paths = (
+                (ViewKind.ARCHITECTURE, classifier.id, encoder),
+                (ViewKind.EXECUTION, train.id, backward),
+                (reveal.view_kind, reveal.root_id, loss_node),
+            )
+            for index, (kind, root_id, selected) in enumerate(paths):
+                with self.subTest(path=kind.value):
+                    zoom = 1.15 + index * 0.1
+                    pan = (24.0 + index, -12.0 - index)
+                    island_position = (640.0 + index * 20, 180.0)
+                    controller.save_viewport(kind, zoom, pan)
+                    controller.open_detail_island(kind, selected.id, island_position)
+                    controller.save_layout(
+                        kind, selected.id, (f"graph:{kind.value}",),
+                        {kind.value: root_id})
+
+                    reopened = AppController(store)
+                    reopened.open_project(PROJECT)
+                    restored = reopened.view(kind, root_id, selected.id)
+                    restored_node = next(node for node in restored.nodes
+                                         if node.id == selected.id)
+
+                    self.assertEqual(reopened.status, expected_status)
+                    self.assertEqual(reopened.view_state.selected_id, selected.id)
+                    viewport = reopened.view_state.viewport_by_view[kind.value]
+                    self.assertEqual((viewport.zoom, viewport.pan), (zoom, pan))
+                    island = next(
+                        item for item in reopened.detail_islands(kind)
+                        if item.source_node_id == selected.id)
+                    self.assertEqual(island.position, island_position)
+                    self.assertEqual(restored_node.source_anchors[0],
+                                     selected.source_anchors[0])
+                    restored_analysis = reopened.analysis
+                    assert restored_analysis is not None
+                    self.assertEqual(
+                        build_inspector(restored, selected.id,
+                                        restored_analysis).source_anchors[0],
+                        selected.source_anchors[0])
+                    controller = reopened
+
+    def test_deleted_detail_node_is_pruned_without_losing_reopened_main_graph(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            source = project / "models.py"
+            source.write_text(
+                "import torch.nn as nn\n"
+                "class Keep(nn.Module):\n"
+                "    def forward(self, x): return x\n"
+                "class Removed(nn.Module):\n"
+                "    def forward(self, x): return x\n", encoding="utf-8")
+            store = CacheStore(Path(data_dir))
+            first = AppController(store)
+            first.open_project(project)
+            first.analyze()
+            graph = first.view(ViewKind.ARCHITECTURE)
+            removed = next(node for node in graph.nodes
+                           if node.display_name == "Removed")
+            first.open_detail_island(ViewKind.ARCHITECTURE, removed.id, None)
+            first.save_layout(ViewKind.ARCHITECTURE, removed.id,
+                              ("graph:Architecture",), {"Architecture": None})
+            source.write_text(
+                "import torch.nn as nn\n"
+                "class Keep(nn.Module):\n"
+                "    def forward(self, x): return x\n", encoding="utf-8")
+            first.analyze()
+
+            reopened = AppController(store)
+            reopened.open_project(project)
+            main = reopened.view(ViewKind.ARCHITECTURE)
+            app = CodeVizApp.__new__(CodeVizApp)
+            app.controller = reopened
+            app._roots = {ViewKind.ARCHITECTURE: None}
+            app.language = "en"
+            app.status_label = SimpleNamespace(configure=lambda **_options: None)
+
+            self.assertEqual(app._detail_pairs(ViewKind.ARCHITECTURE), ())
+            self.assertEqual(reopened.detail_islands(ViewKind.ARCHITECTURE), ())
+            self.assertEqual(reopened.project_root, project.resolve())
+            self.assertIsNotNone(reopened.analysis)
+            self.assertTrue(any(node.display_name == "Keep" for node in main.nodes))
 
     def test_bad_file_is_isolated_and_source_is_never_executed(self):
         self.assertIn("trap.py", {file.relative_path for file in self.analysis.files})
