@@ -219,7 +219,8 @@ def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
     legend = tuple(VisibleLegendItem(kind, *_LEGEND[kind])
                    for kind in _LEGEND if any(edge.type == kind for edge in edges))
     shown_roots = tuple(root for root in roots if root in visible_ids)
-    positions = layout_positions(nodes, edges, shown_roots, layout_kind, state)
+    positions = layout_positions(nodes, edges, shown_roots, layout_kind, state,
+                                 view_kind=request.view_kind)
     return VisibleGraph(
         request.view_kind, nodes, shown_roots, edges,
         aggregations=aggregations, layout_kind=layout_kind, layout_hints=positions,

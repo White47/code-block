@@ -57,6 +57,8 @@ class ViewState:
     filters: tuple[str, ...] = ()
     viewport_by_view: dict[str, ViewportState] = field(default_factory=dict)
     detail_islands: tuple[DetailIslandState, ...] = ()
+    positions_by_view: dict[str, dict[str, tuple[float, float]]] = field(
+        default_factory=dict)
 
     def __post_init__(self) -> None:
         if any(not node_id for node_id in self.expanded_ids):
@@ -87,6 +89,13 @@ class ViewState:
         if any(not item for item in self.filters):
             raise ValueError("filters cannot contain empty names")
         known_views = {kind.value for kind in ViewKind}
+        for kind, positions in self.positions_by_view.items():
+            if type(kind) is not str or kind not in known_views or not isinstance(
+                    positions, dict):
+                raise ValueError("positions by view must use known view kinds")
+            for node_id, position in positions.items():
+                if not node_id or not _finite_point(position):
+                    raise ValueError("positions require finite numeric x/y values")
         if any(type(key) is not str or key not in known_views or
                not isinstance(value, ViewportState)
                for key, value in self.viewport_by_view.items()):
@@ -103,6 +112,13 @@ class ViewState:
         object.__setattr__(self, "graph_roots", dict(self.graph_roots))
         object.__setattr__(self, "viewport_by_view", dict(self.viewport_by_view))
         object.__setattr__(self, "detail_islands", tuple(self.detail_islands))
+        object.__setattr__(
+            self, "positions_by_view",
+            {kind: dict(positions) for kind, positions in self.positions_by_view.items()})
+
+    def positions_for(self, view_kind: ViewKind) -> dict[str, tuple[float, float]]:
+        """Return isolated positions, tolerating legacy flat cached positions."""
+        return self.positions_by_view.get(view_kind.value, self.positions)
 
     def to_dict(self) -> dict[str, object]:
         return {"expanded_ids": list(self.expanded_ids),
@@ -125,14 +141,19 @@ class ViewState:
                      "position": (list(island.position)
                                   if island.position is not None else None)}
                     for island in self.detail_islands
-                ]}
+                ],
+                "positions_by_view": {
+                    kind: {node_id: list(positions[node_id])
+                           for node_id in sorted(positions)}
+                    for kind, positions in sorted(self.positions_by_view.items())
+                }}
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "ViewState":
         if not {"expanded_ids", "positions"} <= set(payload) <= {
             "expanded_ids", "positions", "active_view", "selected_id", "open_tabs",
             "graph_roots", "zoom", "pan", "filters", "viewport_by_view",
-            "detail_islands"
+            "detail_islands", "positions_by_view"
         }:
             raise ValueError("view state has invalid fields")
         expanded = payload.get("expanded_ids", [])
@@ -155,6 +176,7 @@ class ViewState:
         filters = payload.get("filters", [])
         viewports = payload.get("viewport_by_view", {})
         islands = payload.get("detail_islands", [])
+        positions_by_view = payload.get("positions_by_view", {})
         if ((active is not None and type(active) is not str) or
                 (selected is not None and type(selected) is not str) or
                 not isinstance(tabs, list) or any(type(item) is not str for item in tabs) or
@@ -164,7 +186,8 @@ class ViewState:
                 type(zoom) not in (int, float) or not isinstance(pan, list) or
                 len(pan) != 2 or any(type(item) not in (int, float) for item in pan) or
                 not isinstance(filters, list) or any(type(item) is not str for item in filters) or
-                not isinstance(viewports, dict) or not isinstance(islands, list)):
+                not isinstance(viewports, dict) or not isinstance(islands, list) or
+                not isinstance(positions_by_view, dict)):
             raise ValueError("view state navigation fields are invalid")
         try:
             active_kind = ViewKind(active) if active is not None else None
@@ -200,8 +223,21 @@ class ViewState:
                         cast(tuple[float, float], tuple(raw_position)))
             restored_islands.append(DetailIslandState(
                 value["id"], island_kind, value["source_node_id"], position))
+        restored_positions_by_view: dict[str, dict[str, tuple[float, float]]] = {}
+        for kind, values in positions_by_view.items():
+            if type(kind) is not str or not isinstance(values, dict):
+                raise ValueError("positions by view entries are invalid")
+            restored_for_view: dict[str, tuple[float, float]] = {}
+            for node_id, value in values.items():
+                if (type(node_id) is not str or not isinstance(value, list) or
+                        len(value) != 2 or
+                        any(type(item) not in (int, float) for item in value)):
+                    raise ValueError("positions by view entries are invalid")
+                restored_for_view[node_id] = cast(tuple[float, float], tuple(value))
+            restored_positions_by_view[kind] = restored_for_view
         return cls(tuple(expanded), restored, active_kind, selected,
                    tuple(tabs), cast(dict[str, str | None], roots),
                    float(cast(float | int, zoom)),
                    cast(tuple[float, float], tuple(pan)), tuple(filters),
-                   restored_viewports, tuple(restored_islands))
+                   restored_viewports, tuple(restored_islands),
+                   restored_positions_by_view)

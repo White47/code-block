@@ -227,9 +227,22 @@ class AppController:
         )
         self._persist_view_state()
 
-    def move_node(self, node_id: str, position: tuple[float, float]) -> None:
-        positions = {**self.view_state.positions, node_id: position}
-        self.view_state = replace(self.view_state, positions=positions)
+    def move_node(self, node_id: str, position: tuple[float, float],
+                  view_kind: ViewKind | None = None) -> None:
+        kind = view_kind or self.view_state.active_view
+        if kind is None:
+            positions = {**self.view_state.positions, node_id: position}
+            self.view_state = replace(self.view_state, positions=positions)
+        else:
+            positions_by_view = {
+                key: dict(value)
+                for key, value in self.view_state.positions_by_view.items()
+            }
+            positions = dict(self.view_state.positions_for(kind))
+            positions[node_id] = position
+            positions_by_view[kind.value] = positions
+            self.view_state = replace(
+                self.view_state, positions_by_view=positions_by_view)
         self._persist_view_state()
 
     def save_viewport(self, kind: ViewKind, zoom: float,
@@ -297,7 +310,8 @@ class AppController:
         islands = tuple(replace(island, position=None)
                         for island in self.view_state.detail_islands)
         self.view_state = replace(
-            self.view_state, positions={}, detail_islands=islands,
+            self.view_state, positions={}, positions_by_view={},
+            detail_islands=islands,
             viewport_by_view=dict(self.view_state.viewport_by_view),
         )
         self._persist_view_state()

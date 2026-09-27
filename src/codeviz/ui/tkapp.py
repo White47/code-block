@@ -1325,9 +1325,9 @@ class CodeVizApp:
         self._open_graph(kind, self._roots.get(kind))
 
     def _on_move(self, node_id: str, point: tuple[float, float]) -> None:
-        self.controller.move_node(node_id, point)
         kind = self._active_kind
         if kind is not None:
+            self.controller.move_node(node_id, point, kind)
             self._open_graph(kind, self._roots.get(kind))
 
     def _update_inspector(self) -> None:

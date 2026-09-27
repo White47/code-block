@@ -837,6 +837,42 @@ class GraphSceneTests(unittest.TestCase):
 
         self.assertEqual(moved, [("root", (20.0, 10.0))])
 
+    def test_node_motion_below_threshold_selects_without_moving(self):
+        moved: list[tuple[str, tuple[float, float]]] = []
+        graph, canvas = _graph_canvas(on_move=lambda node_id, point:
+                                      moved.append((node_id, point)))
+        main, _state, _detail = _interactive_views()
+        graph.render(main)
+        before = next(item["coords"] for item in canvas.items.values()
+                      if item["kind"] == "rectangle" and
+                      "node:root" in item["tags"] and
+                      "keyboard-focus" not in item["tags"])
+
+        graph._press(SimpleNamespace(x=100, y=100), node_id="root", context_id=None)
+        graph._drag(SimpleNamespace(x=103, y=103))
+        graph._release(SimpleNamespace())
+
+        after = next(item["coords"] for item in canvas.items.values()
+                     if item["kind"] == "rectangle" and
+                     "node:root" in item["tags"] and
+                     "keyboard-focus" not in item["tags"])
+        self.assertEqual(after, before)
+        self.assertEqual(moved, [])
+
+    def test_node_drag_applies_accumulated_motion_when_threshold_is_crossed(self):
+        moved: list[tuple[str, tuple[float, float]]] = []
+        graph, _canvas = _graph_canvas(on_move=lambda node_id, point:
+                                       moved.append((node_id, point)))
+        main, _state, _detail = _interactive_views()
+        graph.render(main)
+
+        graph._press(SimpleNamespace(x=100, y=100), node_id="root", context_id=None)
+        graph._drag(SimpleNamespace(x=103, y=100))
+        graph._drag(SimpleNamespace(x=106, y=100))
+        graph._release(SimpleNamespace())
+
+        self.assertEqual(moved, [("root", (6.0, 0.0))])
+
     def test_island_drag_reports_new_scene_position(self):
         moved: list[tuple[str, tuple[float, float]]] = []
         graph, _canvas = _graph_canvas(on_move_island=lambda island_id, point:
@@ -850,6 +886,100 @@ class GraphSceneTests(unittest.TestCase):
         graph._release(SimpleNamespace())
 
         self.assertEqual(moved, [(state.id, (340.0, 90.0))])
+
+    def test_island_motion_obeys_same_drag_threshold(self):
+        moved: list[tuple[str, tuple[float, float]]] = []
+        graph, canvas = _graph_canvas(on_move_island=lambda island_id, point:
+                                      moved.append((island_id, point)))
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+        before = canvas.bbox(f"island:{state.id}")
+
+        graph._island_press(SimpleNamespace(x=650, y=170), island_id=state.id)
+        graph._drag(SimpleNamespace(x=653, y=173))
+        graph._release(SimpleNamespace())
+        self.assertEqual(canvas.bbox(f"island:{state.id}"), before)
+        self.assertEqual(moved, [])
+
+        graph._island_press(SimpleNamespace(x=650, y=170), island_id=state.id)
+        graph._drag(SimpleNamespace(x=656, y=170))
+        graph._release(SimpleNamespace())
+        self.assertEqual(moved, [(state.id, (326.0, 80.0))])
+
+    def test_keyboard_traversal_selects_scene_order_and_exposes_actions(self):
+        selected: list[tuple[str, str | None]] = []
+        opened: list[str] = []
+        sources: list[tuple[str, str | None]] = []
+        graph, canvas = _graph_canvas(
+            on_select=lambda node_id, context: selected.append((node_id, context)),
+            on_open_detail=opened.append,
+            on_open_source=lambda node_id, context: sources.append((node_id, context)),
+        )
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+
+        graph._traverse(SimpleNamespace(keysym="Down"))
+        graph._enter(SimpleNamespace())
+        graph._open_source_key(SimpleNamespace())
+        graph._traverse(SimpleNamespace(keysym="Down"))
+        graph._traverse(SimpleNamespace(keysym="Down"))
+        graph._open_source_key(SimpleNamespace())
+
+        self.assertEqual(selected, [
+            ("root", None), ("leaf", None), ("inner", state.id)])
+        self.assertEqual(opened, ["root"])
+        self.assertEqual(sources, [("root", None), ("inner", state.id)])
+        self.assertTrue(any("keyboard-focus" in item["tags"]
+                            for item in canvas.items.values()))
+        self.assertEqual(canvas.cget("takefocus"), True)
+
+    def test_mouse_selection_replaces_stale_keyboard_action_target(self):
+        opened: list[str] = []
+        graph, _canvas = _graph_canvas(on_open_detail=opened.append)
+        main, _state, _detail = _interactive_views()
+        graph.render(main)
+        graph._traverse(SimpleNamespace(keysym="Down"))
+
+        graph._press(SimpleNamespace(x=100, y=100), node_id="leaf", context_id=None)
+        graph._enter(SimpleNamespace())
+
+        self.assertEqual(opened, [])
+
+    def test_live_tk_node_and_island_drag_thresholds(self):
+        import tkinter as tk
+
+        try:
+            root = tk.Tk()
+        except tk.TclError:
+            self.skipTest("Tk display unavailable")
+        self.addCleanup(root.destroy)
+        moved_nodes: list[tuple[str, tuple[float, float]]] = []
+        moved_islands: list[tuple[str, tuple[float, float]]] = []
+        graph = GraphCanvas(
+            root, on_select=lambda *_args: None,
+            on_move=lambda node_id, point: moved_nodes.append((node_id, point)),
+            on_move_island=lambda island_id, point:
+            moved_islands.append((island_id, point)),
+        )
+        graph.widget.pack(fill="both", expand=True)
+        main, state, detail = _interactive_views()
+        graph.render(main, details=((state, detail),))
+
+        graph._press(SimpleNamespace(x=100, y=100), node_id="root", context_id=None)
+        graph._drag(SimpleNamespace(x=103, y=103))
+        graph._release(SimpleNamespace())
+        graph._press(SimpleNamespace(x=100, y=100), node_id="root", context_id=None)
+        graph._drag(SimpleNamespace(x=106, y=100))
+        graph._release(SimpleNamespace())
+        graph._island_press(SimpleNamespace(x=650, y=170), island_id=state.id)
+        graph._drag(SimpleNamespace(x=653, y=173))
+        graph._release(SimpleNamespace())
+        graph._island_press(SimpleNamespace(x=650, y=170), island_id=state.id)
+        graph._drag(SimpleNamespace(x=656, y=170))
+        graph._release(SimpleNamespace())
+
+        self.assertEqual(moved_nodes, [("root", (6.0, 0.0))])
+        self.assertEqual(moved_islands, [(state.id, (326.0, 80.0))])
 
     def test_escape_closes_only_selected_island(self):
         closed: list[str] = []
