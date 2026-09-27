@@ -27,7 +27,7 @@
 - 日期：2026-09-27。
 - 平台：Windows，PowerShell；Windows edition / build 未记录。
 - Python：CPython 3.12.9，显式解释器 `C:\Users\16670\AppData\Local\Programs\Python\Python312\python.exe`。
-- 已验证实现提交：`04d0f00a068a5a9334f48979e5bc9e56830e162a`（`Harden interactive canvas restore and acceptance paths`）；本次文档修订基于 `d3fe83980b1516f9086163a9e87c19f359c80856`。二者之间只有 Task 9 文档提交，没有产品 / 测试代码变化。
+- 本次复验起点 HEAD：`245e8e828329987f7e944160817196184f6c6a4b`（`Clarify interactive canvas documentation`）；最终门槛在本报告、其余五份 Task 9 文档和 README 的待提交修改完成后运行。产品 / 测试代码仍对应 `04d0f00a068a5a9334f48979e5bc9e56830e162a`（`Harden interactive canvas restore and acceptance paths`），两者之间及本次工作树修改均只有文档变化。
 - 本地门槛状态如下；GitHub Actions 状态未查询，因此不声称远程 CI 通过或失败。
 
 ## 自动化验证
@@ -42,6 +42,10 @@
 
 48 个跳过均为环境相关：2 个 Windows 符号链接能力用例因当前环境不能创建测试链接而跳过；其余 46 个需要可用 Tk 图形显示的 live-Tk / Canvas 用例因 `Tk display unavailable` 跳过。纯场景、控制器、持久化、验收和 headless Tk 协调测试已运行，不把跳过的 live-Tk 用例计为通过。
 
+没有在本轮重复 wheel gate：自上述成功的本地 wheel 构建以来只修改文档，产品、测试、`pyproject.toml` 和构建配置均未变化。三岛上限、第四岛拒绝、聚合节点打开隐藏成员侧栏、终端节点不隐式打开源码分别由 `test_detail_island_limit_reports_localized_action`、`test_aggregate_drill_down_exposes_hidden_member_choices`、`test_terminal_node_drill_does_not_implicitly_open_source` 等自动化测试覆盖；由于本环境没有 Tk 显示，本报告不把这些路径列作已人工执行的步骤。
+
+为使下述人工步骤基于真实 fixture，本轮还通过公开 `AppController` / `view()` / `detail_view()` 路径检查 `tests/fixtures/mvp_project/`：All Models Architecture 中 `Encoder`（`model.Encoder`）可见，`metadata["has_children"] == True` 且不是聚合节点；其 detail graph 包含带源码锚点的 `model.Encoder.layers`。同一检查确认 `model.Classifier.encoder` 不可展开，因此手工步骤不使用它。
+
 以上数字应以本文件所在提交前最后一次完整验证为准；若后续修改代码、测试或文档，需要重新运行全部门槛并更新结果。
 
 ## 人工视觉试用
@@ -50,49 +54,39 @@
 
 ### 场景 1：基线 A+B 与源码
 
-原验收要求的精确基线序列保留如下；该序列会在 reopen 前关闭岛，因此只验证基本交互，不验证岛恢复：
+原验收要求的精确基线序列保留如下。这里的 `Open Project` / `Analyze` 是需求原文；实际 UI 标签分别是 `Open Folder` / `Analyze Project`。该序列会在 reopen 前关闭岛，因此只验证基本交互，不验证岛恢复：
 
 ```text
 Open Project → Analyze → Architecture → single-click node → double-click/+ →
 move detail island → select island node → Open Source → close island → reopen project
 ```
 
-1. Open Project 选择 `tests/fixtures/mvp_project/`，点击 Analyze；在 Overview 选择 `model.Classifier` 打开 Architecture。
-2. 单击代码名以 `.encoder` 结尾的普通可展开节点，确认 Inspector 更新且 Classifier 主图不变。
-3. 双击该节点或点击 `+`，确认细节岛出现；拖动岛，在岛内选择 `layers` 或其他带 Source 的节点，再点 Open Source，确认打开 `model.py` 对应行。
-4. 关闭岛，再次 Open Project / Recent Projects 打开同一 fixture；确认分析仍可用。此场景不应声称恢复已关闭的岛。
+1. 点击 `Open Folder`，选择 `tests/fixtures/mvp_project/`，再点击 `Analyze Project`。
+2. 在 Project Overview 点击 `Open Architecture`（或点击左侧 Architecture activity），确认 breadcrumb 为 `Architecture › All Models`。
+3. 在主图找到显示名 `Encoder`、代码名 `model.Encoder` 且带 `+` 的节点。单击它，确认 Inspector 更新且 All Models 主图不变。
+4. 双击 `Encoder` 或点击其 `+`，确认细节岛出现；拖动岛，在岛内选择代码名 `model.Encoder.layers` 的源码节点，再点 `Open Source`，确认打开 `model.py` 中 `Encoder.__init__` 的 `self.layers = nn.ModuleList(...)` 行。
+5. 关闭岛，再次点击 `Open Folder` 选择同一 fixture（或从 Recent Projects 打开）；确认分析仍可用。此场景不应声称恢复已关闭的岛。
 
 ### 场景 2：viewport 与岛恢复
 
-1. 在 `model.Classifier` Architecture 再次打开 `.encoder` 细节岛并移动它；保持该岛打开。
+1. 通过 `Open Architecture` 返回 `Architecture › All Models`，再次对带 `+` 的 `Encoder`（`model.Encoder`）打开细节岛并移动它；保持该岛打开。
 2. 依次执行空白拖动或中键拖动、`Ctrl+滚轮`、Fit、100%，最后再设置一个明显非默认 zoom / canvas pan；记下缩放百分比和岛位置。
 3. 用普通滚轮或 Page Down 产生额外原生滚动偏移；不要关闭岛，直接重新打开同一项目（或退出后按 README 命令重启并从 Recent Projects 打开）。
-4. 确认有效 `.encoder` 岛、岛位置、最终 zoom 和 canvas pan 恢复；普通滚轮 / Page Down 的临时 Tk 滚动偏移不要求恢复。
+4. 确认有效 `Encoder` 岛、岛位置、最终 zoom 和 canvas pan 恢复；普通滚轮 / Page Down 的临时 Tk 滚动偏移不要求恢复。
 
-### 场景 3：三岛上限与节点类型
-
-1. 在 Architecture 中依次对三个不同、带 `+` 的普通节点打开岛，保持三个都打开。
-2. 对第四个不同、带 `+` 的普通节点尝试打开岛；确认岛数仍为三个，状态栏显示 `Close a detail view before opening another`（中文模式显示对应译文），且没有旧岛被自动关闭。fixture 的可见节点随所选模型 / 聚合预算而异，因此以四个实际显示 `+` 的普通节点为准。
-3. 对聚合节点双击 / Enter / `+`，确认打开隐藏成员侧栏而非第四个岛；对没有 `+` 的终端节点双击 / Enter，确认不展开，并仍可从 Inspector 使用 Open Source。
-
-### 场景 4：Execution 与 Symbol / Data Flow 差异
-
-1. 从 Overview 打开 `train_epoch` Training Flow；打开 `EpochLoop` 细节岛，确认岛内可见 `BatchLoop`，并验证 `BackwardPass` 打开 `loss.backward()`、`ParameterUpdate` 打开 `optimizer.step()`。
-2. Search 输入 `loss`，选择 `run.train_epoch.loss` 并 Reveal；在 Data Flow 主图单击另一个可聚焦普通节点，确认局部上下文允许重新查询 / 居中，而不是套用 Architecture / Execution 的“主图不变”保证。
-
-### 场景 5：Outdated 与岛保留
+### 场景 3：Outdated 与岛保留
 
 1. 不修改仓库 fixture；在 PowerShell 创建临时副本：`$trial = Join-Path $env:TEMP ("codeviz-mvp-" + [guid]::NewGuid()); Copy-Item tests/fixtures/mvp_project $trial -Recurse`。
-2. Open Project 选择 `$trial`，Analyze，打开 `model.Classifier` Architecture 和 `.encoder` 岛，并保持岛打开。
-3. 在应用外执行 `Add-Content (Join-Path $trial 'run.py') '# outdated trial'`，然后再次 Open Project 选择 `$trial`。
-4. 确认状态为 Outdated、Overview / 图 / Source 显示警告，旧主图仍可浏览且有效 `.encoder` 岛恢复。试用结束后关闭应用，再删除该唯一临时目录 `$trial`。
+2. 点击 `Open Folder` 选择 `$trial`，点击 `Analyze Project`，再点 `Open Architecture` 进入 `Architecture › All Models`；对带 `+` 的 `Encoder`（`model.Encoder`）打开细节岛，并保持岛打开。
+3. 在应用外执行 `Add-Content (Join-Path $trial 'run.py') '# outdated trial'`，然后再次点击 `Open Folder` 选择 `$trial`。
+4. 确认状态为 Outdated、Overview / 图 / Source 显示警告，旧主图仍可浏览且有效 `Encoder` 岛恢复。试用结束后关闭应用，再删除该唯一临时目录 `$trial`。
 
 ## 剩余限制
 
 - 自动路由是有界启发式；候选通道都受阻时会退回直接连线，复杂大图仍可能产生交叉。
 - 细节岛是单层、受限局部视图，不支持岛内继续展开、自由绘图、任意节点编辑或协作。
 - `.drawio` 导出、关系通用过滤器、增量索引 / file watcher 和运行时追踪尚未实现。
-- 本轮自动化不能替代真实显示器上的高 DPI、长中文名称、多岛避让、长训练流和第一次使用者理解度观察。
+- 本轮自动化不能替代真实显示器上的高 DPI、长中文名称、多岛避让、长训练流、三岛 / 第四岛拒绝、聚合成员侧栏和第一次使用者理解度观察。
 - Windows 文件符号链接与 Tk 显示相关路径仍需在具备相应系统能力的环境补验。
 
 ## 规范一致性自审
