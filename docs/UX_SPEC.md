@@ -14,13 +14,14 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 ## 3. 交互
 
-- 主图采用 A+B 交互：A 是稳定的主纵向流程；单击只执行 Select、Inspector 和邻居高亮，不改变主图。对普通且可展开的节点，双击、Enter 或节点上的 `+` 在画布空白处打开 B 细节岛，不替换主图，也不改变主图根节点或展开历史。聚合节点执行同样动作时打开隐藏成员侧栏供选择 / 重新定位，不生成细节岛；不可展开节点不响应这些展开动作，用户可继续通过 Inspector 的 Open Source 查看源码。
+- Architecture / Execution 采用 A+B 交互：A 是稳定的主纵向流程；单击只执行 Select、Inspector 和邻居高亮，不改变主图。对普通且可展开的节点，双击、Enter 或节点上的 `+` 在画布空白处打开 B 细节岛，不替换主图，也不改变主图根节点或展开历史。聚合节点执行同样动作时打开隐藏成员侧栏供选择 / 重新定位，不生成细节岛；不可展开节点不响应这些展开动作，用户可继续通过 Inspector 的 Open Source 查看源码。
+- Symbol / Data Flow 是以所选符号或关键数据为中心的有界局部上下文；单击主图中可聚焦的普通节点时，可以重新查询并重新居中该节点的 1–5 hop 局部图，而不保证当前主图几何保持不变。
 - 每个视图最多同时打开三个细节岛；岛可拖动、关闭，并以虚线连回来源节点。达到上限时提示先关闭一个，不自动淘汰已有岛。岛内节点可更新统一 Inspector 并打开对应源码，但不能继续嵌套新岛。
 - Open Source / Open to Side：独立动作，不与打开细节岛混淆。细节岛标题中的 Open Source 默认打开来源节点；先选择岛内节点后，该动作打开所选岛内节点的源码。
 - 关闭当前选中的细节岛后，选择返回主图来源节点；Escape 关闭当前活动岛，主图选择不受影响。
 - 返回、面包屑和当前视图状态必须可用；细节查询失败或失效只移除 / 跳过对应岛并显示提示，不能清空主图。
 - 关闭标签：点击标签右侧 `×` 或按 `Ctrl+W`；Overview 不可关闭。
-- 画布导航：`Ctrl+滚轮` 以指针为锚在 25%–250% 间缩放；普通滚轮和 Page Up / Page Down 纵向滚动，水平 / 垂直滚动条保持全部已绘制内容可达。左键拖动画布空白处或中键拖动可平移；拖动主节点或细节岛只移动对应对象。
+- 画布导航：`Ctrl+滚轮` 以指针为锚在 25%–250% 间缩放；普通滚轮和 Page Up / Page Down 纵向滚动，水平 / 垂直滚动条保持全部已绘制内容可达。左键拖动画布空白处或中键拖动执行可持久化的 canvas pan；拖动主节点或细节岛只移动对应对象。原生滚动条、普通滚轮和 Page Up / Page Down 产生的 Tk 滚动偏移仅用于当前会话，不写入 View State。
 - 工具栏 Fit 将当前主图与细节岛适配到窗口，100% 恢复 1:1 缩放并尽量保留当前中心；缩放百分比实时显示。重置项目布局清除手动主节点位置，并把已打开岛恢复到自动放置，但不清除分析、展开状态、标签或各视图 viewport。
 
 ## 4. Inspector
@@ -33,9 +34,9 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 Architecture 主关系为组件 + 数据流，Execution 主关系为控制流 + 数据流，Calls 主关系为 CALLS，Gradient 主关系为 GRADIENT_FLOW。Data Flow、Calls、Control、Loop、Gradient 使用不同视觉语义，并有 Legend；通用关系过滤器仍属后续能力。
 
-Architecture、Execution、Symbol 和 Data Flow 使用确定性的分层纵向布局：入口在上、结果在下，同层分支向左右展开，汇合节点尽量回到前驱重心。布局顺序由关系与 Stable ID 决定，不使用随机坐标；回环不重复生成节点。用户拖动主节点后保存位置，手动位置优先于自动布局。
+Architecture / Execution 中受支持的结构 / 控制关系（Contains、Control Flow、Branch True / False）使用确定性的纵向 rank：入口 / 根优先在上，同层分支向左右展开，汇合节点尽量回到前驱重心，回环不重复节点。未参与 rank 的关系不会被伪装成执行顺序；Symbol / Data Flow 的 Calls、Data Flow 等关系通常使用确定性的同 rank / Stable ID 回退位置，用户可再移动节点。所有视图都不使用随机坐标，且手动位置优先于自动布局。
 
-每个图视图分别保存 zoom / pan，细节岛按视图保存来源节点与场景位置；重新打开项目时恢复有效状态。重新分析或加载旧结果时，引用已消失节点的岛会被安全清理。Outdated 状态允许继续浏览旧图，并在 Overview、图和源码区域保留警告。
+每个图视图分别保存 zoom / canvas pan，细节岛按视图保存来源节点与场景位置；重新打开项目时恢复有效状态。重新分析或加载旧结果时，引用已消失节点的岛会被安全清理。Outdated 状态允许继续浏览旧图，并在 Overview、图和源码区域保留警告。
 
 ## 6. 语言
 

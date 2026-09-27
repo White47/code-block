@@ -14,7 +14,7 @@
 
 ## Phase 7–9 — 可视化与导航
 
-已实现 View Builder、Architecture / Execution / Symbol / Data Flow Visible Graph、VSCode 风格 UI、Tabs / Split / Inspector、Search / Reveal in Graph / Source Navigation。本轮交互式源码画布交付进一步实现稳定主纵向流程 + 最多三个细节岛、确定性分层布局、每视图 zoom / pan、Fit / 100%、岛内 Inspector / Source 上下文和独立 View State 恢复；未引入 draw.io runtime。
+已实现 View Builder、Architecture / Execution / Symbol / Data Flow Visible Graph、VSCode 风格 UI、Tabs / Split / Inspector、Search / Reveal in Graph / Source Navigation。本轮交互式源码画布交付进一步实现 Architecture / Execution 的稳定 A+B 主流程 + 最多三个细节岛、对受支持结构 / 控制边的确定性纵向 rank、每视图 zoom / canvas pan、Fit / 100%、岛内 Inspector / Source 上下文和独立 View State 恢复；Symbol / Data Flow 仍是可随选择重新查询 / 居中的有界局部上下文。未引入 draw.io runtime。
 
 ## Phase 10–11 — 持久化与硬化
 
