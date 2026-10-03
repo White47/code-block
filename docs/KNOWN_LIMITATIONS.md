@@ -24,6 +24,14 @@ Phase 11 固定夹具及自动化测试已覆盖三条黄金路径的可操作�
 
 源码读取的最终路径核验当前支持 Windows 文件句柄和 Linux `/proc/self/fd`；若平台无法可靠取得已打开文件的真实路径，或文件系统不提供可比较的文件身份，查看器会拒绝读取而不是忽略安全检查。复杂图的隐藏成员可从聚合节点进入侧栏选择并重新定位，但聚合成员侧栏尚无独立过滤；超大成员列表的交互优化留后续阶段。
 
+## React 原生桌面与分发边界
+
+React 的 Inspector 暂未把所有关系 / 成员 ID 转换为易读名称，也未实现 Inspector 内源码预览；完整源码通过标签或侧边查看。旧 Tk 的所有键盘 / 滚动交互不应视为新 React 界面的承诺，具体差距见 UX_SPEC 的 React 实施口径。Windows 原生入口已显式指定 Edge Chromium；仅安装 Linux WebView 依赖不会使该入口自动支持 Linux。
+
+主命令 `codeviz` 已转为 pywebview / React 桌面，`codeviz-tk` 保留上文 Tk 基线能力与限制。Windows 原生窗口需要系统 WebView2 Runtime；PyInstaller onedir 不内置该系统运行时，必须分发整个 `dist/CodeViz`，不能只复制 exe。Linux core 安装不需要 GTK / Qt；Linux 桌面后端配置与跨平台安装包不属于当前 Windows 交付。
+
+运行前端资源全部本地分发，无 CDN；首次依赖安装与构建仍需获取依赖。静态 loopback 服务只允许 frontend 资源根，不得暴露项目根、源码、缓存或应用 HTTP API。wheel 包含 `codeviz/ui/assets`，冻结包包含 `_internal/frontend/dist`，源码运行使用 `frontend/dist`。无 GUI CI 与 CheckOnly 只能证明依赖和产物检查，不能代替 WebView2 窗口、视觉交互与离线黄金路径验收。packaging 锁定直接工具版本，未提供全部传递依赖的哈希锁。
+
 ## MVP 限制
 
 - Python + PyTorch 优先，其他语言只保留 Adapter 接口。

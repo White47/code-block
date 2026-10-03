@@ -124,6 +124,16 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 - Acceptance Criteria：三条黄金路径通过；原有失败与新增失败分开记录；不执行用户代码。
 - Out of Scope：后置能力。
 
+## React 桌面迁移 — Task 5 打包与 CI
+
+- 主入口 `codeviz` → `codeviz.ui.desktop:main`，旧入口 `codeviz-tk` → `codeviz.ui.tkapp:main`；Tk 实现保留至迁移验收完成。
+- `[desktop]` 固定 pywebview 6.2.1，`[packaging]` 固定 PyInstaller 6.22.3 / setuptools 84.0.0；纯分析核心不引入 Linux GUI 系统库。
+- `scripts/build-desktop.ps1` 探测或接受指定 Python，完整构建先 npm ci / build，再输出 `dist/CodeViz/CodeViz.exe`；CheckOnly 必须检查现有前端依赖与产物。
+- `scripts/desktop_entry.py` 的 setuptools build_py 命令将 `frontend/dist` 复制到 wheel 的 `codeviz/ui/assets`；`scripts/codeviz.spec` 将资源放到冻结目录 `frontend/dist`。启动器须覆盖源码、wheel assets 与 `_MEIPASS` 三种资源路径。
+- CI 执行前端 lint / typecheck / test / build，Python core lint / mypy / unit / wheel 和 Windows 无 GUI 打包；WebView2 原生窗口、离线使用与三条黄金路径仍由 Task 6 单独验收。
+
 ## 阶段门禁
+
+React 迁移 Tasks 1–6 已完成当前 Windows 技术交付与独立复审，2026-10-03 最终构建 / 测试 / 原生三入口结果见 `DESKTOP_MIGRATION_VALIDATION.md`。原 Tk 阶段记录保留为历史基线；当前 UX 差距、跨平台桌面与人工理解度验证明确列为后续，不随此次交付隐式宣称完成。
 
 每阶段结束必须记录 changed files、实现摘要、适用的 lint / typecheck / test / build 结果、原有失败与新增失败、下一阶段。文档与实现冲突时同一阶段内修正文档或实现，并在 ADR / changelog 留痕。

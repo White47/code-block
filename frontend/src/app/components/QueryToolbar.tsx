@@ -1,0 +1,4 @@
+import type { Translate } from '../i18n';
+export default function QueryToolbar({ direction, hops, setDirection, more, disabled, t, inspectorVisible, toggleInspector }: { direction: 'in' | 'out' | 'both'; hops: number; setDirection: (value: 'in' | 'out' | 'both') => void; more: () => void; disabled: boolean; t: Translate; inspectorVisible: boolean; toggleInspector: () => void }) {
+  return <div className="query-toolbar"><span>{t('relations')}</span>{(['in', 'out', 'both'] as const).map(value => <button key={value} disabled={disabled} className={direction === value ? 'active' : ''} onClick={() => setDirection(value)}>{value === 'in' ? t('upstream') : value === 'out' ? t('downstream') : t('both')}</button>)}<button disabled={disabled || hops >= 5} onClick={more}>{t('moreHops')} · {hops}/5</button><button className="inspector-toggle" onClick={toggleInspector} aria-pressed={inspectorVisible}>{t('inspector')} {inspectorVisible ? '›' : '‹'}</button></div>;
+}

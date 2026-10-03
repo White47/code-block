@@ -95,6 +95,8 @@ class TkAppImportTests(unittest.TestCase):
     def test_package_exposes_desktop_launcher_without_runtime_dependency(self):
         manifest = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
         self.assertEqual(manifest["project"]["scripts"]["codeviz"],
+                         "codeviz.ui.desktop:main")
+        self.assertEqual(manifest["project"]["scripts"]["codeviz-tk"],
                          "codeviz.ui.tkapp:main")
         self.assertEqual(manifest["project"]["dependencies"], [])
 

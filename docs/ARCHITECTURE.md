@@ -2,7 +2,7 @@
 
 ## 1. 当前约束
 
-Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。领域层与 UI 使用 Python 3.11+ 标准库；桌面壳采用 Tkinter / ttk / Canvas，持久化采用有大小限制的本地 JSON，见 ADR-005、ADR-006、ADR-007。交互式源码画布只借鉴 draw.io 的分层布局、画布导航和局部容器交互，不捆绑 draw.io、浏览器运行时、WebView 或网络布局服务。
+Phase 0 初次审计未发现现有代码或技术栈；用户确认从空目录新建。领域层使用 Python 3.11+，持久化采用有大小限制的本地 JSON，见 ADR-005、ADR-007。桌面展示正按 ADR-008 从 Tkinter fallback 迁移到 bundled React Flow + pywebview；生产无 CDN，打包静态资源只由随机端口、仅绑定 loopback 的服务器提供，应用 bridge 不走 HTTP。Tk fallback 保留到桌面验收通过。
 
 ## 2. 分层
 
@@ -17,8 +17,8 @@ Project Source / Config
   → Semantic Component Graph
   → View Builder / Graph Query
   → Visible Graph / Deterministic Layout Hints
-  → Canvas Scene
-  → Tk Canvas / Search / Navigation / Inspector / Source
+  → Web Contract / Canvas Scene
+  → React Flow Desktop (primary migration target) / Tk Canvas (temporary fallback)
 ```
 
 ## 3. 模块责任
@@ -36,7 +36,7 @@ Project Source / Config
 - View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单；`views/code_context.py` 从已有 Full Code Graph 取 Symbol / Data Flow 的有向 1–5 hop 邻域。输出限制节点与边并保留聚合成员 ID；`views/layout.py` 只用 Contains、Control Flow、Branch True / False 做确定性的纵向 rank 与分支列，其他关系不参与层级计算，因此 Symbol / Data Flow 可能落入确定性的同 rank / Stable ID 回退位置。分层算法异常时仅在该布局边界内捕获，返回 Stable ID 顺序的纵向位置并在 `VisibleGraph.issues` 记录结构化 `LAYOUT_FALLBACK`；Controller 有界去重并交给 Problems，分析事实和缓存序列化不变。手动位置最后覆盖，完整代码图不直接交给 UI。
 - Search / Navigation：`search.py` 对索引定义及带锚点语义组件做有限结果查询，保留 scope、qualifiedName、SourceAnchor 与 confidence；`navigation.py` 将选中结果映射到 Architecture / Execution / Symbol / Data Flow 及真实根 ID，无法定位时返回显式原因，不猜测动态引用目标。
 - Canvas Scene：`ui/canvas_scene.py` 是纯 UI 投影边界；`graph_scene()` 每次把一个 `VisibleGraph` 转为场景节点、关系路由和尺寸，并提供可逆坐标变换、确定性岛放置与避障折线等纯几何函数。它不组合多个图，也不修改 Code Graph、Semantic Graph 或 Visible Graph。
-- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、每岛最多 18 节点 / 40 边的独立局部查询、View State 和受限只读源码访问；`ui/graph_canvas.py` 接收一个主 `VisibleGraph` 以及零到三个细节图 / 状态对，分别调用 Canvas Scene 投影，组合细节岛和来源连线，再绘制到 Tk Canvas，并分离选择、节点 / 岛拖动、平移、缩放、滚动、Fit、100% 与源码动作；`ui/tkapp.py` 协调标签、主图与岛上下文、统一 Inspector、源码导航、Outdated 警告和后台分析消息队列。Architecture / Execution 的单击保持主图，Symbol / Data Flow 的可聚焦主节点单击可以通过 Controller 重新查询并重新居中有界局部上下文。
+- UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、每岛最多 18 节点 / 40 边的独立局部查询、View State 和受限只读源码访问；`ui/web_contract.py` 将 session、search + Python 规划的 RevealTarget、ViewState、preferences 及既有 presenter / graph 数据转换为版本化纯 JSON DTO，拒绝非有限坐标并丢弃未知 metadata / query context。pywebview bridge 是 React 的唯一应用 API，不经 HTTP；随机 loopback 服务器只提供本地构建静态资源且不开放远程监听。`ui/graph_canvas.py` / `ui/tkapp.py` 在桌面验收前继续作为 fallback。
 - Cache：Analysis Cache、View State、Annotations 三者分离。View State 记录每视图 viewport 以及细节岛来源 / 位置；无效 View State 不能删除或阻止加载有效 Analysis Cache。
 
 ## 4. 关键边界
@@ -49,4 +49,4 @@ Parser 只负责语法事实；Resolver 负责名称；Semantic Rules 负责解�
 
 ## 6. 后续技术决策
 
-桌面壳、图绘制与源码查看由 ADR-006 的 Tkinter 方案落地；Analysis Cache、Annotations、Recent Projects 和 View State 的 JSON 格式由 Phase 10 落地。若图形壳更换，保留 UI 无关的 Controller / Presenter、VisibleGraph 与 Canvas Scene 契约。`.drawio` 导出仍是独立后续能力，只能从 Visible Graph / Canvas Scene 生成，不能反向成为分析事实来源。
+桌面壳、图绘制与源码查看按 ADR-008 迁移到 React Flow + pywebview；ADR-006 的 Tkinter 实现暂作 fallback。Analysis Cache、Annotations、Recent Projects 和 View State 的 JSON 格式由 Phase 10 落地。壳层必须保留 UI 无关的 Controller / Presenter、VisibleGraph 与版本化 Web Contract；`ignore_paths` 后续作为独立分析设置，不进入语言 preferences DTO。`.drawio` 导出仍是独立后续能力，只能从 Visible Graph / Canvas Scene 生成，不能反向成为分析事实来源。

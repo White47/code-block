@@ -9,6 +9,25 @@ permissions:
   contents: read
 
 jobs:
+  frontend:
+    name: Frontend quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend run lint
+      - run: npm --prefix frontend run typecheck
+      - run: npm --prefix frontend test -- --run
+      - run: npm --prefix frontend run build
+
   quality:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-24.04
@@ -41,5 +60,74 @@ jobs:
       - name: Test
         run: python -B -m unittest discover -s tests -v
 
+      - name: Set up Node for wheel assets
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend for wheel
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run build
+
       - name: Build wheel
         run: python -m pip wheel . --no-deps -w dist
+
+      - name: Verify wheel assets and optional desktop dependency
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          from email.parser import Parser
+          with ZipFile(next(Path('dist').glob('*.whl'))) as wheel:
+              names = wheel.namelist()
+              assert 'codeviz/ui/assets/index.html' in names
+              assert any(n.startswith('codeviz/ui/assets/assets/') for n in names)
+              metadata = Parser().parsestr(wheel.read(next(n for n in names if n.endswith('/METADATA'))).decode())
+              assert all('extra ==' in requirement for requirement in metadata.get_all('Requires-Dist', []))
+          PY
+
+      - name: Upload verified Python wheel
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CodeViz-wheel-Python-${{ matrix.python-version }}
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 14
+
+  windows-packaging:
+    name: Windows desktop packaging (no GUI)
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install optional desktop and pinned packaging tools
+        run: python -m pip install -e ".[desktop,packaging]"
+      - name: Build onedir bundle without launching GUI
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1 -Python (Get-Command python).Source
+      - name: Check prerequisites and bundled files without launching GUI
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1 -CheckOnly -Python (Get-Command python).Source
+      - name: Upload complete Windows desktop bundle
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CodeViz-Windows-x64
+          path: dist/CodeViz/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

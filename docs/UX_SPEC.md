@@ -1,5 +1,13 @@
 # UX 规范
 
+## React 桌面实施口径（2026-10-03）
+
+主入口为 React Flow / WebView2 原生 Windows 窗口；下文涉及 Tk 滚动条、快捷键缩放范围和固定 Overview 的描述仅作为 `codeviz-tk` 基线，不适用于新入口。React 中所有标签均可关闭，关闭最后一个标签回到概览；不会退出应用或清除分析结果。画布使用 React Flow 的拖移、缩放与 Fit，用户位置优先，自动布局纵向展开；大图不保证一屏容纳。
+
+React 支持主图与最多三个同画布细节岛、节点选择 / Inspector、源码标签 / 侧边源码、搜索定位、上游 / 下游 / 双向和最多五跳查询。项目切换前保存待处理布局；设置保存与项目操作串行执行，过期异步响应不得覆盖新项目。Ignore Paths 为项目级，语言为应用级，均保存在应用数据目录。
+
+Inspector 已提供锚点、判断依据、关系和数据；关系 / 成员目前仍可显示内部 ID，尚未达到下文易读名称及 12 条截断的目标。源码片段由独立源码标签或侧边完整文件提供，Inspector 内预览与完整键盘导航仍待补齐。以上是明确的当前实现差距，不视为完整 UX 目标已达成。
+
 ## 1. 布局
 
 采用 VSCode 风格：左侧 Activity Bar / Sidebar，中间 Editor Area，右侧统一 Inspector。Activity 包含 Explorer、Search、Architecture、Execution、Symbols、Settings。
