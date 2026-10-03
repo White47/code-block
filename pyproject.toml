@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,9 +11,15 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-codeviz = "codeviz.ui.tkapp:main"
+codeviz = "codeviz.ui.desktop:main"
+codeviz-tk = "codeviz.ui.tkapp:main"
 
 [project.optional-dependencies]
+desktop = ["pywebview==6.2.1"]
+packaging = [
+    "pyinstaller==6.22.3",
+    "setuptools==84.0.0",
+]
 dev = [
     "ruff==0.16.8",
     "mypy==2.3.1",
@@ -36,3 +42,13 @@ warn_unused_configs = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+scripts = "scripts"
+
+[tool.setuptools.cmdclass]
+build_py = "scripts.desktop_entry.BuildFrontendAssets"
+
+[tool.setuptools.package-data]
+"codeviz.ui" = ["assets/**/*", "assets/*"]
