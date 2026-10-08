@@ -7,7 +7,12 @@ import sys
 import traceback
 from pathlib import Path
 
-from playwright.sync_api import expect, sync_playwright
+
+def expect(*args, **kwargs):
+    """Load browser assertions only when native verification uses them."""
+    from playwright.sync_api import expect as playwright_expect
+
+    return playwright_expect(*args, **kwargs)
 
 
 def overview_choice(page, category: str, name: str):
@@ -229,6 +234,8 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
 
 
 def main() -> None:
+    from playwright.sync_api import sync_playwright
+
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=9237)

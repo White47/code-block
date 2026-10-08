@@ -25,6 +25,8 @@
 
 ## 验证原则
 
+核心 unittest 必须在未安装可选浏览器工具的环境中运行；不能因为开发机安装了 Playwright 就假定 CI 也存在。`test_general_python_verifier.py` 使用全新子进程阻止 Playwright 导入，验证 native verifier 的纯选择器／会话辅助可加载，真实 native main 执行时仍明确要求浏览器依赖，不跳过该选择器回归。Playwright 仅在实际浏览器断言或原生验收入口延迟导入，不进入解析核心／dev 必需依赖；真实 WebView2 验收仍在单独配置的桌面环境运行。
+
 每个阶段运行真实仓库已有的 lint、typecheck、test、build；空仓库阶段不伪造通过结果。Phase 2 后的质量门禁已配置 Ruff（`src tests`）和 mypy 严格模式（`src/codeviz`），具体命令见 `README.md` 与 `QUALITY_GATES.md`。失败分为原有失败、环境失败、新增失败。禁止为了测试自动执行被分析项目。
 
 ## 验收
