@@ -41,6 +41,15 @@ function nativeApi(options: { active?: 'Overview' | 'Architecture'; hint?: 1 | 2
     save_viewport: vi.fn(async () => ok(state)),
     get_detail_view: vi.fn(async () => ok(graph)),
     read_source: vi.fn(async value => ok({ filePath: value.filePath, text: '# source', startLine: 1, endLine: 1 })),
+    open_source_document: vi.fn<NativeApi['open_source_document']>(async (projectPath, value) => ok({
+      projectPath, filePath: value.filePath, text: '# source', revision: 'fixture-revision',
+      encoding: 'utf-8', newline: 'LF', readOnlyReason: null,
+    })),
+    save_source_document: vi.fn<NativeApi['save_source_document']>(async request => ok({
+      ...request, revision: 'fixture-saved-revision', encoding: 'utf-8', newline: 'LF', readOnlyReason: null,
+    })),
+    approve_close: vi.fn<NativeApi['approve_close']>(async () => ok(null)),
+    cancel_close: vi.fn<NativeApi['cancel_close']>(async () => ok(null)),
     open_project: vi.fn(async path => {
       currentSession = { ...currentSession, projectPath: path };
       currentOverview = { ...currentOverview, projectPath: path };

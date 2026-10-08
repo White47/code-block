@@ -50,10 +50,12 @@ class FakeWebview:
                                   CoreWebView2InitializationCompleted=FakeEvent(),
                                   CoreWebView2=core)
         self.window = SimpleNamespace(
-            events=SimpleNamespace(initialized=FakeEvent(), before_show=FakeEvent()),
+            events=SimpleNamespace(initialized=FakeEvent(), before_show=FakeEvent(),
+                                   closing=FakeEvent(), before_load=FakeEvent(),
+                                   loaded=FakeEvent(), closed=FakeEvent()),
             native=SimpleNamespace(browser=SimpleNamespace(webview=control)),
             real_url="http://127.0.0.1:12345/", create_file_dialog=Mock(return_value=None),
-            expose=Mock())
+            expose=Mock(), run_js=Mock(return_value=None), evaluate_js=Mock(), destroy=Mock())
 
     def create_window(self, *args: object, **kwargs: object) -> object:
         self.created.append((args, kwargs))

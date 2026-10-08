@@ -22,9 +22,11 @@ from codeviz.search import search_project
 from .controller import AnalysisStatus, AppController
 from .preferences import PreferencesStore
 from .presenter import build_inspector, build_overview, build_problems
+from .source_editing import MAX_SOURCE_BYTES, SourceEditingError
 from .web_contract import (
     JsonObject,
     JsonValue,
+    editable_source_payload,
     graph_payload,
     inspector_payload,
     overview_payload,
@@ -152,6 +154,7 @@ class DesktopBridge:
         self._recent_projects_snapshot: tuple[Path, ...] = ()
         self._window: ProjectWindow | None = None
         self._folder_dialog_type = 20
+        self._close_handler: Callable[[str, bool], None] | None = None
         self._settings_path = self._cache_store.data_dir / "analysis-settings.json"
         self._settings_issue: str | None = None
         self._settings_by_project: dict[str, tuple[str, ...]] = {}
@@ -177,6 +180,25 @@ class DesktopBridge:
         # Private: pywebview exposes public methods of js_api automatically.
         self._window = window
         self._folder_dialog_type = folder_dialog_type
+
+    def _bind_close_handler(self, handler: Callable[[str, bool], None]) -> None:
+        self._close_handler = handler
+
+    def approve_close(self, request_id: object) -> JsonObject:
+        return self._close_response(request_id, True)
+
+    def cancel_close(self, request_id: object) -> JsonObject:
+        return self._close_response(request_id, False)
+
+    def _close_response(self, request_id: object, approve: bool) -> JsonObject:
+        def operation() -> JsonObject:
+            token = _string(request_id, "requestId", max_length=128)
+            if self._close_handler is None:
+                raise ValueError("no native close request")
+            self._close_handler(token, approve)
+            return {"requestId": token}
+
+        return self._invoke(operation, invalid_message="The close request is no longer valid.")
 
     def _load_analysis_settings(self) -> None:
         try:
@@ -331,6 +353,8 @@ class DesktopBridge:
                 invalid_message: str) -> JsonObject:
         try:
             return success_payload(operation())
+        except SourceEditingError as error:
+            return contract_error_payload(error)
         except RuntimeError as error:
             return contract_error_payload(error)
         except (TypeError, ValueError) as error:
@@ -514,6 +538,32 @@ class DesktopBridge:
                 _source_anchor(anchor))),
             invalid_message="The source request is invalid.",
         )
+
+    def open_source_document(self, project_path: object, anchor: object) -> JsonObject:
+        def operation() -> JsonObject:
+            return editable_source_payload(self._controller.open_source_document(
+                _string(project_path, "projectPath", max_length=_MAX_PATH_LENGTH),
+                _source_anchor(anchor)))
+
+        return self._call(operation, invalid_message="The source document request is invalid.")
+
+    def save_source_document(self, request: object) -> JsonObject:
+        def operation() -> JsonObject:
+            if (type(request) is not dict
+                    or set(request) != {"projectPath", "filePath", "text", "revision"}):
+                raise ValueError("save request has unexpected or missing fields")
+            text = _string(request["text"], "text", max_length=MAX_SOURCE_BYTES, allow_empty=True)
+            try:
+                # Validate Unicode here; the service bounds the preserved encoding's bytes.
+                text.encode("utf-8", errors="strict")
+            except UnicodeError:
+                raise ValueError("invalid source text") from None
+            return editable_source_payload(self._controller.save_source_document(
+                _string(request["projectPath"], "projectPath", max_length=_MAX_PATH_LENGTH),
+                _string(request["filePath"], "filePath"), text,
+                _string(request["revision"], "revision", max_length=128)))
+
+        return self._write_call(operation, invalid_message="The source save request is invalid.")
 
     def get_preferences(self) -> JsonObject:
         def operation() -> JsonObject:

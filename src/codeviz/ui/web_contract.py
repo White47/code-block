@@ -17,6 +17,7 @@ from codeviz.views.state import ViewState
 
 from .controller import AnalysisStatus, SourceDocument
 from .presenter import InspectorData, OverviewData, ProblemData
+from .source_editing import EditableSource, SourceEditingError
 
 SCHEMA_VERSION = 1
 JsonScalar: TypeAlias = None | bool | str | int | float
@@ -346,6 +347,18 @@ def source_payload(document: SourceDocument) -> JsonObject:
     })
 
 
+def editable_source_payload(document: "EditableSource") -> JsonObject:
+    return _json_object({
+        "projectPath": document.project_path,
+        "filePath": document.file_path,
+        "text": document.text,
+        "revision": document.revision,
+        "encoding": document.encoding,
+        "newline": document.newline,
+        "readOnlyReason": document.read_only_reason,
+    })
+
+
 def session_payload(
     project_path: Path | None,
     status: AnalysisStatus,
@@ -470,7 +483,10 @@ def success_payload(data: JsonValue,
 def error_payload(error: Exception,
                   request_id: str | None = None, *,
                   safe_message: str | None = None) -> JsonObject:
-    if isinstance(error, (ValueError, TypeError)):
+    if isinstance(error, SourceEditingError):
+        code = error.code
+        message = str(error)
+    elif isinstance(error, (ValueError, TypeError)):
         code = "INVALID_REQUEST"
         message = (safe_message if isinstance(safe_message, str) and safe_message
                    else "The request is invalid.")

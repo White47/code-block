@@ -24,6 +24,8 @@ from codeviz.views.data import critical_data_slice
 from codeviz.views.query import GraphQuery
 from codeviz.views.structure_identity import StructureResolver
 
+from .source_editing import EditableSource, SourceEditingService
+
 _DETAIL_UNAVAILABLE_ERRORS = frozenset({
     "requested root is not available in this view",
     "selected component is outside the requested view",
@@ -69,6 +71,7 @@ class AppController:
         self.cache_issue: str | None = None
         self.view_issues: tuple[ViewIssue, ...] = ()
         self._structure_depths: dict[ViewKind, tuple[str | None, int]] = {}
+        self._source_editing = SourceEditingService()
 
     def open_project(self, project_root: Path) -> None:
         if self.status == AnalysisStatus.ANALYZING:
@@ -77,6 +80,7 @@ class AppController:
         if not root.is_dir():
             raise ValueError("project_root must be an existing directory")
         self.project_root = root
+        self._source_editing.bind_project(root)
         self.analysis = None
         self.status = AnalysisStatus.NOT_ANALYZED
         self.view_state = ViewState()
@@ -115,6 +119,20 @@ class AppController:
         except (CacheError, OSError, ValueError) as error:
             if self.cache_issue is None:
                 self.cache_issue = f"Recent projects: {error}"
+
+    def open_source_document(self, project_path: str, anchor: SourceAnchor) -> EditableSource:
+        return self._source_editing.open(project_path, anchor.file_path)
+
+    def save_source_document(self, project_path: str, file_path: str,
+                             text: str, revision: str) -> EditableSource:
+        if self.status == AnalysisStatus.ANALYZING:
+            raise RuntimeError("source cannot change during analysis")
+        document = self._source_editing.save(project_path, file_path, text, revision)
+        if self.analysis is not None:
+            self.status = AnalysisStatus.OUTDATED
+            self.outdated_reasons = tuple(dict.fromkeys(
+                (*self.outdated_reasons, "source was saved; reanalysis required")))
+        return document
 
     @staticmethod
     def _result_status(result: ProjectAnalysis) -> AnalysisStatus:

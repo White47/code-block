@@ -6,8 +6,9 @@ const projectMutations: ReadonlySet<keyof BridgeMethods> = new Set<keyof BridgeM
   'choose_project', 'open_project', 'analyze', 'save_layout', 'move_node',
   'save_viewport', 'expand', 'collapse', 'open_detail_island',
   'move_detail_island', 'close_detail_island', 'set_analysis_settings',
+  'save_source_document', 'approve_close', 'cancel_close',
 ]);
-declare global { interface Window { pywebview?: { api?: Api } } }
+declare global { interface Window { pywebview?: { api?: Api }; __codevizCloseReady?: boolean } }
 export class BridgeError extends Error {
   constructor(public code: string, message: string) { super(message); this.name = 'BridgeError'; }
 }

@@ -2,13 +2,15 @@
 
 Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
 
+2026-10-08 源码编辑增量：React PC 源码标签与侧边源码已接入离线 Monaco，支持 Python 彩色语法、行号、查找替换、撤销、折叠和显式保存。修改后标签显示 `●`，点击“保存”或按 `Ctrl+S`；关闭最后一个源码视图、切换项目、重新分析或退出时提供保存／放弃／取消。外部文件变化拒绝覆盖并保留草稿；保存后旧图标为过期，需手动重新分析。混合换行、CR-only、链接、只读或不可安全往返的编码目标不可编辑。源码不会自动运行或上传，未保存草稿不在强制退出后恢复。下方只读描述属于早期／Tk 基线，React 编辑合同以 [SOURCE_EDITING.md](docs/SOURCE_EDITING.md) 为准。
+
 普通 Python 项目也可使用：打开目录 → 分析 → 项目概览的“函数 / 方法”目录 → 选择函数 → **函数流程** → 单击节点查看检查器 → 打开源码或侧边源码。无需模型、PyTorch 或自动入口。搜索普通变量可进入局部数据关系；main guard 等入口只代表静态候选，不等于真实运行轨迹。支持范围、限制与本轮验收见 [Python 支持矩阵](docs/PYTHON_SUPPORT_MATRIX.md) 和 [通用 Python 验证记录](docs/GENERAL_PYTHON_VALIDATION.md)。
 
 当前已有本地桌面阅读、搜索与 Phase 10 本地缓存：首次显式点击 Analyze Project 后，重新打开未变化的项目会直接加载分析结果；源码、Ignore Paths 或版本变化时旧图标为 Outdated，并可 Re-analyze。Recent Projects、图布局、标签与选中节点保存在应用数据目录，Annotations 独立保存。Overview 中可选择模型或入口，浏览 Architecture / Training Flow 局部图；Search / Symbols 可查定义与语义节点，再 Reveal 到局部图、Inspector、只读源码或 Open to Side。Analysis Issues 有独立标签页。自动布局按各视图关系方向从上到下分层，同层分支并列；Symbol / Data Flow 上游允许位于查询焦点上方，环稳定处理，不代表真实执行顺序，详见 `docs/UX_SPEC.md`。关系范围可用“更少层 / 更多层”在 1–5 层间调整；新图自动定位，正常用户视角和手动节点位置保留，详见 [画布恢复](docs/CANVAS_RECOVERY.md)。长图可继续平移、缩放和适应，不保证一屏全部容纳；除概览外的图、源码和问题标签都可通过右侧 `×` 或 `Ctrl+W` 关闭。底层 `analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`；`build_visible_graph(...)` 只生成有预算的 Architecture / Execution / FunctionFlow / Symbol / Data Flow 局部图。Q/K/V → 矩阵得分 → softmax 只给出 Attention-like 候选；梯度关系是 Probable 静态模式，不是真实 autograd 图。源码只读，不导入或执行被分析代码。
 
 桌面主入口采用 React Flow + pywebview 原生窗口。Windows 需要预先安装系统原生 **Microsoft Edge WebView2 Runtime**，打包目录不内置该系统运行时。生产前端 JS、CSS 等资源全部随应用分发，可离线使用，无 CDN。静态服务只绑定随机 loopback 端口、只提供 frontend 资源根；项目源码和应用 API 不通过 HTTP 暴露，应用操作经 pywebview bridge 完成。浏览器打开 Vite 页面仅用于前端开发，不能替代原生窗口。
 
-当前本地架构详情修复体验包：关闭旧应用，运行 `dist/architecture-detail-routing/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录。已完成 nanoGPT 的源码／wheel／冻结 PC 三入口验证与普通 Python、训练、搜索、源码、缓存回归，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。复杂图仍可能连线交叉；尚未提交或上传，不要把旧 GitHub 包当作此版本。此前画布恢复包保留为历史产物。
+本轮源码编辑 PC 包：关闭旧应用，运行 `dist/monaco-source-editing/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录，不要只复制 exe。该包沿用架构详情与普通 Python 能力；编辑增量尚未提交或推送。此前 `dist/architecture-detail-routing/CodeViz/CodeViz.exe` 等只读体验包作为历史产物保留。复杂图仍可能连线交叉，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。
 
 从仓库根目录准备并启动（Python 3.11+、Node.js 22，首次安装与构建需获取依赖）：
 

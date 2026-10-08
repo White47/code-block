@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { BridgeError, call, hasMethod, waitForBridge } from '../api/bridge';
 import type { AnalysisSettings, Anchor, Graph, InspectorData, Language, Overview as OverviewData, Problem, SearchResult, Session, ViewKind, ViewState, VisibleNode } from '../types';
-import { initialState, layoutOf, reducer, sourceTab, viewTab, workspaceFromPython, type Action } from './state';
+import { initialState, layoutOf, reducer, sourceTab, viewTab, workspaceFromPython, type Action, type Tab } from './state';
+import { SourceDocumentStore, sourceDocumentKey } from './sourceDocuments';
+import { releaseSourceModel } from './sourceModels';
 import { translator } from './i18n';
 import ActivityBar, { type Activity } from './components/ActivityBar';
 import Sidebar from './components/Sidebar';
@@ -76,6 +78,131 @@ export default function App() {
     if (generation !== projectGeneration.current || (pollingEpoch !== undefined && pollingEpoch !== pollEpoch.current) || (!allowProjectChange && (sessionRef.current?.projectPath !== requestedPath || s.projectPath !== requestedPath))) return null;
     sessionRef.current = s; setSession(s); return s;
   }, []);
+  const [documents] = useState(() => new SourceDocumentStore(
+    (projectPath, anchor) => call('open_source_document', projectPath, anchor),
+    request => enqueue(async () => {
+      const generation = projectGeneration.current;
+      if (sessionRef.current?.projectPath !== request.projectPath) throw new BridgeError('SOURCE_PROJECT_CHANGED', 'The source project changed.');
+      const saved = await call('save_source_document', request);
+      await refreshSession(generation).catch(reportError);
+      return saved;
+    }),
+  ));
+  const [sourceVersion, sourceChanged] = useReducer(value => value + 1, 0);
+  useEffect(() => documents.subscribe(sourceChanged), [documents]);
+  const [sourceDecision, setSourceDecision] = useState<{ keys: string[]; resolve: (choice: 'save' | 'discard' | 'cancel') => void } | null>(null);
+  const [guardSaving, setGuardSaving] = useState(false);
+  const [sourceLocked, setSourceLocked] = useState(false);
+  const settingsPending = useRef(false);
+  const nativeClosePending = useRef(false);
+  const activeNativeClose = useRef<{ requestId: string; phase: 'guard' | 'approval' } | null>(null);
+  const guardPending = useRef(false);
+  const keyFor = useCallback((anchor: Anchor) => sourceDocumentKey(sessionRef.current?.projectPath ?? '', anchor.filePath), []);
+  const guardSources = useCallback(async (keys: string[]): Promise<boolean> => {
+    if (guardPending.current) return false;
+    guardPending.current = true;
+    const unique = [...new Set(keys)];
+    try {
+      for (const key of unique) if (documents.get(key)?.saving) await documents.save(key);
+      const dirty = unique.filter(key => documents.get(key)?.dirty);
+      if (!dirty.length) return true;
+      const decision = await new Promise<'save' | 'discard' | 'cancel'>(resolve => setSourceDecision({ keys: dirty, resolve }));
+      if (decision === 'cancel') return false;
+      if (decision === 'discard') {
+        for (const key of dirty) documents.discard(key);
+        return true;
+      }
+      setGuardSaving(true);
+      for (const key of dirty) {
+        await documents.save(key);
+        if (documents.get(key)?.dirty) return false;
+      }
+      return true;
+    } catch (error) { reportError(error); return false; }
+    finally { setSourceDecision(null); setGuardSaving(false); guardPending.current = false; }
+  }, [documents, reportError]);
+  const closeSourceTab = useCallback(async (id: string) => {
+    if (projectOperationPending.current || guardPending.current) return;
+    const current = workspaceRef.current;
+    const closing = current.tabs.find(item => item.id === id);
+    if (closing?.anchor) {
+      const key = keyFor(closing.anchor);
+      const retained = current.tabs.some(item => item.id !== id && item.anchor && keyFor(item.anchor) === key)
+        || (current.side && keyFor(current.side) === key);
+      if (!retained && !await guardSources([key])) return;
+    }
+    dispatch({ type: 'close', id });
+  }, [guardSources, keyFor]);
+  const changeSide = useCallback(async (anchor: Anchor | null) => {
+    if (projectOperationPending.current || guardPending.current) return;
+    const current = workspaceRef.current;
+    if (current.side) {
+      const key = keyFor(current.side);
+      const retained = (anchor && keyFor(anchor) === key) || current.tabs.some(item => item.anchor && keyFor(item.anchor) === key);
+      if (!retained && !await guardSources([key])) return;
+    }
+    dispatch({ type: 'side', anchor });
+  }, [guardSources, keyFor]);
+  const saveSource = useCallback(async (key: string) => {
+    if (projectOperationPending.current || settingsPending.current) return;
+    try { await documents.save(key); } catch (error) { reportError(error); }
+  }, [documents, reportError]);
+  const releaseSources = useCallback(() => {
+    for (const key of documents.keys()) {
+      documents.release(key);
+      releaseSourceModel(key);
+    }
+  }, [documents]);
+  useEffect(() => {
+    const retained = new Set(workspace.tabs.flatMap(item => item.anchor ? [keyFor(item.anchor)] : []));
+    if (workspace.side) retained.add(keyFor(workspace.side));
+    for (const key of documents.keys()) {
+      const document = documents.get(key);
+      if (!retained.has(key) && !document?.dirty && !document?.saving) {
+        releaseSourceModel(key); documents.release(key);
+      }
+    }
+  }, [workspace, sourceVersion, documents, keyFor, session?.projectPath]);
+  useEffect(() => {
+    const consumed = new Set<string>();
+    const close = (event: Event) => {
+      const requestId = (event as CustomEvent<{ requestId?: unknown }>).detail?.requestId;
+      if (typeof requestId !== 'string' || !requestId || consumed.has(requestId)) return;
+      consumed.add(requestId);
+      void (async () => {
+        if (window.__codevizCloseReady !== true || projectOperationPending.current || settingsPending.current || guardPending.current) {
+          await call('cancel_close', requestId); return;
+        }
+        nativeClosePending.current = true; projectOperationPending.current = true; setSourceLocked(true);
+        activeNativeClose.current = { requestId, phase: 'guard' };
+        try {
+          const approved = await guardSources(documents.keys());
+          if (approved) activeNativeClose.current = { requestId, phase: 'approval' };
+          await call(approved ? 'approve_close' : 'cancel_close', requestId);
+          if (!approved && activeNativeClose.current?.requestId === requestId) { activeNativeClose.current = null; nativeClosePending.current = false; projectOperationPending.current = false; setSourceLocked(false); }
+        } catch (error) {
+          if (activeNativeClose.current?.requestId === requestId) {
+            activeNativeClose.current = null; nativeClosePending.current = false; projectOperationPending.current = false; setSourceLocked(false); throw error;
+          }
+        }
+      })().catch(reportError);
+    };
+    const failed = (event: Event) => {
+      const requestId = (event as CustomEvent<{ requestId?: unknown }>).detail?.requestId;
+      if (typeof requestId !== 'string' || activeNativeClose.current?.requestId !== requestId || activeNativeClose.current.phase !== 'approval') return;
+      activeNativeClose.current = null; nativeClosePending.current = false; projectOperationPending.current = false; setSourceLocked(false);
+      reportError(new BridgeError('NATIVE_CLOSE_FAILED', 'The window could not close. Your source is preserved; you can retry.'));
+    };
+    const unload = (event: BeforeUnloadEvent) => {
+      if (documents.keys().some(key => { const document = documents.get(key); return document?.dirty || document?.saving; })) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('codeviz:close-request', close); window.addEventListener('codeviz:close-failed', failed); window.addEventListener('beforeunload', unload);
+    return () => { window.removeEventListener('codeviz:close-request', close); window.removeEventListener('codeviz:close-failed', failed); window.removeEventListener('beforeunload', unload); };
+  }, [documents, guardSources, reportError]);
+  useEffect(() => {
+    window.__codevizCloseReady = connection === 'ready';
+    return () => { window.__codevizCloseReady = false; };
+  }, [connection]);
   const hydrate = useCallback(async (s: Session, generation: number) => {
     if (generation !== projectGeneration.current) return false;
     localSourceTabs.current.clear();
@@ -182,11 +309,22 @@ export default function App() {
   }, [node, view, root, detailSource, localSelectionValid, busy, graph?.queryContext.structureDepth, structureDepth, reportError]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'w') { event.preventDefault(); if (workspaceRef.current.active) dispatch({ type: 'close', id: workspaceRef.current.active }); }
-      if (event.key === 'Enter' && !(event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target.tagName)) && node && view && !detailSource) { event.preventDefault(); void write(() => call('open_detail_island', view, node.id, null)); }
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const focusedSide = Boolean(target?.closest('.side-editor'));
+      const editing = Boolean(target?.closest('input,textarea,select,button,.monaco-editor,[role="textbox"],[contenteditable]:not([contenteditable="false"])'));
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'w') {
+        event.preventDefault();
+        if (focusedSide) void changeSide(null);
+        else if (workspaceRef.current.active) void closeSourceTab(workspaceRef.current.active);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        const anchor = focusedSide ? workspaceRef.current.side : workspaceRef.current.tabs.find(item => item.id === workspaceRef.current.active)?.anchor;
+        if (anchor) { event.preventDefault(); void saveSource(keyFor(anchor)); }
+      }
+      if (event.key === 'Enter' && !editing && node && view && !detailSource) { event.preventDefault(); void write(() => call('open_detail_island', view, node.id, null)); }
     };
-    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
-  }, [node, view, detailSource, write]);
+    window.addEventListener('keydown', key, true); return () => window.removeEventListener('keydown', key, true);
+  }, [node, view, detailSource, write, closeSourceTab, changeSide, saveSource, keyFor]);
   useEffect(() => {
     if (!busy) return;
     const generation = projectGeneration.current;
@@ -197,6 +335,9 @@ export default function App() {
   async function runProject(operation: () => Promise<Session>) {
     if (projectOperationPending.current) return;
     projectOperationPending.current = true;
+    setSourceLocked(true);
+    if (!await guardSources(documents.keys())) { projectOperationPending.current = false; setSourceLocked(settingsPending.current); return; }
+    releaseSources();
     const flushLayout = connection === 'ready' && sessionRef.current?.projectPath && sessionRef.current.hasAnalysis && sessionRef.current.status !== 'Analyzing' ? layoutSnapshot(workspaceRef.current) : null;
     clearTimeout(layoutTimer.current); layoutTimer.current = undefined;
     const generation = ++projectGeneration.current;
@@ -224,12 +365,16 @@ export default function App() {
         try { const s = await refreshSession(generation, true); if (s) await hydrate(s, generation); } catch { /* Keep the original operation failure visible. */ }
         if (generation === projectGeneration.current) restored.current = true;
       }
-    } finally { if (generation === projectGeneration.current) { pollEpoch.current++; projectOperationPending.current = false; setBusy(false); } }
+    } finally { if (generation === projectGeneration.current) { pollEpoch.current++; projectOperationPending.current = false; setBusy(false); setSourceLocked(settingsPending.current); } }
   }
-  const saveAnalysisSettings = useCallback((payload: { ignorePaths: string[] }): Promise<AnalysisSettings> => {
+  const saveAnalysisSettings = useCallback(async (payload: { ignorePaths: string[] }): Promise<AnalysisSettings> => {
     const expectedPath = sessionRef.current?.projectPath;
     const generation = projectGeneration.current;
     if (projectOperationPending.current) return Promise.reject(new BridgeError('NOT_READY', 'Wait for the project operation to finish.'));
+    if (settingsPending.current) throw new BridgeError('NOT_READY', 'Wait for analysis settings to finish.');
+    settingsPending.current = true; setSourceLocked(true);
+    if (!await guardSources(documents.keys())) { settingsPending.current = false; setSourceLocked(false); throw new BridgeError('SOURCE_CANCELLED', 'Source navigation cancelled.'); }
+    releaseSources();
     const layout = expectedPath && sessionRef.current?.hasAnalysis && sessionRef.current.status !== 'Analyzing' ? layoutSnapshot(workspaceRef.current) : null;
     clearTimeout(layoutTimer.current); layoutTimer.current = undefined;
     return enqueue(async () => {
@@ -238,16 +383,28 @@ export default function App() {
       const result = await call('set_analysis_settings', payload);
       if (generation === projectGeneration.current) { const s = await refreshSession(generation); if (s) await hydrate(s, generation); }
       return result;
-    });
-  }, [enqueue, hydrate, refreshSession]);
-  function openView(kind: ViewKind, selectedRoot?: string) { if (selectedRoot) dispatch({ type: 'reveal', view: kind, root: selectedRoot, selected: selectedRoot }); else dispatch({ type: 'open', tab: viewTab(kind) }); }
+    }).finally(() => { settingsPending.current = false; setSourceLocked(false); });
+  }, [enqueue, hydrate, refreshSession, guardSources, documents, releaseSources]);
+  function openTab(tab: Tab) {
+    if (nativeClosePending.current) return;
+    if ((projectOperationPending.current || guardPending.current) && !workspaceRef.current.tabs.some(item => item.id === tab.id)) return;
+    if (!workspaceRef.current.tabs.some(item => item.id === tab.id) && workspaceRef.current.tabs.length >= 40) { setError(t('tabLimit')); return; }
+    dispatch({ type: 'open', tab });
+  }
+  function openView(kind: ViewKind, selectedRoot?: string) {
+    if (projectOperationPending.current || guardPending.current) return;
+    if (!workspaceRef.current.tabs.some(item => item.id === kind) && workspaceRef.current.tabs.length >= 40) { setError(t('tabLimit')); return; }
+    if (selectedRoot) dispatch({ type: 'reveal', view: kind, root: selectedRoot, selected: selectedRoot }); else openTab(viewTab(kind));
+  }
   const openSource = useCallback((anchor: Anchor) => {
+    if (projectOperationPending.current || guardPending.current) return;
+    if (!workspaceRef.current.tabs.some(item => item.id === sourceTab(anchor).id) && workspaceRef.current.tabs.length >= 40) { setError(translator(language)('tabLimit')); return; }
     const source = sourceTab(anchor);
     if (detailSource !== null && graphContext === cameraContext) {
       localSourceTabs.current.add(source.id);
     }
     dispatch({ type: 'open', tab: source });
-  }, [detailSource, graphContext, cameraContext]);
+  }, [detailSource, graphContext, cameraContext, language]);
   const closeIsland = useCallback((id: string) => { void write(() => call('close_detail_island', id)); }, [write]);
   function reveal(result: SearchResult) { const destination = result.revealTarget; if (!destination.viewKind) { setError(destination.reason ?? 'No graph destination'); openSource(result.sourceAnchor); return; } dispatch({ type: 'reveal', view: destination.viewKind, root: destination.rootId, selected: destination.selectedId }); setRevision(n => n + 1); }
   async function changeLanguage(value: Language) { try { const p = await call('set_preferences', { language: value }); setLanguage(p.language); if (p.issue) reportError(p.issue); } catch (e) { reportError(e); } }
@@ -268,5 +425,5 @@ export default function App() {
   const inspectorIsland = viewState?.detailIslands.find(i => i.viewKind === view && i.sourceNodeId === detailSource);
   const inspectorDetail = inspectorIsland ? details[inspectorIsland.id] ?? null : null;
   const settings = <SettingsPanel language={language} session={session} onLanguage={value => { void changeLanguage(value); }} saveAnalysisSettings={saveAnalysisSettings} onError={reportError} t={t}/>;
-  return <div className="desktop-shell"><header className="titlebar"><strong>CODE<span>VIZ</span></strong><span className="titlebar-path">{session?.projectPath ?? t('local')}</span><span className="native-badge"><i className="signal"/> LOCAL ENGINE</span></header><div className="shell-body"><ActivityBar activity={activity} t={t} onChange={value => { setActivity(current => current === value ? null : value); if (value === 'settings') dispatch({ type: 'open', tab: { id: 'settings', kind: 'settings' } }); }}/>{activity !== null && <aside className="sidebar">{activity === 'search' ? <SearchPanel key={session?.projectPath} enabled={analyzed && !busy} onReveal={reveal} onSource={r => openSource(r.sourceAnchor)} onError={reportError} t={t}/> : activity === 'problems' ? <><div className="panel-heading">{t('problems')}</div><Problems problems={problems} onSource={openSource} t={t}/></> : <Sidebar session={session} active={workspace.active} openView={openView} openPath={value => { void runProject(() => call('open_project', value)); }} choose={() => { void runProject(() => call('choose_project')); }} analyze={() => { void runProject(() => call('analyze')); }} busy={busy || connection !== 'ready'} t={t}/>}</aside>}<main className="workbench">{layoutWarning && <div className="outdated-banner" role="status"><span>{t('layoutNotSaved')} {layoutWarning}</span><button onClick={() => setLayoutWarning('')} aria-label={t('close')}>×</button></div>}<EditorTabs tabs={workspace.tabs} active={workspace.active} onOpen={tab => dispatch({ type: 'open', tab })} onClose={id => dispatch({ type: 'close', id })} t={t}/>{error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label={t('close')}>×</button></div>}{session?.status === 'Outdated' && <div className="outdated-banner">{t('outdated')} <button disabled={busy} onClick={() => { void runProject(() => call('analyze')); }}>{t('reanalyze')}</button></div>}{session?.status === 'Analyzing' && <div className="analysis-progress" role="status">{t('Analyzing')}…</div>}<div className="editor-area">{connection !== 'ready' ? <div className="welcome"><div className="welcome-mark">CV</div><h1>{connection === 'waiting' ? t('waiting') : t('desktop')}</h1>{connection === 'error' && <button className="primary" onClick={() => { void connect(); }}>{t('retry')}</button>}</div> : <><div className="primary-editor">{tab?.kind === 'settings' ? settings : !session?.projectPath ? <div className="welcome"><div className="welcome-mark">CV</div><h1>{t('empty')}</h1><button className="primary" disabled={busy} onClick={() => { void runProject(() => call('choose_project')); }}>{t('open')}</button><form className="path-form" onSubmit={e => { e.preventDefault(); if (path.trim()) void runProject(() => call('open_project', path.trim())); }}><input aria-label={t('path')} placeholder={t('path')} value={path} onChange={e => setPath(e.target.value)}/><button disabled={busy || !path.trim()}>{t('open')}</button></form></div> : !tab ? <div className="welcome"><p>{t('noTabs')}</p></div> : tab.kind === 'source' && tab.anchor ? <SourceViewer key={tab.id} anchor={tab.anchor} t={t}/> : !analyzed ? <div className="welcome"><h1>{t(session.status)}</h1><button className="primary" disabled={busy} onClick={() => { void runProject(() => call('analyze')); }}>{t('analyze')}</button></div> : tab.kind === 'Overview' ? <Overview data={overview} openView={openView} t={t}/> : relationFocusMissing ? <div className="welcome"><p>{t('relationFocusRequired')}</p><button className="primary" onClick={() => setActivity('search')}>{t('search')}</button></div> : graph && view ? <><div className="graph-workspace" style={{ display: graphContext === cameraContext ? undefined : 'none' }}>{view === 'FunctionFlow' && <p className="static-flow-note">{t('staticFlow')}</p>}<p className="static-flow-note">{controlMode === 'structure' ? t(view === 'ProjectStructure' ? 'projectStructureNote' : 'architectureNote') : ''}{controlMode === 'structure' && <> · {t('root')}: {graph.nodes.find(n => n.id === root || graph.rootIds.includes(n.id))?.codeName ?? graph.nodes.find(n => graph.rootIds.includes(n.id))?.displayName ?? session.projectPath} · {t('structure')}: {graph.queryContext.structureDepth ?? structureDepth}/5</>}</p><p className="query-feedback" role="status" aria-live="polite">{feedback}</p>{view === 'Architecture' && graph.nodes.length === 0 && <div className="padded"><p>{t('noModels')}</p><button onClick={() => openView('ProjectStructure')}>{t('ProjectStructure')}</button></div>}<QueryToolbar mode={controlMode} depth={graph.queryContext.structureDepth ?? structureDepth} canExpand={graph.queryContext.canExpand} depthLimit={graph.queryContext.depthLimit} budgetTruncated={graph.queryContext.budgetTruncated} direction={direction} hops={hops} setDirection={setDirection} more={() => controlMode === 'structure' ? changeStructure(1) : setHops(n => Math.min(5, n + 1))} fewer={() => controlMode === 'structure' ? changeStructure(-1) : setHops(n => Math.max(1, n - 1))} disabled={busy || graphLoading} t={t} inspectorVisible={inspectorVisible} toggleInspector={() => setInspectorVisible(v => !v)}/><GraphEditor cameraContext={graphContext} restoreViewport={viewportContexts.current[view] === graphContext} graph={graph} viewState={viewState ? { ...viewState, detailIslands: viewState.detailIslands.filter(i => i.viewKind === graph.viewKind && graph.nodes.some(n => n.id === i.sourceNodeId)) } : null} details={details} selectedId={graphContext === cameraContext && detailSource !== null && localSelectionValid ? node?.id ?? null : workspace.selectedId} onSelect={(item, source) => { if (graphContext !== cameraContext) return; setNode(item); setDetailSource(source); if (source === null) dispatch({ type: 'select', id: item.id }); }} onDetail={detail} onMove={(id, position, island) => { void write(() => island ? call('move_detail_island', id, position) : call('move_node', id, position, view)); }} onViewport={(kind, viewport) => { if (graphContext !== cameraContext || busy) return; viewportContexts.current[kind] = graphContext; void write(() => call('save_viewport', kind, viewport.zoom, { x: viewport.x, y: viewport.y })); }} onCloseIsland={closeIsland} t={t}/></div>{graphContext !== cameraContext && <div className="welcome"><p>{graphLoading ? t('waiting') : t('select')}</p></div>}</> : <div className="welcome"><p>{graphLoading ? t('waiting') : t('select')}</p></div>}</div>{workspace.side && <section className="side-editor"><div className="side-title">{t('source')}<button onClick={() => dispatch({ type: 'side', anchor: null })} aria-label={t('close')}>×</button></div><SourceViewer anchor={workspace.side} t={t}/></section>}{view && inspectorVisible && <Inspector graph={graphContext === cameraContext ? graph : null} detailGraph={inspectorDetail} node={node} data={inspector} missing={inspectorMissing} loading={inspectorLoading} openSource={openSource} openSide={anchor => dispatch({ type: 'side', anchor })} openDetail={() => { if (node && !detailSource) detail(node); }} expand={collapse => { if (node) void write(() => call(collapse ? 'collapse' : 'expand', node.id)).then(() => setRevision(v => v + 1)); }} t={t}/>}</>}</div><div className="problems-heading"><button onClick={() => setShowProblems(v => !v)}>{showProblems ? '⌄' : '›'} {t('problems')} <span>{problems.length}</span></button><span>PYTHON ANALYSIS</span></div>{showProblems && <div className="problems-dock"><Problems problems={problems} onSource={openSource} t={t}/></div>}</main></div><footer className="statusbar"><span><i className="signal"/> {connection === 'ready' ? 'Python bridge' : t('waiting')}</span><span>{session ? t(session.status) : '—'}</span><span className="status-path">{session?.projectPath}</span><span>{language === 'en' ? 'EN' : '中文'} · UTF-8</span></footer></div>;
+  return <div className="desktop-shell"><header className="titlebar"><strong>CODE<span>VIZ</span></strong><span className="titlebar-path">{session?.projectPath ?? t('local')}</span><span className="native-badge"><i className="signal"/> LOCAL ENGINE</span></header><div className="shell-body"><ActivityBar activity={activity} t={t} onChange={value => { setActivity(current => current === value ? null : value); if (value === 'settings') openTab({ id: 'settings', kind: 'settings' }); }}/>{activity !== null && <aside className="sidebar">{activity === 'search' ? <SearchPanel key={session?.projectPath} enabled={analyzed && !busy} onReveal={reveal} onSource={r => openSource(r.sourceAnchor)} onError={reportError} t={t}/> : activity === 'problems' ? <><div className="panel-heading">{t('problems')}</div><Problems problems={problems} onSource={openSource} t={t}/></> : <Sidebar session={session} active={workspace.active} openView={openView} openPath={value => { void runProject(() => call('open_project', value)); }} choose={() => { void runProject(() => call('choose_project')); }} analyze={() => { void runProject(() => call('analyze')); }} busy={busy || connection !== 'ready'} t={t}/>}</aside>}<main className="workbench">{layoutWarning && <div className="outdated-banner" role="status"><span>{t('layoutNotSaved')} {layoutWarning}</span><button onClick={() => setLayoutWarning('')} aria-label={t('close')}>×</button></div>}<EditorTabs tabs={workspace.tabs} active={workspace.active} onOpen={openTab} onClose={id => { void closeSourceTab(id); }} isDirty={tab => Boolean(tab.anchor && documents.get(keyFor(tab.anchor))?.dirty)} t={t}/>{error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label={t('close')}>×</button></div>}{view && documents.keys().some(key => documents.get(key)?.dirty) && <div className="source-notice" role="status">{t('sourceStale')}</div>}{session?.status === 'Outdated' && <div className="outdated-banner">{t('outdated')} <button disabled={busy} onClick={() => { void runProject(() => call('analyze')); }}>{t('reanalyze')}</button></div>}{session?.status === 'Analyzing' && <div className="analysis-progress" role="status">{t('Analyzing')}…</div>}<div className="editor-area">{connection !== 'ready' ? <div className="welcome"><div className="welcome-mark">CV</div><h1>{connection === 'waiting' ? t('waiting') : t('desktop')}</h1>{connection === 'error' && <button className="primary" onClick={() => { void connect(); }}>{t('retry')}</button>}</div> : <><div className="primary-editor">{tab?.kind === 'settings' ? settings : !session?.projectPath ? <div className="welcome"><div className="welcome-mark">CV</div><h1>{t('empty')}</h1><button className="primary" disabled={busy} onClick={() => { void runProject(() => call('choose_project')); }}>{t('open')}</button><form className="path-form" onSubmit={e => { e.preventDefault(); if (path.trim()) void runProject(() => call('open_project', path.trim())); }}><input aria-label={t('path')} placeholder={t('path')} value={path} onChange={e => setPath(e.target.value)}/><button disabled={busy || !path.trim()}>{t('open')}</button></form></div> : !tab ? <div className="welcome"><p>{t('noTabs')}</p></div> : tab.kind === 'source' && tab.anchor ? <SourceViewer key={tab.id} anchor={tab.anchor} t={t} projectPath={session.projectPath} store={documents} locked={sourceLocked || busy} onSave={saveSource} outdated={session.status === 'Outdated'}/> : !analyzed ? <div className="welcome"><h1>{t(session.status)}</h1><button className="primary" disabled={busy} onClick={() => { void runProject(() => call('analyze')); }}>{t('analyze')}</button></div> : tab.kind === 'Overview' ? <Overview data={overview} openView={openView} t={t}/> : relationFocusMissing ? <div className="welcome"><p>{t('relationFocusRequired')}</p><button className="primary" onClick={() => setActivity('search')}>{t('search')}</button></div> : graph && view ? <><div className="graph-workspace" style={{ display: graphContext === cameraContext ? undefined : 'none' }}>{view === 'FunctionFlow' && <p className="static-flow-note">{t('staticFlow')}</p>}<p className="static-flow-note">{controlMode === 'structure' ? t(view === 'ProjectStructure' ? 'projectStructureNote' : 'architectureNote') : ''}{controlMode === 'structure' && <> · {t('root')}: {graph.nodes.find(n => n.id === root || graph.rootIds.includes(n.id))?.codeName ?? graph.nodes.find(n => graph.rootIds.includes(n.id))?.displayName ?? session.projectPath} · {t('structure')}: {graph.queryContext.structureDepth ?? structureDepth}/5</>}</p><p className="query-feedback" role="status" aria-live="polite">{feedback}</p>{view === 'Architecture' && graph.nodes.length === 0 && <div className="padded"><p>{t('noModels')}</p><button onClick={() => openView('ProjectStructure')}>{t('ProjectStructure')}</button></div>}<QueryToolbar mode={controlMode} depth={graph.queryContext.structureDepth ?? structureDepth} canExpand={graph.queryContext.canExpand} depthLimit={graph.queryContext.depthLimit} budgetTruncated={graph.queryContext.budgetTruncated} direction={direction} hops={hops} setDirection={setDirection} more={() => controlMode === 'structure' ? changeStructure(1) : setHops(n => Math.min(5, n + 1))} fewer={() => controlMode === 'structure' ? changeStructure(-1) : setHops(n => Math.max(1, n - 1))} disabled={busy || graphLoading} t={t} inspectorVisible={inspectorVisible} toggleInspector={() => setInspectorVisible(v => !v)}/><GraphEditor cameraContext={graphContext} restoreViewport={viewportContexts.current[view] === graphContext} graph={graph} viewState={viewState ? { ...viewState, detailIslands: viewState.detailIslands.filter(i => i.viewKind === graph.viewKind && graph.nodes.some(n => n.id === i.sourceNodeId)) } : null} details={details} selectedId={graphContext === cameraContext && detailSource !== null && localSelectionValid ? node?.id ?? null : workspace.selectedId} onSelect={(item, source) => { if (graphContext !== cameraContext) return; setNode(item); setDetailSource(source); if (source === null) dispatch({ type: 'select', id: item.id }); }} onDetail={detail} onMove={(id, position, island) => { void write(() => island ? call('move_detail_island', id, position) : call('move_node', id, position, view)); }} onViewport={(kind, viewport) => { if (graphContext !== cameraContext || busy) return; viewportContexts.current[kind] = graphContext; void write(() => call('save_viewport', kind, viewport.zoom, { x: viewport.x, y: viewport.y })); }} onCloseIsland={closeIsland} t={t}/></div>{graphContext !== cameraContext && <div className="welcome"><p>{graphLoading ? t('waiting') : t('select')}</p></div>}</> : <div className="welcome"><p>{graphLoading ? t('waiting') : t('select')}</p></div>}</div>{workspace.side && <section className="side-editor"><div className="side-title">{t('source')}<button onClick={() => { void changeSide(null); }} aria-label={t('close')}>×</button></div><SourceViewer anchor={workspace.side} t={t} projectPath={session?.projectPath ?? undefined} store={documents} locked={sourceLocked || busy} onSave={saveSource} outdated={session?.status === 'Outdated'}/></section>}{view && inspectorVisible && <Inspector graph={graphContext === cameraContext ? graph : null} detailGraph={inspectorDetail} node={node} data={inspector} missing={inspectorMissing} loading={inspectorLoading} openSource={openSource} openSide={anchor => { void changeSide(anchor); }} openDetail={() => { if (node && !detailSource) detail(node); }} expand={collapse => { if (node) void write(() => call(collapse ? 'collapse' : 'expand', node.id)).then(() => setRevision(v => v + 1)); }} t={t}/>}</>}</div><div className="problems-heading"><button onClick={() => setShowProblems(v => !v)}>{showProblems ? '⌄' : '›'} {t('problems')} <span>{problems.length}</span></button><span>PYTHON ANALYSIS</span></div>{showProblems && <div className="problems-dock"><Problems problems={problems} onSource={openSource} t={t}/></div>}</main></div><footer className="statusbar"><span><i className="signal"/> {connection === 'ready' ? 'Python bridge' : t('waiting')}</span><span>{session ? t(session.status) : '—'}</span><span className="status-path">{session?.projectPath}</span><span>{language === 'en' ? 'EN' : '中文'} · UTF-8</span></footer>{sourceDecision && <div className="source-dialog-backdrop"><section className="source-dialog" role="dialog" aria-modal="true" aria-labelledby="source-dialog-title"><h2 id="source-dialog-title">{t('unsavedSource')}</h2><p>{t('unsavedSourcePrompt')}</p><ul>{sourceDecision.keys.map(key => <li key={key}>{documents.get(key)?.filePath}</li>)}</ul><div className="source-dialog-actions"><button className="primary" disabled={guardSaving} onClick={() => sourceDecision.resolve('save')}>{guardSaving ? t('savingSource') : t('saveSource')}</button><button disabled={guardSaving} onClick={() => sourceDecision.resolve('discard')}>{t('discardSource')}</button><button autoFocus disabled={guardSaving} onClick={() => sourceDecision.resolve('cancel')}>{t('cancelSource')}</button></div></section></div>}</div>;
 }

@@ -7,6 +7,21 @@ import sys
 import traceback
 from pathlib import Path
 
+try:
+    from scripts.native_source_assertions import (
+        anchor_from_card,
+        capture_screenshot,
+        expect_source_anchor,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "scripts":
+        raise
+    from native_source_assertions import (
+        anchor_from_card,
+        capture_screenshot,
+        expect_source_anchor,
+    )
+
 
 def expect(*args, **kwargs):
     """Load browser assertions only when native verification uses them."""
@@ -99,7 +114,7 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
     expect(page.locator(".inspector h2")).to_have_text("encoder")
     encoder_id = encoder.locator("..").get_attribute("data-id")
     assert encoder_id, "main encoder occurrence must have a real canvas ID"
-    page.screenshot(path=str(output / "architecture.png"), full_page=True)
+    capture_screenshot(page, path=str(output / "architecture.png"), full_page=True)
     encoder.dblclick()
     expect(page.locator(".detail-island")).to_have_count(1)
     parent_id = page.locator(".react-flow__node-island").get_attribute("data-id")
@@ -117,7 +132,7 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
     expect(page.locator(".inspector-content > code:not(.member-id)")).to_have_text("model.Classifier.encoder")
     expect(page.locator('.react-flow__node-code[data-id^="island:"] .code-node code').filter(
         has_text=re.compile(r"^model\.Encoder\.layers$"))).to_have_count(1)
-    page.screenshot(path=str(output / "detail-island.png"), full_page=True)
+    capture_screenshot(page, path=str(output / "detail-island.png"), full_page=True)
     checks.append("architecture / inspector / detail island")
     toolbar = page.locator(".query-toolbar")
     expect(toolbar.get_by_role("button", name=re.compile(r"^(上游|下游|双向)$"))).to_have_count(0)
@@ -152,9 +167,9 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
                    for node in current), current
         expect(page.locator(".query-feedback")).to_contain_text(re.compile(
             rf"新增节点:\s*{len(current_ids - previous_ids)}(?!\d)"))
-        expect(page.locator('[role="alert"]')).to_have_count(0)
+        expect(page.locator('.desktop-shell [role="alert"]')).to_have_count(0)
         previous_ids = current_ids
-    page.screenshot(path=str(output / "architecture-structure-depth-3.png"), full_page=True)
+    capture_screenshot(page, path=str(output / "architecture-structure-depth-3.png"), full_page=True)
     for depth, hidden_code_name in ((2, "model.Encoder.layers[*]"), (1, "model.Encoder.layers")):
         expect(fewer).to_be_enabled()
         fewer.click()
@@ -166,7 +181,7 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
         assert current_ids < previous_ids, (previous_ids, current)
         expect(page.locator(".query-feedback")).to_contain_text(re.compile(
             rf"收起节点:\s*{len(previous_ids - current_ids)}(?!\d)"))
-        expect(page.locator('[role="alert"]')).to_have_count(0)
+        expect(page.locator('.desktop-shell [role="alert"]')).to_have_count(0)
         previous_ids = current_ids
     assert previous_ids == initial_ids, (shallow, structure_nodes())
     expect(fewer).to_be_disabled()
@@ -187,9 +202,19 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
         expect(page.locator(".inspector h2")).to_have_text(role)
         expect(page.locator(".inspector").get_by_role(
             "button", name="打开源码", exact=True).first).to_be_enabled()
-    page.screenshot(path=str(output / "training.png"), full_page=True)
+    capture_screenshot(page, path=str(output / "training.png"), full_page=True)
+    update_anchor = anchor_from_card(page.locator(".inspector .anchor-card").first)
+    session = page.evaluate("() => window.pywebview.api.get_session()")
+    assert session["ok"], session
+    project = Path(session["data"]["projectPath"])
+    fixture_lines = (project / "run.py").read_text(encoding="utf-8").splitlines()
+    update_lines = [line for line, text in enumerate(fixture_lines, 1)
+                    if text.strip() == "optimizer.step()"]
+    assert len(update_lines) == 1, update_lines
+    assert update_anchor == ("run.py", update_lines[0], update_lines[0]), update_anchor
+    update_text = fixture_lines[update_lines[0] - 1]
     page.locator(".inspector").get_by_role("button", name="打开源码", exact=True).first.click()
-    expect(page.locator(".code-table tr.highlighted pre").first).to_contain_text("optimizer.step()")
+    expect_source_anchor(page, ".primary-editor", *update_anchor, update_text)
     page.keyboard.press("Control+w")
     checks.append("epoch / batch / forward / loss / backward / optimizer / source")
     if not page.get_by_role("textbox", name="搜索", exact=True).count():
@@ -204,11 +229,15 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
     source = page.locator(".inspector").get_by_role(
         "button", name="打开源码", exact=True).first
     expect(source).to_be_enabled()
+    backward_anchor = anchor_from_card(page.locator(".inspector .anchor-card").first)
+    backward_lines = [line for line, text in enumerate(fixture_lines, 1)
+                      if text.strip() == "loss.backward()"]
+    assert len(backward_lines) == 1, backward_lines
+    assert backward_anchor == ("run.py", backward_lines[0], backward_lines[0]), backward_anchor
+    backward_text = fixture_lines[backward_lines[0] - 1]
     source.click()
-    expect(page.locator(".code-table tr").first.locator(".line-number")).to_have_text("1")
-    expect(page.locator(".code-table tr.highlighted")).not_to_have_count(0)
-    expect(page.locator(".code-table tr.highlighted pre").first).to_contain_text("loss.backward()")
-    page.screenshot(path=str(output / "source.png"), full_page=True)
+    expect_source_anchor(page, ".primary-editor", *backward_anchor, backward_text)
+    capture_screenshot(page, path=str(output / "source.png"), full_page=True)
     before = page.get_by_role("tab").count()
     page.keyboard.press("Control+w")
     expect(page.get_by_role("tab")).to_have_count(before - 1)
@@ -218,14 +247,14 @@ def check_interactions(page, output: Path, measurements: list) -> list[str]:
     click_canvas_node(page, page.locator('.code-node[data-role="BackwardPass"]').first,
                       "Split source BackwardPass", measurements)
     page.locator(".inspector").get_by_role("button", name="在侧边打开", exact=True).first.click()
-    expect(page.locator(".side-editor .code-table")).to_be_visible()
-    page.screenshot(path=str(output / "split.png"), full_page=True)
+    expect_source_anchor(page, ".side-editor", *backward_anchor, backward_text)
+    capture_screenshot(page, path=str(output / "split.png"), full_page=True)
     checks.append("semantic search / reveal / source lines / tab close / split")
     page.get_by_role("button", name="设置", exact=True).click()
     page.locator("#language").select_option("en")
     expect(page.get_by_role("heading", name="Settings", exact=True)).to_be_visible()
     expect(page.locator("#ignore-paths")).to_be_enabled()
-    page.screenshot(path=str(output / "settings-en.png"), full_page=True)
+    capture_screenshot(page, path=str(output / "settings-en.png"), full_page=True)
     response = page.evaluate("() => window.pywebview.api.get_preferences()")
     assert response["ok"] and response["data"]["language"] == "en", response
     page.locator("#language").select_option("zh-CN")
@@ -280,7 +309,7 @@ def main() -> None:
             assert not any("." in method for method in methods), methods
             page.get_by_role("heading", name="mvp_project", exact=True).wait_for()
             response = page.evaluate("() => window.pywebview.api.get_session()")
-            page.screenshot(path=str(args.output / "overview.png"), full_page=True)
+            capture_screenshot(page, path=str(args.output / "overview.png"), full_page=True)
             print(json.dumps({
                 "url": page.url,
                 "session": response["data"],
@@ -298,7 +327,7 @@ def main() -> None:
             report["errors"].append(f"{type(error).__name__}: {error}")
             report["traceback"] = traceback.format_exc()
             if page is not None and not page.is_closed():
-                page.screenshot(path=str(args.output / "failure.png"), full_page=True)
+                capture_screenshot(page, path=str(args.output / "failure.png"), full_page=True)
                 print(page.locator("body").inner_text()[:2000])
             raise
         finally:

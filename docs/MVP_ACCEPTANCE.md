@@ -1,5 +1,15 @@
 # MVP 验收标准
 
+## 源码编辑增量验收（2026-10-08，已执行）
+
+最终源码／安装 wheel／冻结 PC 三入口的真实检查见 [编辑验收记录](SOURCE_EDITING_VALIDATION.md)；下述为持续回归标准。
+
+除下述图与源码黄金路径外，本轮须在真实 PC 窗口验证 Monaco Python 彩色 token、准确文件／行定位、编辑／撤销／保存与磁盘内容一致。不同锚点和 split 共享一份草稿，切换标签不丢稿；保存期间继续输入不能误标已保存。
+
+所有可能丢稿的关闭／导航入口分别验证保存、放弃、取消；真实 OS 关闭也必须能取消。外部修改、旧项目 revision、非法路径、链接、只读权限及替换失败必须拒绝覆盖并保留草稿。编码、BOM、换行与无末尾换行须保留。已有分析保存后为 Outdated，旧图／布局／注释不被清空，只有显式重分析更新图；测试不得执行被分析代码。
+
+离线 Worker、wheel 与独立冻结包都需实测；mock 编辑器测试不能作为语法高亮或原生窗口证据。具体约束见 [源码编辑](SOURCE_EDITING.md)，执行及结果记录见 [实施计划](superpowers/plans/2026-10-08-monaco-source-editing.md)。
+
 ## 1. 前置条件
 
 测试夹具至少包含：两个可区分的模型（其中一个为自定义 `nn.Module`）、一个 Sequential / ModuleList、训练与评估或推理两个入口、可被多个入口引用的模型、loss / backward / optimizer、if / loop、同名局部变量和一个 unresolved dynamic call。
