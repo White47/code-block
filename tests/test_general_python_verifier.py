@@ -509,5 +509,99 @@ class NativeVerifierRegressionTests(unittest.TestCase):
         self.assertEqual(choose(session, self.project), previous)
 
 
+class NativeVerifierOptionalDependencyTests(unittest.TestCase):
+    """Pure helpers must work even when native browser automation is unavailable."""
+
+    def run_without_playwright(self, script_name, body, *arguments):
+        # A fresh interpreter cannot reuse this suite's imports or the developer's
+        # installed Playwright. The finder raises rather than supplying a fake package.
+        bootstrap = '''
+import importlib.abc
+import importlib.util
+import sys
+
+class BlockPlaywright(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "playwright" or fullname.startswith("playwright."):
+            raise ModuleNotFoundError(
+                "Playwright deliberately unavailable in isolated regression: " + fullname,
+                name=fullname,
+            )
+
+assert not any(name == "playwright" or name.startswith("playwright.") for name in sys.modules)
+sys.meta_path.insert(0, BlockPlaywright())
+spec = importlib.util.spec_from_file_location("isolated_native_verifier", sys.argv[1])
+native = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(native)
+print("NATIVE_IMPORT_OK", flush=True)
+'''
+        return subprocess.run(
+            [sys.executable, "-B", "-c", bootstrap + body,
+             str(SCRIPT.with_name(script_name)), *map(str, arguments)],
+            capture_output=True, text=True, check=False, timeout=20,
+        )
+
+    def test_native_scripts_dynamically_import_without_playwright(self):
+        for name in ("verify_native_desktop.py", "verify_general_python_native.py"):
+            with self.subTest(script=name):
+                process = self.run_without_playwright(name, '''
+assert callable(native.main)
+assert not any(name == "playwright" or name.startswith("playwright.") for name in sys.modules)
+print("PURE_IMPORT_OK")
+''')
+                self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+                self.assertIn("PURE_IMPORT_OK", process.stdout)
+                self.assertEqual(process.stderr, "")
+
+    def test_overview_choice_routes_models_and_entries_without_playwright(self):
+        process = self.run_without_playwright("verify_native_desktop.py", '''
+from unittest.mock import Mock, patch
+
+for category, name, valid_heading, excluded_heading in (
+    ("models", "model.Classifier", "Models 4", "Classes 4"),
+    ("entries", "train_epoch", "Entry points 2", "Functions and methods 11"),
+):
+    page = Mock()
+    cards, headings, selected, rows, choice = (Mock() for _ in range(5))
+    page.locator.side_effect = [cards, headings]
+    headings.filter.return_value = headings
+    cards.filter.return_value = selected
+    selected.locator.return_value = rows
+    rows.filter.return_value = choice
+    # Only the browser assertion boundary is mocked, never the missing package.
+    with patch.object(native, "expect", create=True) as expect:
+        assert native.overview_choice(page, category, name) is choice
+        expect.assert_any_call(choice)
+        expect.return_value.to_have_count.assert_called_with(1)
+    assert [call.args[0] for call in page.locator.call_args_list] == [".overview-card", ".card-heading"]
+    pattern = headings.filter.call_args.kwargs["has_text"]
+    assert pattern.fullmatch(valid_heading)
+    assert not pattern.fullmatch(excluded_heading)
+    cards.filter.assert_called_once_with(has=headings)
+    selected.locator.assert_called_once_with(".entity-row")
+    rows.filter.assert_called_once_with(has_text=name)
+assert not any(name == "playwright" or name.startswith("playwright.") for name in sys.modules)
+print("OVERVIEW_CHOICE_OK")
+''')
+        self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+        self.assertIn("OVERVIEW_CHOICE_OK", process.stdout)
+        self.assertEqual(process.stderr, "")
+
+    def test_actual_native_main_reports_missing_playwright_after_successful_import(self):
+        with tempfile.TemporaryDirectory() as output:
+            process = self.run_without_playwright("verify_native_desktop.py", '''
+sys.argv = [sys.argv[1], "--output", sys.argv[2]]
+native.main()
+print("UNEXPECTED_NATIVE_SUCCESS")
+''', output)
+        # The marker distinguishes a genuine runtime dependency error from the
+        # top-level import failure that broke CI before main could be called.
+        self.assertIn("NATIVE_IMPORT_OK", process.stdout, process.stderr)
+        self.assertNotEqual(process.returncode, 0, process.stdout + process.stderr)
+        self.assertIn("playwright", process.stderr.lower())
+        self.assertNotIn("NameError", process.stderr)
+        self.assertNotIn("UNEXPECTED_NATIVE_SUCCESS", process.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
