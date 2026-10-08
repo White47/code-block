@@ -18,6 +18,15 @@ from .imports import ModuleCatalog
 from .python import AnalysisIssue, ParsedFile
 from .symbols import SymbolIndex, SymbolIndexEntry, SymbolReference
 
+MAX_IMPORT_WORK = 4096
+
+
+@dataclass(frozen=True, slots=True)
+class BindingOwnerFact:
+    owner_id: str | None
+    reason: str | None = None
+    issue_code: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class ResolutionResult:
@@ -41,12 +50,38 @@ class _Resolver:
         self.catalog = ModuleCatalog(files, index)
         self.children: dict[tuple[str, str], list[SymbolIndexEntry]] = defaultdict(list)
         for entry in index.entries.values():
-            if entry.parent_symbol is not None:
+            if entry.parent_symbol is not None and entry.definition:
                 self.children[(entry.parent_symbol, entry.name)].append(entry)
         self.external: dict[str, CodeNode] = {}
         self.unresolved: dict[str, CodeNode] = {}
         self.issues: list[AnalysisIssue] = []
         self.unresolved_counts: dict[tuple[str, str, str, str | None], int] = defaultdict(int)
+        self.import_work = 0
+        self.import_cache: dict[tuple[str, int, str, str | None], _Targets] = {}
+        self.import_partial_cache: dict[
+            tuple[tuple[str, int, str, str | None], frozenset[str]], _Targets
+        ] = {}
+        for scope_id, declarations in index.scope_declarations.items():
+            owner = index.entries[scope_id]
+            for name, declaration in declarations.items():
+                if declaration == "invalid_declaration":
+                    location = owner.metadata.get(f"invalid_declaration:{name}")
+                    anchor = owner.source_anchor
+                    if location is not None:
+                        line, column = location.split(":")
+                        anchor = SourceAnchor(owner.file_path, int(line), int(column))
+                    self.issues.append(AnalysisIssue(
+                        "SCOPE_DECLARATION_CONFLICT",
+                        f"partial scope analysis: conflicting global/nonlocal declaration "
+                        f"or parameter declaration for {name!r}",
+                        owner.file_path, anchor,
+                    ))
+                if declaration == "invalid_walrus":
+                    self.issues.append(AnalysisIssue(
+                        "WALRUS_BINDING_UNRESOLVED",
+                        f"assignment expression for {name!r} has invalid comprehension ownership",
+                        owner.file_path, owner.source_anchor,
+                    ))
         for parsed in files:
             if parsed.tree is None:
                 continue
@@ -95,7 +130,9 @@ class _Resolver:
             entry = self.index.entries.get(scope_id)
             if entry is None:
                 return None
-            if entry.kind in (NodeKind.FUNCTION, NodeKind.METHOD):
+            if (entry.kind in (NodeKind.FUNCTION, NodeKind.METHOD)
+                    or entry.kind == NodeKind.LEXICAL_SCOPE
+                    and entry.metadata.get("scope_type") == "Lambda"):
                 return scope_id
             scope_id = entry.parent_symbol
         return None
@@ -106,12 +143,19 @@ class _Resolver:
             return _Targets(reason="no matching definition")
         results = [self._entry_target(entry, anchor, visited) for entry in entries]
         ids = tuple(dict.fromkeys(target for result in results for target in result.ids))
+        work_partial = next((result for result in results
+                             if result.issue_code == "IMPORT_WORK_BUDGET_PARTIAL"), None)
         if not ids:
+            if work_partial is not None:
+                return work_partial
             cycle = any(result.issue_code == "IMPORT_CYCLE" for result in results)
             return _Targets(reason="circular import alias" if cycle else results[0].reason,
                             issue_code="IMPORT_CYCLE" if cycle else results[0].issue_code)
         if len(entries) == 1 and len(ids) == 1 and results[0].confidence == Confidence.EXACT:
             return _Targets(ids, Confidence.EXACT)
+        partial = work_partial or next((result for result in results if result.issue_code is not None), None)
+        if partial is not None:
+            return _Targets(ids, Confidence.PROBABLE, partial.reason, partial.issue_code)
         return _Targets(ids, Confidence.PROBABLE, "multiple or unverified targets")
 
     def _entry_target(self, entry: SymbolIndexEntry, anchor: SourceAnchor,
@@ -124,9 +168,25 @@ class _Resolver:
                        visited: frozenset[str]) -> _Targets:
         if entry.id in visited:
             return _Targets(reason="circular import alias", issue_code="IMPORT_CYCLE")
+        if len(visited) >= 16:
+            return _Targets(reason="import alias traversal exceeds 16 definitions",
+                            issue_code="IMPORT_BUDGET")
+        cache_key = (entry.id, 16 - len(visited), anchor.file_path, entry.metadata.get("binds_root"))
+        cached = self.import_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        if self.import_work >= MAX_IMPORT_WORK:
+            partial = self.import_partial_cache.get((cache_key, visited))
+            if partial is not None:
+                return partial
+            return _Targets(reason=f"import graph work exceeds {MAX_IMPORT_WORK} expansions; "
+                            "additional alternatives remain unknown",
+                            issue_code="IMPORT_WORK_BUDGET_PARTIAL")
+        self.import_work += 1
         path = self.catalog.absolute_import(entry)
         if path is None:
             return _Targets(reason="invalid relative import", issue_code="IMPORT_UNRESOLVED")
+        incoming_visited = visited
         visited = visited | {entry.id}
         candidates: list[SymbolIndexEntry] = list(self.catalog.candidates(path))
         parent_path, _, member = path.rpartition(".")
@@ -134,23 +194,44 @@ class _Resolver:
             for module in self.catalog.candidates(parent_path):
                 candidates.extend(self.children.get((module.id, member), ()))
         if candidates:
-            return self._entry_targets(candidates, anchor, visited)
+            result = self._entry_targets(candidates, anchor, visited)
+            # Only completed, source-only facts are reusable. Partial/cyclic
+            # results and anchor-dependent external symbols are never cached.
+            if result.issue_code is None and all(target in self.index.entries for target in result.ids):
+                self.import_cache[cache_key] = result
+            elif result.issue_code == "IMPORT_WORK_BUDGET_PARTIAL" and result.ids:
+                # An explicitly partial summary retains discovered targets,
+                # but never enters the complete memo or erases its issue.
+                self.import_partial_cache[(cache_key, incoming_visited)] = result
+            return result
         if self.catalog.is_project_path(path):
             return _Targets(reason=f"project import {path!r} has no indexed target",
                             issue_code="IMPORT_UNRESOLVED")
         external_id = self._external(path, anchor)
         return _Targets((external_id,), Confidence.PROBABLE, "external import not inspected")
 
-    def _name(self, name: str, scope_id: str | None, file_path: str,
-              anchor: SourceAnchor) -> _Targets:
+    def _binding_owner(self, name: str, scope_id: str | None, file_path: str) -> BindingOwnerFact:
         current = scope_id or self._module_id(file_path)
         seen_function = False
+        nonlocal_search = False
         while current is not None:
             owner = self.index.entries.get(current)
             if owner is None or owner.kind == NodeKind.FILE:
                 break
+            if nonlocal_search and owner.kind == NodeKind.MODULE:
+                return BindingOwnerFact(None, "nonlocal name has no enclosing function binding",
+                                        "NONLOCAL_BINDING_UNRESOLVED")
             declaration = self.index.scope_declarations.get(current, {}).get(name)
+            if declaration == "invalid_declaration":
+                return BindingOwnerFact(current, "partial scope analysis: invalid scope declaration",
+                                        "SCOPE_DECLARATION_CONFLICT")
+            if declaration == "invalid_walrus":
+                return BindingOwnerFact(current, "assignment expression has invalid comprehension ownership",
+                                        "WALRUS_BINDING_UNRESOLVED")
             if declaration == "global":
+                if nonlocal_search:
+                    current = owner.parent_symbol
+                    continue
                 current = self._module_id(file_path)
                 seen_function = False
                 if current == owner.id:
@@ -159,14 +240,27 @@ class _Resolver:
             if declaration == "nonlocal":
                 current = self._nearest_function(owner.parent_symbol)
                 seen_function = True
+                nonlocal_search = True
                 continue
             if not (seen_function and owner.kind == NodeKind.CLASS):
                 candidates = self.children.get((current, name), ())
                 if candidates:
-                    return self._entry_targets(candidates, anchor)
-            if owner.kind in (NodeKind.FUNCTION, NodeKind.METHOD):
+                    return BindingOwnerFact(current)
+            if owner.kind in (NodeKind.FUNCTION, NodeKind.METHOD, NodeKind.LEXICAL_SCOPE):
                 seen_function = True
             current = owner.parent_symbol
+        if nonlocal_search:
+            return BindingOwnerFact(None, "nonlocal name has no enclosing function binding",
+                                    "NONLOCAL_BINDING_UNRESOLVED")
+        return BindingOwnerFact(None)
+
+    def _name(self, name: str, scope_id: str | None, file_path: str,
+              anchor: SourceAnchor) -> _Targets:
+        binding = self._binding_owner(name, scope_id, file_path)
+        if binding.issue_code is not None:
+            return _Targets(reason=binding.reason, issue_code=binding.issue_code)
+        if binding.owner_id is not None:
+            return self._entry_targets(self.children[(binding.owner_id, name)], anchor)
         if hasattr(builtins, name):
             external_id = self._external(f"builtins.{name}", anchor)
             return _Targets((external_id,), Confidence.PROBABLE, "host builtin, not project code")
@@ -204,11 +298,15 @@ class _Resolver:
         from_entries = self._entry_targets(candidates, anchor) if candidates else _Targets()
         target_ids.extend(from_entries.ids)
         unique = tuple(dict.fromkeys(target_ids))
+        partial = (base if base.issue_code else
+                   from_entries if from_entries.issue_code else None)
         if not unique:
-            if from_entries.issue_code:
-                return from_entries
+            if partial is not None:
+                return _Targets(reason=partial.reason, issue_code=partial.issue_code)
             return _Targets(reason="dynamic or unknown attribute target",
                             issue_code="DYNAMIC_ATTRIBUTE_UNRESOLVED")
+        if partial is not None:
+            return _Targets(unique, Confidence.PROBABLE, partial.reason, partial.issue_code)
         if (base.confidence == Confidence.EXACT and len(unique) == 1
                 and not has_external_member and not from_entries.issue_code
                 and (not from_entries.ids or from_entries.confidence == Confidence.EXACT)):
@@ -222,6 +320,14 @@ class _Resolver:
             return _Targets(reason="dynamic qualifier expression",
                             issue_code="DYNAMIC_ATTRIBUTE_UNRESOLVED")
         if parts[0] == "self":
+            binding = self._name("self", reference.scope_symbol_id,
+                                 reference.source_anchor.file_path, reference.source_anchor)
+            entry = self.index.entries.get(binding.ids[0]) if len(binding.ids) == 1 else None
+            owner = self.index.entries.get(entry.parent_symbol) if entry and entry.parent_symbol else None
+            if (entry is None or entry.kind != NodeKind.PARAMETER or owner is None
+                    or owner.kind != NodeKind.METHOD):
+                return _Targets(reason="self is not bound to the enclosing method parameter",
+                                issue_code="DYNAMIC_ATTRIBUTE_UNRESOLVED")
             class_id = self._class_for_self(reference.scope_symbol_id)
             if class_id is None:
                 return _Targets(reason="self has no indexed class owner",
@@ -235,6 +341,11 @@ class _Resolver:
             if not base.ids:
                 break
         return base
+
+    def _reference_targets(self, reference: SymbolReference) -> _Targets:
+        return (self._qualified(reference) if reference.qualifier is not None else
+                self._name(reference.name, reference.scope_symbol_id,
+                           reference.source_anchor.file_path, reference.source_anchor))
 
     def run(self) -> ResolutionResult:
         resolved = SymbolIndex()
@@ -257,16 +368,14 @@ class _Resolver:
                     "IMPORT_UNRESOLVED", f"project module {full_path!r} has no indexed target",
                     entry.file_path, entry.source_anchor,
                 ))
-            if not targets.ids:
+            if not targets.ids or targets.issue_code == "IMPORT_WORK_BUDGET_PARTIAL":
                 self.issues.append(AnalysisIssue(
                     targets.issue_code or "IMPORT_UNRESOLVED",
                     targets.reason or "import has no indexed target",
                     entry.file_path, entry.source_anchor,
                 ))
         for raw in self.index.references:
-            targets = (self._qualified(raw) if raw.qualifier is not None else
-                       self._name(raw.name, raw.scope_symbol_id,
-                                  raw.source_anchor.file_path, raw.source_anchor))
+            targets = self._reference_targets(raw)
             if targets.confidence == Confidence.EXACT and len(targets.ids) == 1:
                 reference = replace(raw, resolved_definition_id=targets.ids[0],
                                     confidence=Confidence.EXACT)
@@ -276,6 +385,11 @@ class _Resolver:
                 if len(targets.ids) > 1:
                     self.issues.append(AnalysisIssue(
                         "AMBIGUOUS_SYMBOL", targets.reason or "multiple possible targets",
+                        raw.source_anchor.file_path, raw.source_anchor,
+                    ))
+                if targets.issue_code == "IMPORT_WORK_BUDGET_PARTIAL":
+                    self.issues.append(AnalysisIssue(
+                        targets.issue_code, targets.reason or "import graph work truncated",
                         raw.source_anchor.file_path, raw.source_anchor,
                     ))
             else:
@@ -294,3 +408,54 @@ class _Resolver:
 def resolve_project_symbols(files: tuple[ParsedFile, ...], index: SymbolIndex) -> ResolutionResult:
     """Return resolved references without mutating the syntax-only index."""
     return _Resolver(files, index).run()
+
+
+@dataclass(frozen=True, slots=True)
+class ImportTargetFact:
+    ids: tuple[str, ...]
+    confidence: Confidence
+    reason: str | None
+    issue_code: str | None
+
+    @property
+    def truncated(self) -> bool:
+        return self.issue_code in ("IMPORT_BUDGET", "IMPORT_WORK_BUDGET_PARTIAL")
+
+
+class ImportTargetQuery:
+    """Reuse the resolver's authoritative import algorithm without rebinding references.
+
+    Dependency queries retain the full path of ``import pkg.sub``; ordinary
+    binding queries keep Python's root-package binding. Neither loads a module.
+    """
+
+    def __init__(self, files: tuple[ParsedFile, ...], resolution: ResolutionResult) -> None:
+        self.resolver = _Resolver(files, resolution.symbol_index)
+        self.resolver.external.update({node.id: node for node in resolution.external_symbols})
+        self.catalog = self.resolver.catalog
+        self.children = self.resolver.children
+
+    def targets(self, entry: SymbolIndexEntry, *, dependency: bool = False,
+                anchor: SourceAnchor | None = None) -> ImportTargetFact:
+        if dependency and entry.metadata.get("binds_root") == "true":
+            entry = replace(entry, metadata={**entry.metadata, "binds_root": "false"})
+        result = self.resolver._import_target(entry, anchor or entry.source_anchor, frozenset())
+        return ImportTargetFact(result.ids, result.confidence, result.reason, result.issue_code)
+
+    def reference_targets(self, reference: SymbolReference) -> ImportTargetFact:
+        """Query Name/Attribute lexical facts, including partial import issues.
+
+        Candidate confidence is independent of partiality: a complete finite
+        Probable union need not have an issue. The supplied reference is not
+        rebound or mutated, and no target code is loaded.
+        """
+        result = self.resolver._reference_targets(reference)
+        return ImportTargetFact(result.ids, result.confidence, result.reason, result.issue_code)
+
+    def binding_owner(self, name: str, scope_id: str | None, file_path: str) -> BindingOwnerFact:
+        """Return the same declaration-aware owner used by lexical resolution."""
+        return self.resolver._binding_owner(name, scope_id, file_path)
+
+    @property
+    def external_symbols(self) -> tuple[CodeNode, ...]:
+        return tuple(self.resolver.external.values())

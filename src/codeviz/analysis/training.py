@@ -1,6 +1,7 @@
 """Static training events and independent entry points over parsed Python facts."""
 
 import ast
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, replace
 
 from codeviz.core import (
@@ -21,6 +22,12 @@ from codeviz.semantic import (
 
 from .flow import FlowAnalysis
 from .imports import ModuleCatalog
+from .lexical_scopes import (
+    IMPLICIT_SCOPES,
+    ImplicitScope,
+    definition_expressions,
+    implicit_parts,
+)
 from .model import ModelAnalysis
 from .python import AnalysisIssue, ParsedFile
 from .resolution import ResolutionResult
@@ -70,6 +77,11 @@ class TrainingAnalysis:
     joins: tuple[TrainingControlJoin, ...] = ()
 
 
+def _has_training_evidence(entry: EntryPoint, framework_evidence: bool) -> bool:
+    """Only facts evaluated in this entry can support an ML interpretation."""
+    return bool(entry.model_ids) or framework_evidence
+
+
 def _anchor(parsed: ParsedFile, node: ast.AST) -> SourceAnchor:
     line = getattr(node, "lineno", 1)
     return SourceAnchor(parsed.relative_path, line,
@@ -110,6 +122,24 @@ def _parameter_role(name: str) -> str | None:
     return None
 
 
+def _scope_nodes(statements: Iterable[ast.AST], *, eager_bodies: bool = False) -> Iterator[ast.AST]:
+    """Walk evaluation boundaries; deferred bodies never contribute outer facts."""
+    pending: list[ast.AST] = list(reversed(tuple(statements)))
+    while pending:
+        node = pending.pop()
+        yield node
+        children: tuple[ast.AST, ...]
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            children = definition_expressions(node)
+        elif isinstance(node, IMPLICIT_SCOPES):
+            outer, inner = implicit_parts(node)
+            children = (outer + inner if eager_bodies and
+                        not isinstance(node, (ast.Lambda, ast.GeneratorExp)) else outer)
+        else:
+            children = tuple(ast.iter_child_nodes(node))
+        pending.extend(reversed(children))
+
+
 def _local_names(function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Module,
                  *, include_imports: bool = True) -> set[str]:
     names = ({arg.arg for arg in (*function.args.posonlyargs, *function.args.args,
@@ -119,7 +149,7 @@ def _local_names(function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Module,
         names.add(function.args.vararg.arg)
     if not isinstance(function, ast.Module) and function.args.kwarg is not None:
         names.add(function.args.kwarg.arg)
-    for node in ast.walk(function):
+    for node in _scope_nodes(function.body):
         if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
             names.add(node.id)
         elif include_imports and isinstance(node, ast.Import):
@@ -133,16 +163,7 @@ def _local_names(function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Module,
 
 def _executed_calls(statements: list[ast.stmt]) -> list[ast.Call]:
     """Ignore calls inside definitions that a loop merely creates."""
-    calls: list[ast.Call] = []
-    pending: list[ast.AST] = list(statements)
-    while pending:
-        node = pending.pop()
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
-            continue
-        if isinstance(node, ast.Call):
-            calls.append(node)
-        pending.extend(ast.iter_child_nodes(node))
-    return calls
+    return [node for node in _scope_nodes(statements) if isinstance(node, ast.Call)]
 
 
 class _EntryVisitor(ast.NodeVisitor):
@@ -152,7 +173,8 @@ class _EntryVisitor(ast.NodeVisitor):
                  model_ids: frozenset[str],
                  references: dict[tuple[str, int, int | None], str],
                  call_sites: dict[tuple[str, int, int | None, object], str],
-                 control_blocks: dict[tuple[str, str, int, int | None], str]) -> None:
+                 control_blocks: dict[tuple[str, str, int, int | None], str],
+                 issues: list[AnalysisIssue]) -> None:
         self.parsed = parsed
         self.function = function
         self.entry = entry
@@ -163,9 +185,11 @@ class _EntryVisitor(ast.NodeVisitor):
         self.framework = PyTorchModelRule()
         self.model_ids = model_ids
         self.used_model_ids: list[str] = []
+        self.framework_evidence = False
         self.references = references
         self.call_sites = call_sites
         self.control_blocks = control_blocks
+        self.issues = issues
         self.events: list[TrainingEvent] = []
         self.joins: list[TrainingControlJoin] = []
         self.event_occurrences: dict[str, int] = {}
@@ -183,7 +207,7 @@ class _EntryVisitor(ast.NodeVisitor):
                         (f"parameter name {argument.arg!r} suggests {role}",)
                     )
         self.no_grad_context_calls = {
-            id(item.context_expr) for statement in ast.walk(function)
+            id(item.context_expr) for statement in _scope_nodes(function.body)
             if isinstance(statement, (ast.With, ast.AsyncWith)) for item in statement.items
             if isinstance(item.context_expr, ast.Call)
         }
@@ -245,16 +269,21 @@ class _EntryVisitor(ast.NodeVisitor):
         canonical = self.framework.canonical_name(value.func, self.imports)
         if canonical is not None:
             if canonical in ("torch.cuda.amp.GradScaler", "torch.amp.GradScaler"):
+                self.framework_evidence = True
                 return ReceiverFact("grad_scaler", Confidence.PROBABLE,
                                     (f"constructor {canonical}; scaler may skip an update",))
             if canonical.startswith("torch.optim.lr_scheduler.") and canonical.rsplit(".", 1)[-1] in _SCHEDULERS:
+                self.framework_evidence = True
                 return ReceiverFact("scheduler", Confidence.EXACT, (f"constructor {canonical}",))
             if canonical.startswith("torch.optim.") and canonical.rsplit(".", 1)[-1] in _OPTIMIZERS:
+                self.framework_evidence = True
                 return ReceiverFact("optimizer", Confidence.EXACT, (f"constructor {canonical}",))
             if canonical.startswith("torch.nn.") and canonical.rsplit(".", 1)[-1] in _LOSSES:
+                self.framework_evidence = True
                 return ReceiverFact("criterion", Confidence.EXACT, (f"constructor {canonical}",))
             if (canonical.startswith("torch.nn.functional.")
                     and canonical.rsplit(".", 1)[-1] in _FUNCTIONAL_LOSSES):
+                self.framework_evidence = True
                 return ReceiverFact("loss", Confidence.EXACT, (f"functional loss {canonical}",))
         if isinstance(value.func, ast.Name):
             receiver = self.facts.get(value.func.id)
@@ -266,7 +295,7 @@ class _EntryVisitor(ast.NodeVisitor):
     def _bind(self, target: ast.expr, value: ast.expr) -> None:
         if isinstance(target, ast.Name):
             fact = self._fact_for_value(value)
-            if fact is None:
+            if fact is None and not isinstance(value, ast.Constant):
                 role = _parameter_role(target.id)
                 fact = (ReceiverFact(role, Confidence.PROBABLE,
                                      (f"assignment name {target.id!r} suggests {role}",))
@@ -335,6 +364,10 @@ class _EntryVisitor(ast.NodeVisitor):
             return
         if matched.role == TrainingRole.DISABLE_GRADIENT and id(node) not in self.no_grad_context_calls:
             return
+        if self.framework.canonical_name(node.func, self.imports) in (
+            "torch.no_grad", "torch.save", "torch.load",
+        ):
+            self.framework_evidence = True
         source_node_id = self.call_sites.get((self.parsed.relative_path, node.lineno,
                                               node.col_offset, self.entry.id))
         self._event(matched.role, node, matched.confidence, matched.evidence,
@@ -522,10 +555,39 @@ class _EntryVisitor(ast.NodeVisitor):
             self.visit(statement)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        return  # Nested definitions are not executed by defining the entry point.
+        for expression in definition_expressions(node):
+            self.visit(expression)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        return
+        for expression in definition_expressions(node):
+            self.visit(expression)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        for expression in definition_expressions(node):
+            self.visit(expression)
+
+    def _visit_implicit(self, node: ImplicitScope) -> None:
+        outer, inner = implicit_parts(node)
+        for expression in outer:
+            self.visit(expression)
+        self.issues.append(AnalysisIssue(
+            "TRAINING_SCOPE_PARTIAL",
+            f"{type(node).__name__} lexical body is excluded from outer training events; "
+            "deferred execution and scoped receiver propagation are not modeled",
+            self.parsed.relative_path, _anchor(self.parsed, node),
+        ))
+        # Eager comprehensions may rebind an outer name with walrus. Invalidate
+        # rather than retaining a falsely proven receiver after an omitted body.
+        if not isinstance(node, (ast.Lambda, ast.GeneratorExp)):
+            for child in _scope_nodes(inner, eager_bodies=True):
+                if isinstance(child, ast.NamedExpr):
+                    self._clear_target(child.target)
+
+    visit_Lambda = _visit_implicit
+    visit_GeneratorExp = _visit_implicit
+    visit_ListComp = _visit_implicit
+    visit_SetComp = _visit_implicit
+    visit_DictComp = _visit_implicit
 
     def run(self) -> tuple[EntryPoint, tuple[TrainingEvent, ...],
                            tuple[TrainingControlJoin, ...]]:
@@ -591,9 +653,9 @@ def build_training_analysis(files: tuple[ParsedFile, ...], resolution: Resolutio
             try:
                 visitor = _EntryVisitor(parsed, parsed.tree, module_symbol, module_kind,
                                         imports, model_ids, references,
-                                        call_sites, control_blocks)
+                                        call_sites, control_blocks, issues)
                 entry, flow_events, flow_joins = visitor.run()
-                if flow_events:
+                if flow_events and _has_training_evidence(entry, visitor.framework_evidence):
                     entries.append(entry)
                     events.extend(flow_events)
                     joins.extend(flow_joins)
@@ -611,8 +673,10 @@ def build_training_analysis(files: tuple[ParsedFile, ...], resolution: Resolutio
                 continue
             try:
                 visitor = _EntryVisitor(parsed, function, symbol, kind, imports,
-                                        model_ids, references, call_sites, control_blocks)
+                                        model_ids, references, call_sites, control_blocks, issues)
                 entry, flow_events, flow_joins = visitor.run()
+                if not _has_training_evidence(entry, visitor.framework_evidence):
+                    continue
                 entries.append(entry)
                 events.extend(flow_events)
                 joins.extend(flow_joins)

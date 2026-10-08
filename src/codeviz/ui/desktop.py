@@ -23,8 +23,8 @@ _API_METHODS = (
 )
 _API_ARITIES = {
     "get_session": (0, 0), "open_project": (1, 1), "choose_project": (0, 0),
-    "analyze": (0, 0), "get_overview": (0, 0), "get_view": (1, 5),
-    "get_detail_view": (3, 3), "get_inspector": (3, 4), "get_view_state": (0, 0),
+    "analyze": (0, 0), "get_overview": (0, 0), "get_view": (1, 6),
+    "get_detail_view": (3, 3), "get_inspector": (3, 5), "get_view_state": (0, 0),
     "search": (1, 3), "read_source": (1, 1), "get_preferences": (0, 0),
     "set_language": (1, 1), "set_preferences": (1, 1),
     "get_analysis_settings": (0, 0), "set_analysis_settings": (1, 1),

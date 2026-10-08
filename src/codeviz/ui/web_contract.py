@@ -122,12 +122,19 @@ def _metadata_payload(metadata: dict[str, object]) -> JsonObject:
         "symbol_id": "symbolId",
         "entry_point_id": "entryPointId",
         "entry_kind": "entryKind",
+        "statement_type": "statementType",
+        "condition": "condition",
+        "partial": "partial",
+        "definition_code_name": "definitionCodeName",
+        "instance_context": "instanceContext",
     }
     integer_fields = {
         "repeat_count": "repeatCount",
         "hidden_count": "hiddenCount",
+        "structure_level": "structureLevel",
     }
-    boolean_fields = {"has_children": "hasChildren"}
+    boolean_fields = {"has_children": "hasChildren", "definition_projection": "definitionProjection",
+                      "can_open_detail": "canOpenDetail"}
     for source, target in string_fields.items():
         value = metadata.get(source)
         if isinstance(value, str):
@@ -180,6 +187,7 @@ def _query_context_payload(context: dict[str, object]) -> JsonObject:
         "root_id": "rootId",
         "selected_id": "selectedId",
         "direction": "direction",
+        "control_mode": "controlMode",
     }
     for source, target in string_fields.items():
         value = context.get(source)
@@ -188,9 +196,14 @@ def _query_context_payload(context: dict[str, object]) -> JsonObject:
     hops = context.get("hops")
     if type(hops) is int:
         result["hops"] = hops
+    depth = context.get("structure_depth")
+    if type(depth) is int:
+        result["structureDepth"] = depth
     for source, target in (
         ("has_more", "hasMore"),
         ("budget_truncated", "budgetTruncated"),
+        ("can_expand", "canExpand"),
+        ("depth_limit", "depthLimit"),
     ):
         value = context.get(source)
         if type(value) is bool:
@@ -247,21 +260,34 @@ def graph_payload(graph: VisibleGraph) -> JsonObject:
 
 
 def overview_payload(data: OverviewData) -> JsonObject:
-    return _json_object({
+    payload: dict[str, object] = {
         "projectName": data.project_name,
         "projectPath": data.project_path,
         "language": data.language,
         "framework": data.framework,
         "models": [
             {"id": item.id, "name": item.name,
-             "sourceAnchor": _anchor_payload(item.source_anchor)}
+             "sourceAnchor": _anchor_payload(item.source_anchor),
+             **({"initialStructureDepth": item.initial_structure_depth}
+                if item.initial_structure_depth is not None else {})}
             for item in data.models
         ],
         "entries": [
             {"id": item.id, "name": item.name,
+             "viewKind": item.view_kind.value, "confidence": item.confidence.value,
+             "evidence": list(item.evidence), "detectionKind": item.detection_kind,
              "sourceAnchor": _anchor_payload(item.source_anchor)}
             for item in data.entries
         ],
+        "functions": [{"id": item.id, "name": item.name,
+                       "sourceAnchor": _anchor_payload(item.source_anchor)}
+                      for item in data.functions],
+        "modules": [{"id": item.id, "name": item.name,
+                     "sourceAnchor": _anchor_payload(item.source_anchor)}
+                    for item in data.modules],
+        "classes": [{"id": item.id, "name": item.name,
+                     "sourceAnchor": _anchor_payload(item.source_anchor)}
+                    for item in data.classes],
         "mainAreas": list(data.main_areas),
         "health": {
             "filesParsed": data.health.files_parsed,
@@ -272,7 +298,8 @@ def overview_payload(data: OverviewData) -> JsonObject:
             "unresolved": data.health.unresolved,
             "issueCount": data.health.issue_count,
         },
-    })
+    }
+    return _json_object(payload)
 
 
 def inspector_payload(data: InspectorData) -> JsonObject:
@@ -325,11 +352,13 @@ def session_payload(
     outdated_reasons: tuple[str, ...],
     cache_issue: str | None,
     recent_projects: tuple[Path, ...],
+    has_analysis: bool = False,
 ) -> JsonObject:
     """Serialize project-session status without consulting mutable stores."""
     return _json_object({
         "projectPath": str(project_path) if project_path is not None else None,
         "status": status.value,
+        "hasAnalysis": has_analysis,
         "outdatedReasons": list(outdated_reasons),
         "cacheIssue": cache_issue,
         "recentProjects": [str(path) for path in recent_projects],

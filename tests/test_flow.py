@@ -19,7 +19,9 @@ from codeviz.core import (
     EntityRole,
     NodeKind,
     SourceAnchor,
+    ViewKind,
 )
+from codeviz.views.data import critical_data_slice
 
 
 def analyze_files(files: dict[str, str]):
@@ -135,7 +137,15 @@ class FlowGraphTests(unittest.TestCase):
                             for node in result.flow.data_nodes))
         graph = result.flow.graph
         data = {node.name: node for node in graph.nodes.values() if node.kind == NodeKind.DATA}
-        self.assertNotIn("tmp", data)
+        self.assertNotIn("tmp", {node.name for node in result.flow.data_nodes})
+        self.assertTrue(data["tmp"].metadata["generic_data"])
+        self.assertEqual(data["tmp"].metadata["data_role"], DataRole.OTHER.value)
+        owner_id = next(item.id for item in result.symbol_index.entries.values()
+                        if item.name == "train" and item.kind == NodeKind.FUNCTION)
+        default_slice = critical_data_slice(result, (owner_id,), ViewKind.EXECUTION)
+        self.assertEqual({node.name for node in default_slice.nodes},
+                         {"input", "target", "prediction", "loss"})
+        self.assertNotIn(data["tmp"].id, {node.id for node in default_slice.nodes})
         edges = {(edge.source, edge.target, edge.type) for edge in graph.edges}
         self.assertIn((data["input"].id, data["prediction"].id, EdgeType.DATA_FLOW), edges)
         self.assertIn((data["prediction"].id, data["loss"].id, EdgeType.DATA_FLOW), edges)
@@ -344,7 +354,15 @@ class FlowGraphTests(unittest.TestCase):
         )})
         graph = result.flow.graph
         data = {node.name: node for node in graph.nodes.values() if node.kind == NodeKind.DATA}
-        self.assertNotIn("tmp", data)
+        self.assertNotIn("tmp", {node.name for node in result.flow.data_nodes})
+        self.assertTrue(data["tmp"].metadata["generic_data"])
+        self.assertEqual(data["tmp"].metadata["data_role"], DataRole.OTHER.value)
+        owner_id = next(item.id for item in result.symbol_index.entries.values()
+                        if item.name == "run" and item.kind == NodeKind.FUNCTION)
+        default_slice = critical_data_slice(result, (owner_id,), ViewKind.EXECUTION)
+        self.assertEqual({node.name for node in default_slice.nodes},
+                         {"input", "prediction"})
+        self.assertNotIn(data["tmp"].id, {node.id for node in default_slice.nodes})
         self.assertTrue(any(edge.type == EdgeType.DATA_FLOW
                             and edge.source == data["input"].id
                             and edge.target == data["prediction"].id

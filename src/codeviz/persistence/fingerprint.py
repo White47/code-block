@@ -10,9 +10,9 @@ from stat import S_ISREG
 from codeviz.analysis.discovery import _normalize_ignore, discover_python_files
 from codeviz.source_handles import opened_file_path
 
-ANALYSIS_VERSION = "1"
+ANALYSIS_VERSION = "3"
 PARSER_VERSION = f"python-{sys.version_info.major}.{sys.version_info.minor}"
-SEMANTIC_VERSION = "1"
+SEMANTIC_VERSION = "3"
 _MAX_SOURCE_BYTES = 50_000_000
 
 

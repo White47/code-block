@@ -100,7 +100,7 @@ class TrainingAnalysisTests(unittest.TestCase):
         self.assertEqual(entry.source_anchor.file_path, "train.py")
 
         inactive = analyze_files({"train.py": "def train():\n    return 1\n"})
-        self.assertEqual(len(inactive.training.entry_points), 1)
+        self.assertEqual(len(inactive.training.entry_points), 0)
 
     def test_train_and_evaluate_have_independent_flows_and_shared_model_definition(self):
         result = analyze_files({
@@ -178,8 +178,8 @@ class TrainingAnalysisTests(unittest.TestCase):
         )})
         events = result.training.events
         self.assertFalse(any(item.role == TrainingRole.DISABLE_GRADIENT for item in events))
-        step = next(item for item in events if item.role == TrainingRole.PARAMETER_UPDATE)
-        self.assertEqual(step.confidence, Confidence.PROBABLE)
+        self.assertEqual(events, ())
+        self.assertEqual(result.training.entry_points, ())
 
     def test_rebinding_downgrades_model_and_parameter_receivers_remain_probable(self):
         result = analyze_files({
@@ -219,7 +219,8 @@ class TrainingAnalysisTests(unittest.TestCase):
     def test_bad_file_does_not_hide_good_training_entry(self):
         result = analyze_files({
             "bad.py": "def train(: pass\n",
-            "good.py": "def train(optimizer):\n    optimizer.step()\n",
+            "good.py": ("import torch\ndef train(optimizer):\n"
+                            "    criterion = torch.nn.MSELoss()\n    optimizer.step()\n"),
         })
         self.assertEqual([item.name for item in result.training.entry_points], ["train"])
         self.assertIn("SYNTAX_ERROR", {issue.code for issue in result.issues})
@@ -235,7 +236,8 @@ class TrainingAnalysisTests(unittest.TestCase):
         with patch.object(PyTorchModelRule, "import_bindings", failing_imports):
             result = analyze_files({
                 "bad.py": "def train():\n    break_training_rule()\n",
-                "good.py": "def train(optimizer):\n    optimizer.step()\n",
+                "good.py": ("import torch\ndef train(optimizer):\n"
+                            "    criterion = torch.nn.MSELoss()\n    optimizer.step()\n"),
             })
         self.assertEqual([item.source_anchor.file_path for item in result.training.entry_points],
                          ["good.py"])
@@ -312,8 +314,10 @@ class TrainingAnalysisTests(unittest.TestCase):
                              for item in result.training.events))
 
     def test_unrelated_earlier_event_does_not_change_existing_event_id(self):
-        base = "def evaluate(model):\n    model.eval()\n"
-        inserted = "def evaluate(model):\n    for epoch in []: pass\n    model.eval()\n"
+        prefix = ("import torch\ndef evaluate(model):\n"
+                  "    criterion = torch.nn.MSELoss()\n")
+        base = prefix + "    model.eval()\n"
+        inserted = prefix + "    for epoch in []: pass\n    model.eval()\n"
         first = analyze_files({"run.py": base}).training.events
         second = analyze_files({"run.py": inserted}).training.events
         eval_first = next(item for item in first if item.role == TrainingRole.EVALUATION_MODE)
@@ -336,7 +340,9 @@ class TrainingAnalysisTests(unittest.TestCase):
                 self.scans += 1
                 return super().values()
 
-        source = "".join(f"def train_{name}(optimizer):\n    optimizer.step()\n"
+        source = "import torch\n" + "".join(
+                         f"def train_{name}(optimizer):\n"
+                         "    criterion = torch.nn.MSELoss()\n    optimizer.step()\n"
                          for name in ("a", "b", "c", "d"))
         result = analyze_files({"run.py": source})
         references = CountedList(result.resolution.symbol_index.references)

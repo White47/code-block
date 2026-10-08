@@ -11,7 +11,12 @@ from typing import cast
 
 from codeviz.analysis.project import ProjectAnalysis
 from codeviz.persistence.codec import decode_analysis, encode_analysis
-from codeviz.persistence.fingerprint import ProjectFingerprint
+from codeviz.persistence.fingerprint import (
+    ANALYSIS_VERSION,
+    PARSER_VERSION,
+    SEMANTIC_VERSION,
+    ProjectFingerprint,
+)
 from codeviz.views import ViewState
 
 _SCHEMA_VERSION = 1
@@ -21,6 +26,10 @@ _MAX_STATE_BYTES = 1_000_000
 
 class CacheError(ValueError):
     """A cache cannot be safely read or written; analysis can still proceed."""
+
+
+class CacheVersionMismatch(CacheError):
+    """Old analysis requires reanalysis, not corruption recovery."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,6 +155,10 @@ class CacheStore:
             if payload["project_root"] != str(root):
                 raise CacheError("analysis cache belongs to another project")
             fingerprint = ProjectFingerprint.from_payload(payload["fingerprint"])
+            if (fingerprint.analysis_version != ANALYSIS_VERSION or
+                    fingerprint.semantic_version != SEMANTIC_VERSION or
+                    fingerprint.parser_version != PARSER_VERSION):
+                raise CacheVersionMismatch("analysis versions changed; reanalysis required")
             analysis = decode_analysis(payload["analysis"])
             return CachedAnalysis(analysis, fingerprint)
         except (OSError, UnicodeError, TypeError, ValueError, RecursionError) as error:

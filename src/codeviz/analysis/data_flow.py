@@ -15,8 +15,10 @@ from codeviz.core import (
     stable_node_id,
 )
 
+from .def_use import add_generic_def_use
+from .lexical_scopes import ImplicitScope, ImplicitScopeVisitor, ScopeLocations
 from .python import AnalysisIssue, ParsedFile
-from .symbols import SymbolIndex, SymbolIndexEntry, SymbolReference
+from .symbols import SymbolIndex, SymbolReference
 
 _ROLES: dict[str, DataRole] = {
     "input": DataRole.INPUT, "inputs": DataRole.INPUT,
@@ -33,7 +35,7 @@ _ROLES: dict[str, DataRole] = {
 }
 
 
-class _DataVisitor(ast.NodeVisitor):
+class _DataVisitor(ImplicitScopeVisitor):
     def __init__(self, parsed: ParsedFile, index: SymbolIndex, graph: CodeGraph,
                  data_by_symbol: dict[str, str]) -> None:
         self.parsed = parsed
@@ -43,11 +45,8 @@ class _DataVisitor(ast.NodeVisitor):
         self.origins: dict[str, set[str]] = {}
         self.scope_id = next(entry.id for entry in index.entries.values()
                              if entry.kind == NodeKind.MODULE and entry.file_path == parsed.relative_path)
-        self.children: dict[tuple[str, str, NodeKind, int], SymbolIndexEntry] = {}
-        for entry in index.entries.values():
-            if entry.parent_symbol is not None:
-                self.children[(entry.parent_symbol, entry.name, entry.kind,
-                               entry.source_anchor.start_line)] = entry
+        assert parsed.tree is not None
+        self.locations = ScopeLocations(parsed.tree, index, parsed.relative_path)
         self.steps = {
             (node.source_anchors[0].start_line, node.source_anchors[0].start_column,
              node.metadata["statement_type"]): node.id
@@ -62,9 +61,9 @@ class _DataVisitor(ast.NodeVisitor):
             if ref.source_anchor.file_path == parsed.relative_path
         }
 
-    def _visit_definition(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef,
-                          kind: NodeKind) -> None:
-        entry = self.children.get((self.scope_id, node.name, kind, node.lineno))
+    def _visit_definition(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
+        entry_id = self.locations.owners.get(node)
+        entry = self.index.entries.get(entry_id) if entry_id is not None else None
         if entry is None:
             return
         previous = self.scope_id
@@ -76,24 +75,30 @@ class _DataVisitor(ast.NodeVisitor):
         self.scope_id = previous
         self.origins = previous_origins
 
+    def _visit_implicit_body(self, node: ImplicitScope, body: tuple[ast.AST, ...]) -> None:
+        previous_origins = self.origins
+        self.origins = dict(previous_origins)
+        try:
+            super()._visit_implicit_body(node, body)
+        finally:
+            # Deferred expressions do not mutate origins at creation time.
+            if isinstance(node, (ast.Lambda, ast.GeneratorExp)):
+                self.origins = previous_origins
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        parent = self.index.entries[self.scope_id]
-        self._visit_definition(node, NodeKind.METHOD if parent.kind == NodeKind.CLASS
-                               else NodeKind.FUNCTION)
+        self._visit_definition(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        parent = self.index.entries[self.scope_id]
-        self._visit_definition(node, NodeKind.METHOD if parent.kind == NodeKind.CLASS
-                               else NodeKind.FUNCTION)
+        self._visit_definition(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        self._visit_definition(node, NodeKind.CLASS)
+        self._visit_definition(node)
 
     def _reads(self, expression: ast.AST | None) -> set[str]:
         if expression is None:
             return set()
         found: set[str] = set()
-        for node in ast.walk(expression):
+        for node, scope_id in self.locations.expression_nodes(expression, self.scope_id):
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
                 name, qualifier = node.id, None
             elif isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
@@ -101,7 +106,7 @@ class _DataVisitor(ast.NodeVisitor):
             else:
                 continue
             reference: SymbolReference | None = self.refs.get(
-                (self.scope_id, node.lineno, node.col_offset, name, qualifier)
+                (scope_id, node.lineno, node.col_offset, name, qualifier)
             )
             if reference is not None and reference.resolved_definition_id is not None:
                 target_id = reference.resolved_definition_id
@@ -251,4 +256,5 @@ def add_critical_data(files: tuple[ParsedFile, ...], index: SymbolIndex,
                     "DATA_FLOW_ERROR", f"{type(error).__name__}: {error}",
                     parsed.relative_path, SourceAnchor(parsed.relative_path, 1),
                 ))
+    add_generic_def_use(files, index, graph, issues)
     return tuple(data_nodes)

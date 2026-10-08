@@ -1,9 +1,10 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { graph, ok, overview, session, viewState } from './testFixtures';
-import type { Layout, Session, ViewState } from '../types';
-vi.mock('./components/GraphEditor', () => ({ default: () => <div data-testid="graph-canvas">graph</div> }));
+import { graph, ok, overview, selectedNode, session, viewState } from './testFixtures';
+import type { Graph, Layout, Session, ViewState } from '../types';
+vi.mock('./components/GraphEditor', () => ({ default: ({ graph }: { graph: Graph }) =>
+  <div data-testid="graph-canvas">{graph.nodes.map(node => <span key={node.id}>{node.displayName}</span>)}</div> }));
 afterEach(() => { cleanup(); delete window.pywebview; });
 beforeEach(() => { window.pywebview = { api: {
   get_session: vi.fn().mockResolvedValue(ok(session)), get_preferences: vi.fn().mockResolvedValue(ok({ language: 'en', issue: null })),
@@ -129,8 +130,44 @@ describe('desktop workspace integration', () => {
     await waitFor(() => expect(api.get_view).toHaveBeenLastCalledWith('Execution', 'entry', null, 1, 'both'));
     await waitFor(() => expect(api.save_layout).toHaveBeenLastCalledWith(expect.objectContaining({ activeView: 'Execution', selectedId: null })));
   });
-  it('hydrates Python roots and calls Inspector with exact kind/root/selected/detail arguments', async () => { render(<App/>); await screen.findByTestId('graph-canvas'); await waitFor(() => expect(window.pywebview?.api?.get_inspector).toHaveBeenCalledWith('Architecture', 'model', 'layer', null)); expect(window.pywebview?.api?.get_view).toHaveBeenCalledWith('Architecture', 'model', 'layer', 1, 'both'); });
-  it('queries Python upstream/downstream and limits hops to five', async () => { render(<App/>); await screen.findByTestId('graph-canvas'); fireEvent.click(screen.getByText('Upstream')); await waitFor(() => expect(window.pywebview?.api?.get_view).toHaveBeenLastCalledWith('Architecture', 'model', 'layer', 1, 'in')); await screen.findByTestId('graph-canvas'); fireEvent.click(screen.getByText('Downstream')); await waitFor(() => expect(window.pywebview?.api?.get_view).toHaveBeenLastCalledWith('Architecture', 'model', 'layer', 1, 'out')); for (let i = 2; i <= 5; i++) { await screen.findByTestId('graph-canvas'); fireEvent.click(screen.getByText(new RegExp(`More hops · ${i - 1}/5`))); await waitFor(() => expect(window.pywebview?.api?.get_view).toHaveBeenLastCalledWith('Architecture', 'model', 'layer', i, 'out')); } await screen.findByTestId('graph-canvas'); expect((screen.getByText('More hops · 5/5') as HTMLButtonElement).disabled).toBe(true); });
+  it('hydrates Architecture roots and passes structural depth to the exact view and Inspector arguments', async () => {
+    render(<App/>); await screen.findByTestId('graph-canvas');
+    await waitFor(() => expect(window.pywebview?.api?.get_inspector).toHaveBeenCalledWith('Architecture', 'model', 'layer', null, 1));
+    expect(window.pywebview?.api?.get_view).toHaveBeenCalledWith('Architecture', 'model', 'layer', 1, 'both', 1);
+    expect(screen.queryByRole('button', { name: 'Upstream' })).toBeNull();
+    expect(screen.getByRole('button', { name: /^More layers/ })).toBeDefined();
+  });
+  it('queries Symbol upstream/downstream, displays returned neighbors and limits relationship hops to five', async () => {
+    const api = window.pywebview!.api!;
+    api.get_view_state = vi.fn().mockResolvedValue(ok({ ...viewState, activeView: 'Symbol',
+      openTabs: ['Overview', 'Symbol'], graphRoots: { Symbol: 'layer' } }));
+    api.get_view = vi.fn(async (kind, root, selected, hops = 1, direction = 'both') => ok({
+      ...graph, viewKind: kind, rootIds: [root!], queryContext: { controlMode: 'relations' as const, hasMore: hops < 5, budgetTruncated: false },
+      nodes: [selectedNode, ...Array.from({ length: hops }, (_, index) => ({ ...selectedNode,
+        id: `${direction}:neighbor:${index + 1}`, displayName: `${direction} neighbor ${index + 1}` }))],
+      edges: Array.from({ length: hops }, (_, index) => ({ source: direction === 'in' ? `${direction}:neighbor:${index + 1}` : selected!,
+        target: direction === 'in' ? selected! : `${direction}:neighbor:${index + 1}`, type: 'CALLS', confidence: 'Exact',
+        sourceAnchors: [], codeEdgeIds: [], semanticComponentIds: [] })),
+    }));
+    render(<App/>); await screen.findByText('both neighbor 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Upstream' }));
+    await screen.findByText('in neighbor 1');
+    expect(api.get_view).toHaveBeenLastCalledWith('Symbol', 'layer', 'layer', 1, 'in');
+    expect(screen.queryByText('both neighbor 1')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Downstream' }));
+    await screen.findByText('out neighbor 1');
+    expect(api.get_view).toHaveBeenLastCalledWith('Symbol', 'layer', 'layer', 1, 'out');
+    expect(screen.queryByText('in neighbor 1')).toBeNull();
+    for (let hops = 2; hops <= 5; hops++) {
+      const more = screen.getByRole('button', { name: `More hops · ${hops - 1}/5` }) as HTMLButtonElement;
+      await waitFor(() => expect(more.disabled).toBe(false));
+      fireEvent.click(more);
+      await screen.findByText(`out neighbor ${hops}`);
+      expect(api.get_view).toHaveBeenLastCalledWith('Symbol', 'layer', 'layer', hops, 'out');
+      expect(screen.getByTestId('graph-canvas').querySelectorAll('span')).toHaveLength(hops + 1);
+    }
+    expect((screen.getByRole('button', { name: 'More hops · 5/5' }) as HTMLButtonElement).disabled).toBe(true);
+  });
   it('Ctrl+W closes active graph and persists the remaining Overview tab', async () => { render(<App/>); await screen.findByTestId('graph-canvas'); const event = new KeyboardEvent('keydown', { key: 'w', ctrlKey: true, cancelable: true, bubbles: true }); window.dispatchEvent(event); expect(event.defaultPrevented).toBe(true); await waitFor(() => expect(screen.queryByTestId('graph-canvas')).toBeNull()); await waitFor(() => expect(window.pywebview?.api?.save_layout).toHaveBeenLastCalledWith(expect.objectContaining({ activeView: 'Overview', openTabs: ['Overview'] }))); });
   it('refreshes session after analysis rejects so a failed session can be retried', async () => { const get = vi.fn().mockResolvedValueOnce(ok(session)).mockResolvedValue(ok({ ...session, status: 'Failed' })); window.pywebview!.api!.get_session = get; window.pywebview!.api!.analyze = vi.fn().mockResolvedValue({ ok: false, schemaVersion: 1, error: { code: 'INTERNAL_ERROR', message: 'Analysis failed' } }); render(<App/>); await screen.findByTestId('graph-canvas'); fireEvent.click(screen.getByText('Re-analyze')); await waitFor(() => expect(get).toHaveBeenCalledTimes(2)); expect(await screen.findByText(/INTERNAL_ERROR: Analysis failed/)).toBeDefined(); await waitFor(() => expect((screen.getByText('Re-analyze') as HTMLButtonElement).disabled).toBe(false)); });
   it('loads the new project Python layout and never applies late graph responses from the previous project', async () => { let finishOld: (value: ReturnType<typeof ok<typeof graph>>) => void = () => {}; window.pywebview!.api!.get_view = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve; })).mockResolvedValue(ok({ ...graph, viewKind: 'Execution' })); window.pywebview!.api!.open_project = vi.fn().mockResolvedValue(ok({ ...session, projectPath: 'E:\\project-b' })); window.pywebview!.api!.get_view_state = vi.fn().mockResolvedValueOnce(ok(viewState)).mockResolvedValue(ok({ ...viewState, activeView: 'Execution', selectedId: null, openTabs: ['Execution'], graphRoots: { Execution: 'entry-b' } })); render(<App/>); await waitFor(() => expect(window.pywebview?.api?.get_view).toHaveBeenCalled()); fireEvent.click(screen.getByText('project-b')); await screen.findByTestId('graph-canvas'); finishOld(ok(graph)); await waitFor(() => expect(window.pywebview?.api?.get_view).toHaveBeenLastCalledWith('Execution', 'entry-b', null, 1, 'both')); expect(screen.getAllByRole('tab').map(e => e.textContent)).toEqual(['Execution']); });

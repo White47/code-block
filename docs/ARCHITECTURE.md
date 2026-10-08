@@ -33,7 +33,7 @@ Project Source / Config
 - Model Analysis：`analysis/model.py` 在 Resolver 和 Flow 之后提取带源码锚点的模型 Definition、子模块 Instance、`forward` Invocation；通过 CallSite ID 与已有 Full Code Graph 关联。`ModuleList` 仅在静态可见的同构结构上给出折叠次数；模型事实不直接插入 Code Graph。
 - Training Analysis：`analysis/training.py` 将 AST 调用与 Resolver / Model / Flow 证据组合成独立入口、训练事件和循环归属；函数参数名称仅形成 Probable 线索。
 - Semantic Graph：`semantic/components.py` 组合模型定义、实例、入口和事件；关系含源码锚点与证据。控制流边表达 AST 路径的静态近似，梯度边只表示 Probable 静态模式；Attention-like 是结构性 Probable 候选。
-- View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单；`views/code_context.py` 从已有 Full Code Graph 取 Symbol / Data Flow 的有向 1–5 hop 邻域。输出限制节点与边并保留聚合成员 ID；`views/layout.py` 只用 Contains、Control Flow、Branch True / False 做确定性的纵向 rank 与分支列，其他关系不参与层级计算，因此 Symbol / Data Flow 可能落入确定性的同 rank / Stable ID 回退位置。分层算法异常时仅在该布局边界内捕获，返回 Stable ID 顺序的纵向位置并在 `VisibleGraph.issues` 记录结构化 `LAYOUT_FALLBACK`；Controller 有界去重并交给 Problems，分析事实和缓存序列化不变。手动位置最后覆盖，完整代码图不直接交给 UI。
+- View Builder：`views/query.py` 索引语义关系，`views/data.py` 将入口函数或模型 `forward` 作用域内的关键 DataNode 与真实代码级 DATA_FLOW 投影到局部视图；`views/builder.py` 选择根、展开 / 选中邻域和关系白名单；`views/code_context.py` 从已有 Full Code Graph 取 Symbol / Data Flow 的有向 1–5 hop 邻域。输出限制节点与边并保留聚合成员 ID；`views/layout.py` 按各视图明确关系白名单做稳定纵向分层，SCC 压缩后对 DAG 有界排层；Symbol / Data Flow 查询焦点不强制置顶，Data 使用已投影 VisibleEdge 方向，不再次反转 READS。结构 / 控制视图保留显式根在上，回边不制造无限深度。分层算法异常时仅在布局边界捕获，返回 Stable ID 顺序的纵向位置及结构化 `LAYOUT_FALLBACK`；Controller 有界去重并交给 Problems，分析事实和缓存序列化不变。手动位置最后覆盖，完整代码图不直接交给 UI。前端相机以项目会话 / view / root 为 context，在节点测量就绪后定位，不从固定延迟猜测完成，也不因同 context 选中 / 查询刷新反复重挂载。
 - Search / Navigation：`search.py` 对索引定义及带锚点语义组件做有限结果查询，保留 scope、qualifiedName、SourceAnchor 与 confidence；`navigation.py` 将选中结果映射到 Architecture / Execution / Symbol / Data Flow 及真实根 ID，无法定位时返回显式原因，不猜测动态引用目标。
 - Canvas Scene：`ui/canvas_scene.py` 是纯 UI 投影边界；`graph_scene()` 每次把一个 `VisibleGraph` 转为场景节点、关系路由和尺寸，并提供可逆坐标变换、确定性岛放置与避障折线等纯几何函数。它不组合多个图，也不修改 Code Graph、Semantic Graph 或 Visible Graph。
 - UI：`ui/presenter.py` 将分析与局部图转为 Overview / Inspector / Problems 纯数据；`ui/controller.py` 管理项目会话、显式一次性 Analyze、每岛最多 18 节点 / 40 边的独立局部查询、View State 和受限只读源码访问；`ui/web_contract.py` 将 session、search + Python 规划的 RevealTarget、ViewState、preferences 及既有 presenter / graph 数据转换为版本化纯 JSON DTO，拒绝非有限坐标并丢弃未知 metadata / query context。pywebview bridge 是 React 的唯一应用 API，不经 HTTP；随机 loopback 服务器只提供本地构建静态资源且不开放远程监听。`ui/graph_canvas.py` / `ui/tkapp.py` 在桌面验收前继续作为 fallback。
@@ -41,11 +41,26 @@ Project Source / Config
 
 ## 4. 关键边界
 
-Parser 只负责语法事实；Resolver 负责名称；Semantic Rules 负责解释；View Builder 负责展示取舍；Canvas Scene 只负责绘制几何。任何层都必须保留回溯链：`Visual Node → Semantic Component → Code Symbol → Source Anchor`。主图与细节岛都由受限 `VisibleGraph` 生成，画布交互不触发重新分析或语义图重建。
+### 通用 Python 分析增量
+
+- `analysis/entries.py` 识别 main guard、`__main__.py` 与仅凭名称的 Probable main 候选；普通库不必有自动入口。Overview 的模块、类、具名函数 / 方法目录独立于 ML 入口。
+- `views/function_flow.py` 从所选词法作用域的 Code Graph 投影独立 `FunctionFlow`，不复用训练 Execution，不自动内联被调函数或嵌套定义。缓存恢复后不需要 AST 即可构图。
+- `analysis/lexical_scopes.py` 为 Symbol / Resolver / Call / Data 共用作用域边界。lambda / comprehension 使用非定义 `LexicalScope`；默认值与首 iterable 留在创建作用域，延迟主体不冒充外围即时执行。
+- `analysis/relations.py` 使用已有 Resolver 生成 IMPORTS / INHERITS。`analysis/value_candidates.py` 单独跟踪有限实例 / callable 候选；词法定义归属和可能运行时值不是一件事。重绑定、分支未知和预算截断必须保留不确定性。
+- `analysis/def_use.py` 补充普通参数 / 赋值 / 返回值的有界语法依赖，标记 `generic_data`。`FlowAnalysis.data_nodes` 仍是 ML 关键数据集合；普通变量只在局部 Symbol / Data Flow 查询中按需显示，不灌入模型架构和训练主图。
+- FunctionFlow 的分支、循环及 finally 退出路径来自静态 CFG；隐式异常、协程调度和 generator 恢复时序不完整时提供 Partial 诊断。训练图仍由独立语义层构建，不能把普通 CFG 的完整性直接套用于训练语义。
+
+该增量的验收与未完成项见 `GENERAL_PYTHON_PLAN.md`、`GENERAL_PYTHON_VALIDATION.md`，不能以模块存在替代验收。
+
+Parser 只负责语法事实；Resolver 负责名称；Semantic Rules 负责解释；View Builder 负责展示取舍；Canvas Scene 只负责绘制几何。语义图保留 `Visual Node → Semantic Component → Code Symbol → Source Anchor`；普通 FunctionFlow / Symbol / Data 图可直接经 CodeNode / Code Symbol 追溯 SourceAnchor，不强制创建语义组件。主图与细节岛都由受限 `VisibleGraph` 生成，画布交互不触发重新分析或语义图重建。
 
 ## 5. 运行状态
 
-项目分析状态为 Analyzing、Ready、Partial、Outdated、Failed。文件级失败只产生 Problem，不抹掉其他文件的可用结果。Outdated 仍允许读取缓存图并显示原因；单个细节岛无法重建时只清理 / 跳过该岛，主图与源码导航继续可用。
+### 结构探索修复合同（2026-10-07）
+
+Architecture 使用独立结构深度，`ProjectStructure` 从既有 Symbol Index 投影模块 / 类 / 函数的真实所有权；Symbol / DataFlow 的 hops 仍是关系邻域，不复用为结构层级。自定义组件的内部通过真实 `target_definition_id` 进行带实例上下文的局部投影，Code Graph / Semantic Graph 不增加伪造运行实例。投影身份解析验证当前项目、根、真实定义成员路径和深度上限，查询、Inspector、位置写入、细节岛及状态清理共用校验；合法持久身份与当前可见身份分开。深度临时，重开默认 1 层，不以新缓存版本强迫重分析；合法但暂不可见的手动位置保留。完整合同与实施证据见 `STRUCTURE_EXPLORATION.md`。
+
+项目分析状态为 Analyzing、Ready、Partial、Outdated、Failed。文件级失败只产生 Problem，不抹掉其他文件的可用结果。源码 / 配置过期且版本兼容时允许读取旧缓存图并显示原因；版本不兼容的 Analysis Cache 拒绝解码、要求重分析，独立状态 / 标注保留。单个细节岛无法重建时只清理 / 跳过该岛，主图与源码导航继续可用。
 
 ## 6. 后续技术决策
 

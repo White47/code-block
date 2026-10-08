@@ -69,7 +69,11 @@ class ControllerTests(unittest.TestCase):
         with TemporaryDirectory() as first, TemporaryDirectory() as second:
             first_root, second_root = Path(first), Path(second)
             (first_root / "run.py").write_text(
-                "def train(optimizer):\n    optimizer.step()\n", encoding="utf-8")
+                "import torch\ndef relay(value): return value\n"
+                "def train(optimizer):\n"
+                "    criterion = torch.nn.MSELoss()\n"
+                "    forwarded = relay(optimizer)\n"
+                "    optimizer.step()\n", encoding="utf-8")
             (second_root / "other.py").write_text("answer = 42\n", encoding="utf-8")
             controller = AppController()
             controller.open_project(first_root)
@@ -79,7 +83,19 @@ class ControllerTests(unittest.TestCase):
                 controller.view(ViewKind.EXECUTION)
             analysis = controller.analyze()
             self.assertIs(analysis, controller.analysis)
-            self.assertEqual(controller.status, AnalysisStatus.READY)
+            # Calls remain statically visible, but cross-function argument/return
+            # value propagation is explicitly not modeled by this fixture.
+            self.assertEqual(controller.status, AnalysisStatus.PARTIAL)
+            self.assertEqual({issue.code for issue in analysis.issues
+                              if issue.code.endswith("_PARTIAL")},
+                             {"GENERIC_DATA_CALL_PARTIAL"})
+            call_issues = [issue for issue in analysis.issues
+                           if issue.code == "GENERIC_DATA_CALL_PARTIAL"]
+            self.assertEqual(len(call_issues), 1)
+            self.assertEqual(call_issues[0].source_anchor.file_path, "run.py")
+            self.assertEqual(call_issues[0].source_anchor.start_line, 5)
+            self.assertFalse(any(issue.code.endswith("_ERROR")
+                                 for issue in analysis.issues))
             self.assertTrue(controller.view(ViewKind.EXECUTION).nodes)
             controller.open_project(second_root)
             self.assertIsNone(controller.analysis)
@@ -180,7 +196,8 @@ class ControllerTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "run.py").write_text(
-                "def train(loss, optimizer):\n"
+                "import torch\ndef train(loss, optimizer):\n"
+                "    criterion = torch.nn.MSELoss()\n"
                 "    for epoch in range(2):\n"
                 "        loss.backward()\n"
                 "        optimizer.step()\n", encoding="utf-8")
@@ -282,7 +299,7 @@ class ControllerTests(unittest.TestCase):
     def test_architecture_instance_detail_navigates_to_target_definition_source(self):
         controller = AppController(ignore_paths=("data",))
         controller.open_project(self.fixture_root)
-        controller.analyze()
+        analysis = controller.analyze()
         architecture = controller.view(ViewKind.ARCHITECTURE)
         classifier = next(node for node in architecture.nodes
                           if node.display_name == "Classifier")
@@ -293,7 +310,15 @@ class ControllerTests(unittest.TestCase):
         detail = controller.detail_view(
             ViewKind.ARCHITECTURE, classifier.id, encoder.id)
 
-        self.assertEqual(detail.root_ids, (encoder.metadata["target_definition_id"],))
+        self.assertEqual(detail.root_ids, (encoder.id,))
+        occurrence = next(node for node in detail.nodes if node.id == encoder.id)
+        target_id = encoder.metadata["target_definition_id"]
+        target = analysis.symbol_index.entries[target_id]
+        self.assertIn(target_id, occurrence.code_node_ids)
+        self.assertTrue(set(encoder.source_anchors) <= set(occurrence.source_anchors))
+        definition_source = controller.read_source(target.source_anchor)
+        self.assertIn("class Encoder", definition_source.text.splitlines()[
+            definition_source.start_line - 1])
         layers = next(node for node in detail.nodes
                       if node.display_name.startswith("layers"))
         document = controller.read_source(layers.source_anchors[0])
@@ -329,8 +354,10 @@ class ControllerTests(unittest.TestCase):
         controller.analyze()
 
         for kind in (ViewKind.ARCHITECTURE, ViewKind.SYMBOL):
+            message = (r"^invalid structural detail source$" if kind is ViewKind.ARCHITECTURE
+                       else r"^node has no local detail graph$")
             with self.subTest(kind=kind), self.assertRaisesRegex(
-                    ValueError, r"^node has no local detail graph$"):
+                    ValueError, message):
                 controller.detail_view(kind, None, "outside-node")
 
     def test_detail_view_preserves_unexpected_builder_value_error(self):
@@ -338,11 +365,14 @@ class ControllerTests(unittest.TestCase):
         controller.open_project(self.fixture_root)
         controller.analyze()
 
+        architecture = controller.view(ViewKind.ARCHITECTURE)
+        source = next(node for node in architecture.nodes if node.display_name == "Classifier")
         with patch(
-            "codeviz.ui.controller.build_visible_graph",
+            "codeviz.ui.controller.build_architecture_structure",
             side_effect=ValueError("internal invariant broken"),
-        ), self.assertRaisesRegex(ValueError, r"^internal invariant broken$"):
-            controller.detail_view(ViewKind.ARCHITECTURE, None, "model")
+        ) as builder, self.assertRaisesRegex(ValueError, r"^internal invariant broken$"):
+            controller.detail_view(ViewKind.ARCHITECTURE, source.id, source.id)
+        builder.assert_called_once()
 
     def test_detail_view_requires_analysis(self):
         controller = AppController()

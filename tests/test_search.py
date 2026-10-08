@@ -21,14 +21,15 @@ class SearchTests(unittest.TestCase):
 
     def test_chinese_and_english_semantics_resolve_to_same_event(self):
         analysis = analyze_files({"run.py": (
-            "def train(loss, optimizer):\n"
+            "import torch\ndef train(loss, optimizer):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    loss.backward()\n    optimizer.step()\n")})
         chinese = search_project(analysis, "反向传播").results
         english = search_project(analysis, "backward").results
         self.assertEqual({item.id for item in chinese}, {item.id for item in english
                           if item.source_kind == "semantic"})
         self.assertTrue(chinese)
-        self.assertEqual(chinese[0].source_anchor.start_line, 2)
+        self.assertEqual(chinese[0].source_anchor.start_line, 4)
         self.assertTrue(any(item.name == "ParameterUpdate"
                             for item in search_project(analysis, "参数更新").results))
         self.assertEqual(

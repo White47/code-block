@@ -73,7 +73,25 @@ class DesktopAcceptanceTests(unittest.TestCase):
             kind, root_id, node["id"], detail_source_id=detail_source_id))
         self.assertEqual(inspector["id"], node["id"])
         self.assertEqual(inspector["role"], node["role"])
-        self.assertEqual(inspector["sourceAnchors"], node["sourceAnchors"])
+        for anchor in node["sourceAnchors"]:
+            self.assertIn(anchor, inspector["sourceAnchors"])
+        extra_anchors = [anchor for anchor in inspector["sourceAnchors"]
+                         if anchor not in node["sourceAnchors"]]
+        if extra_anchors:
+            self.assertEqual(kind, "Architecture")
+            target_id = node["metadata"]["targetDefinitionId"]
+            analysis = bridge._controller.analysis
+            definition = next(item for item in analysis.model.definitions
+                              if item.symbol_id == target_id)
+            target = analysis.symbol_index.entries[target_id]
+            self.assertEqual(definition.source_anchor, target.source_anchor)
+            anchor = target.source_anchor
+            expected_anchor = {"filePath": anchor.file_path, "startLine": anchor.start_line,
+                               "startColumn": anchor.start_column, "endLine": anchor.end_line,
+                               "endColumn": anchor.end_column}
+            for extra in extra_anchors:
+                self.assertEqual(extra, expected_anchor,
+                                 "extra inspector anchors must match the actual target definition")
         self.assertTrue(inspector["canOpenSource"])
         self.assertTrue(inspector["sourceAnchors"])
         excerpts = []
@@ -106,11 +124,17 @@ class DesktopAcceptanceTests(unittest.TestCase):
         detail = self.success(self.bridge.get_detail_view(
             "Architecture", model["id"], encoder["id"]))
         self.assertEqual(detail["viewKind"], "Architecture")
-        definition = self.item(detail["nodes"], "codeName", "model.Encoder")
-        self.assertIn(definition["id"], detail["rootIds"])
-        self.assertNotIn(definition["id"],
-                         {node["id"] for node in architecture["nodes"]})
-        self.inspector_source("Architecture", model["id"], definition,
+        occurrence = self.item(detail["nodes"], "id", encoder["id"])
+        self.assertEqual(detail["rootIds"], [encoder["id"]])
+        self.assertEqual(occurrence["codeName"], encoder["codeName"])
+        target_id = encoder["metadata"]["targetDefinitionId"]
+        self.assertIn(target_id, occurrence["codeNodeIds"])
+        target = self.bridge._controller.analysis.symbol_index.entries[target_id]
+        anchor = target.source_anchor
+        self.assertIn({"filePath": anchor.file_path, "startLine": anchor.start_line,
+                       "startColumn": anchor.start_column, "endLine": anchor.end_line,
+                       "endColumn": anchor.end_column}, occurrence["sourceAnchors"])
+        self.inspector_source("Architecture", model["id"], occurrence,
                               "class Encoder(nn.Module):", encoder["id"])
         layers = self.item(detail["nodes"], "codeName", "model.Encoder.layers")
         self.assertEqual(layers["metadata"]["repeatCount"], 2)

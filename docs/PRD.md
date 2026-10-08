@@ -8,6 +8,8 @@
 
 构建 Python-first 的代码模块可视化 / 程序理解应用，首版重点支持 Python + PyTorch。应用把源码还原成适合人理解的项目架构图、模型组件图、执行流程图和源码关系图，并保证每个抽象都能追溯到文件、符号和代码行。
 
+用户已批准通用 Python 扩展：普通脚本、工具函数、库、面向对象和异步代码同样属于核心用户场景。PyTorch 是通用事实层之上的框架增强，不是普通项目可浏览的前置条件。实施进度与支持边界分别见 `GENERAL_PYTHON_PLAN.md`、`PYTHON_SUPPORT_MATRIX.md`。
+
 目标路径：`Source Code → Parse → Resolve → Code Graph → Semantic Component Graph → Visible Graph → Search / Drill Down / Inspector → Source`。
 
 ## 2. 用户与核心任务
@@ -39,6 +41,7 @@ MVP 不以 AST 节点数量为成功标准，而以第一次看到项目的人�
 1. Open Project → Analyze → Overview → Model → Architecture → Drill Down → Source。
 2. Overview → Training Flow → Epoch / Batch → Forward → Loss → Backward → Optimizer → Source。
 3. Search symbol / variable / semantic keyword → Results → Reveal in Graph → Local Context → Inspector → Source。
+4. 普通项目 → Overview → 模块 / 具名函数或方法 → FunctionFlow → Inspector → Source；无训练入口、无模型的库也必须成立。静态函数控制结构不是实际执行轨迹。
 
 ## 6. 产品原则
 

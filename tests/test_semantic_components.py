@@ -91,7 +91,9 @@ class SemanticComponentTests(unittest.TestCase):
 
     def test_gradient_relation_is_only_a_probable_static_pattern(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(loss, optimizer):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    loss.backward()\n"
             "    optimizer.step()\n"
         )})
@@ -103,7 +105,9 @@ class SemanticComponentTests(unittest.TestCase):
 
     def test_loop_back_uses_final_frontier_after_branch_join(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(optimizer, flag):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    for epoch in range(2):\n"
             "        if flag:\n"
             "            optimizer.step()\n"
@@ -121,7 +125,9 @@ class SemanticComponentTests(unittest.TestCase):
 
     def test_mutually_exclusive_if_branches_have_no_flow_or_gradient_edge(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(loss, optimizer, flag):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    if flag:\n"
             "        loss.backward()\n"
             "    else:\n"
@@ -137,7 +143,9 @@ class SemanticComponentTests(unittest.TestCase):
 
     def test_conditional_expression_branches_are_not_a_gradient_sequence(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(loss, optimizer, flag):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    loss.backward() if flag else optimizer.step()\n"
         )})
         roles = {event.role.value: event.id for event in result.training.events}
@@ -219,7 +227,8 @@ class SemanticComponentTests(unittest.TestCase):
 
     def test_many_optional_branches_keep_control_relation_count_linear(self):
         count = 80
-        source = "def train(optimizer, flags):\n" + "".join(
+        source = ("import torch\ndef train(optimizer, flags):\n"
+                  "    criterion = torch.nn.MSELoss()\n") + "".join(
             f"    if flags[{index}]: optimizer.step()\n" for index in range(count)
         )
         result = analyze_files({"run.py": source})
@@ -308,7 +317,8 @@ class SemanticComponentTests(unittest.TestCase):
                     CountedEvent.reads += 1
                 return getattr(self.event, name)
 
-        source = "def train(optimizer):\n" + "    optimizer.step()\n" * 40
+        source = ("import torch\ndef train(optimizer):\n"
+                  "    criterion = torch.nn.MSELoss()\n") + "    optimizer.step()\n" * 40
         result = analyze_files({"run.py": source})
         training = TrainingAnalysis(result.training.entry_points,
                                     tuple(CountedEvent(item) for item in result.training.events))

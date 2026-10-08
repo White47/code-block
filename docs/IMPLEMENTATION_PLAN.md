@@ -1,5 +1,7 @@
 # 实施计划
 
+当前通用 Python 扩展的已授权任务、架构约束与逐阶段验收见 `GENERAL_PYTHON_PLAN.md`。下文保留原 MVP 阶段记录；新能力不得因普通项目没有 PyTorch 模型而不可达。
+
 ## 当前实施前提
 
 Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空且不是 Git 仓库；用户随后确认从空目录新建项目，Phase 1 最小技术栈见 `adr/005-stdlib-core-first.md`。指定连接器的 `workspace_info` 在 Phase 0 未成功；当前阶段直接审计目标路径与 Git 状态。Phase 1–8 已按实际代码路径落实，后续阶段进入时再细化。
@@ -133,6 +135,10 @@ Phase 0 审计时间：2026-09-17。建立文档前 `E:\Codex\代码块` 为空�
 - CI 执行前端 lint / typecheck / test / build，Python core lint / mypy / unit / wheel 和 Windows 无 GUI 打包；WebView2 原生窗口、离线使用与三条黄金路径仍由 Task 6 单独验收。
 
 ## 阶段门禁
+
+2026-10-08 架构详情／避障布局反馈修复完成：执行计划 `superpowers/plans/2026-10-07-architecture-detail-routing.md`；最终合同、changed files、675 后端／184 前端、三入口 nanoGPT PC 证据及残余交叉在 `ARCHITECTURE_DETAIL_ROUTING.md`。新独立包为 `dist/architecture-detail-routing/CodeViz/CodeViz.exe`，不覆盖既有发布或用户源码／缓存，不包含本轮 Git 提交或推送。
+
+2026-10-07 用户反馈修复单独执行结构探索计划：`superpowers/plans/2026-10-07-structure-exploration.md`，产品合同与验证记录在 `STRUCTURE_EXPLORATION.md`。范围包含分视图结构深度／关系跳数、普通 Python 项目结构、确定性定义投影身份、真实节点变化反馈及测量后相机定位。沿用现有 React Flow / pywebview / Python 标准库；不增加运行时依赖、不迁移分析事实缓存格式。保留现有未提交修改，最终以新冻结包和仓库外 wheel 的真实 PC 验收为交付门禁，不复用旧版本成功结论。
 
 React 迁移 Tasks 1–6 已完成当前 Windows 技术交付与独立复审，2026-10-03 最终构建 / 测试 / 原生三入口结果见 `DESKTOP_MIGRATION_VALIDATION.md`。原 Tk 阶段记录保留为历史基线；当前 UX 差距、跨平台桌面与人工理解度验证明确列为后续，不随此次交付隐式宣称完成。
 

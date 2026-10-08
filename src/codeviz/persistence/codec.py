@@ -7,6 +7,7 @@ from math import isfinite
 from types import UnionType
 from typing import Any, Union, cast, get_args, get_origin, get_type_hints
 
+from codeviz.analysis.entries import GenericEntryCandidate
 from codeviz.analysis.flow import FlowAnalysis
 from codeviz.analysis.model import (
     ModelAnalysis,
@@ -45,7 +46,7 @@ from codeviz.semantic.components import SemanticAnalysis
 from codeviz.semantic.training import TrainingRole
 
 _TYPES = {item.__name__: item for item in (
-    ProjectAnalysis, AnalysisIssue, SymbolIndexEntry, SymbolReference,
+    ProjectAnalysis, GenericEntryCandidate, AnalysisIssue, SymbolIndexEntry, SymbolReference,
     ResolutionResult, FlowAnalysis, ModelDefinition, ModuleInstance,
     ModuleInvocation, ModelAnalysis, TrainingEvent, TrainingControlJoin,
     TrainingAnalysis, SemanticAnalysis, CodeNode, CodeEdge, SemanticComponent,

@@ -3,8 +3,10 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from codeviz.analysis.project import analyze_project
+from codeviz.analysis.resolution import ImportTargetQuery
 from codeviz.core import Confidence, NodeKind
 
 
@@ -26,6 +28,159 @@ def reference(result, name: str, scope: str, qualifier: str | None = None):
 
 
 class ResolutionTests(unittest.TestCase):
+    def test_reexport_dag_query_bounds_work_without_losing_complete_fact(self):
+        files = {"root.py": "def run(): pass\n"}
+        parents = ["root"]
+        for layer in range(9):
+            names = [f"m{layer}_{position}" for position in range(4)]
+            for name in names:
+                files[name + ".py"] = "".join(f"from {parent} import run\n" for parent in parents)
+            parents = names
+        files["app.py"] = f"from {parents[0]} import run\nrun()\n"
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_files(root, files)
+            result = analyze_project(root)
+        query = ImportTargetQuery(result.files, result.resolution)
+        entry = next(entry for entry in result.symbol_index.entries.values()
+                     if entry.file_path == "app.py" and entry.name == "run")
+        visits = 0
+        original = query.resolver._import_target
+
+        def counted(*args, **kwargs):
+            nonlocal visits
+            visits += 1
+            return original(*args, **kwargs)
+
+        with patch.object(query.resolver, "_import_target", counted):
+            fact = query.targets(entry)
+        aliases = sum("imported_from" in entry.metadata for entry in result.symbol_index.entries.values())
+        self.assertLessEqual(visits, 4 * aliases + 1, "lookup count must scale with the DAG, not its paths")
+        self.assertLessEqual(query.resolver.import_work, 4096)
+        self.assertEqual(len(fact.ids), 1)
+        self.assertIsNone(fact.issue_code)
+
+    def test_import_work_budget_preserves_known_fact_and_later_local_definition(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_files(root, {"root.py": "def run(): pass\nfrom tail import run\n",
+                               "tail.py": "def run(): pass\n",
+                               "app.py": "from root import run\ndef healthy(): pass\nhealthy()\n"})
+            result = analyze_project(root)
+        query = ImportTargetQuery(result.files, result.resolution)
+        entry = next(entry for entry in result.symbol_index.entries.values()
+                     if entry.file_path == "app.py" and entry.name == "run")
+        with patch("codeviz.analysis.resolution.MAX_IMPORT_WORK", 1, create=True):
+            partial = query.targets(entry)
+            repeated = query.targets(entry)
+            healthy = query.reference_targets(reference(result, "healthy", "app"))
+        self.assertTrue(partial.ids)
+        self.assertEqual(partial.issue_code, "IMPORT_WORK_BUDGET_PARTIAL")
+        self.assertEqual(partial.confidence, Confidence.PROBABLE)
+        self.assertEqual(repeated.ids, partial.ids, "budget exhaustion must not discard known partial IDs")
+        self.assertEqual(repeated.issue_code, "IMPORT_WORK_BUDGET_PARTIAL")
+        self.assertEqual(healthy.confidence, Confidence.EXACT)
+        self.assertIsNone(healthy.issue_code)
+
+    def test_import_work_budget_is_shared_across_queries(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            files = {f"m{i}.py": "def run(): pass\n" for i in range(3)}
+            files["app.py"] = "".join(f"from m{i} import run as f{i}\n" for i in range(3))
+            write_files(root, files)
+            result = analyze_project(root)
+        query = ImportTargetQuery(result.files, result.resolution)
+        entries = sorted((entry for entry in result.symbol_index.entries.values()
+                          if entry.file_path == "app.py" and "imported_from" in entry.metadata),
+                         key=lambda entry: entry.name)
+        with patch("codeviz.analysis.resolution.MAX_IMPORT_WORK", 2, create=True):
+            facts = [query.targets(entry) for entry in entries]
+        self.assertIsNone(facts[0].issue_code)
+        self.assertIsNone(facts[1].issue_code)
+        self.assertEqual(facts[2].issue_code, "IMPORT_WORK_BUDGET_PARTIAL")
+
+    def reference_fact(self, result, ref):
+        query = ImportTargetQuery(result.files, result.resolution)
+        lookup = getattr(query, "reference_targets", None)
+        self.assertTrue(callable(lookup), "shared query must expose Name/Attribute reference facts")
+        before = tuple(result.symbol_index.references)
+        fact = lookup(ref)
+        self.assertEqual(tuple(result.symbol_index.references), before)
+        return fact
+
+    def test_member_lookup_keeps_partial_import_cycle_issue(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_files(root, {
+                "a.py": "from b import Base\nclass Base: pass\n",
+                "b.py": "from a import Base\n",
+                "app.py": "import b\nb.Base\n",
+            })
+            result = analyze_project(root)
+        query = ImportTargetQuery(result.files, result.resolution)
+        ref = reference(result, "Base", "app", "b")
+        fact = query.resolver._qualified(ref)
+        self.assertTrue(fact.ids)
+        self.assertEqual(fact.issue_code, "IMPORT_CYCLE")
+        self.assertEqual(fact.confidence, Confidence.PROBABLE)
+
+    def test_unified_reference_facts_keep_name_and_attribute_partial(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_files(root, {
+                "a.py": "from b import Base\nclass Base: pass\n",
+                "b.py": "from a import Base\n",
+                "app.py": "from b import Base\nimport b\nBase\nb.Base\n"
+                          "def build():\n    global Base\n    Base\n",
+            })
+            result = analyze_project(root)
+        target = next(entry.id for entry in result.symbol_index.entries.values()
+                      if entry.qualified_name == "a.Base" and entry.kind == NodeKind.CLASS)
+        for scope, qualifier in (("app", None), ("app", "b"), ("app.build", None)):
+            with self.subTest(scope=scope, qualifier=qualifier):
+                fact = self.reference_fact(result, reference(result, "Base", scope, qualifier))
+                self.assertEqual(fact.ids, (target,))
+                self.assertEqual(fact.issue_code, "IMPORT_CYCLE")
+                self.assertEqual(fact.confidence, Confidence.PROBABLE)
+
+    def test_unified_reference_facts_keep_complete_probable_and_exact(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_files(root, {
+                "bases.py": "class Base: pass\nclass Base: pass\nclass Unique: pass\n",
+                "app.py": "from bases import Base\nimport bases\nBase\nbases.Base\nbases.Unique\n"
+                          "def build():\n    class Base: pass\n    Base\n",
+            })
+            result = analyze_project(root)
+        for qualifier in (None, "bases"):
+            fact = self.reference_fact(result, reference(result, "Base", "app", qualifier))
+            self.assertEqual(len(fact.ids), 2)
+            self.assertEqual(fact.confidence, Confidence.PROBABLE)
+            self.assertIsNone(fact.issue_code)
+        for name, scope, qualifier in (("Unique", "app", "bases"), ("Base", "app.build", None)):
+            fact = self.reference_fact(result, reference(result, name, scope, qualifier))
+            self.assertEqual(len(fact.ids), 1)
+            self.assertEqual(fact.confidence, Confidence.EXACT)
+            self.assertIsNone(fact.issue_code)
+
+    def test_member_chain_keeps_partial_receiver_issue(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_files(root, {
+                "real.py": "class Base: pass\n",
+                "a.py": "from b import container\nimport real as container\n",
+                "b.py": "from a import container\n",
+                "app.py": "from b import container\ncontainer.Base\ncontainer.missing\n",
+            })
+            result = analyze_project(root)
+        fact = self.reference_fact(result, reference(result, "Base", "app", "container"))
+        self.assertTrue(fact.ids)
+        self.assertEqual(fact.issue_code, "IMPORT_CYCLE")
+        self.assertEqual(fact.confidence, Confidence.PROBABLE)
+        missing = self.reference_fact(result, reference(result, "missing", "app", "container"))
+        self.assertFalse(missing.ids)
+        self.assertEqual(missing.issue_code, "IMPORT_CYCLE")
+
     def test_lexical_shadowing_closures_and_class_scope(self):
         source = (
             "x = 0\n"

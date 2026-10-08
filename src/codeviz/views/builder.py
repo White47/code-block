@@ -1,7 +1,7 @@
 """Bounded semantic views; never return the full analysis graph to the UI."""
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from codeviz.analysis.project import ProjectAnalysis
 from codeviz.core import (
@@ -15,9 +15,12 @@ from codeviz.core import (
     VisibleNode,
 )
 
+from .architecture_structure import build_architecture_structure
 from .code_context import build_code_context
 from .data import critical_data_slice
+from .function_flow import build_function_flow
 from .layout import layout_positions
+from .project_structure import build_project_structure
 from .query import GraphQuery
 from .state import ViewState
 
@@ -45,8 +48,12 @@ class ViewRequest:
     max_nodes: int = 100
     max_edges: int = 300
     direction: str = "both"
+    structure_depth: int = 1
+    project_namespace: str = ""
 
     def __post_init__(self) -> None:
+        if type(self.structure_depth) is not int or not 1 <= self.structure_depth <= 5:
+            raise ValueError("structure depth must be an integer from 1 to 5")
         if (type(self.max_nodes) is not int or type(self.max_edges) is not int
                 or type(self.hops) is not int or self.max_nodes < 1
                 or self.max_edges < 1 or self.hops < 0 or self.hops > 5):
@@ -76,14 +83,24 @@ def _visible_node(query: GraphQuery, node_id: str) -> VisibleNode:
 def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
                         state: ViewState | None = None) -> VisibleGraph:
     """Return only the source-backed local graph permitted by this request's budgets."""
+    if request.view_kind == ViewKind.ARCHITECTURE:
+        return build_architecture_structure(analysis, request, state or ViewState())
+    if request.view_kind == ViewKind.PROJECT_STRUCTURE:
+        return build_project_structure(analysis, request, state or ViewState())
+    if request.view_kind == ViewKind.FUNCTION_FLOW:
+        result = build_function_flow(analysis, request, state or ViewState())
+        return replace(result, query_context={**result.query_context, "control_mode": "none",
+                       "structure_depth": request.structure_depth, "can_expand": False,
+                       "depth_limit": False})
     if request.view_kind in (ViewKind.SYMBOL, ViewKind.DATA_FLOW):
-        return build_code_context(analysis, request, state or ViewState())
+        result = build_code_context(analysis, request, state or ViewState())
+        return replace(result, query_context={**result.query_context, "control_mode": "relations",
+                       "structure_depth": request.structure_depth, "can_expand": False,
+                       "depth_limit": False})
     if analysis.semantic is None:
         raise ValueError("semantic analysis is required before building a visible graph")
     query = GraphQuery(analysis.semantic.graph)
-    if request.view_kind == ViewKind.ARCHITECTURE:
-        root_role, allowed, layout_kind = "ModelDefinition", _ARCHITECTURE_EDGES, "hierarchical"
-    elif request.view_kind == ViewKind.EXECUTION:
+    if request.view_kind == ViewKind.EXECUTION:
         root_role, allowed, layout_kind = "EntryPoint", _EXECUTION_EDGES, "flowchart"
     else:
         raise ValueError(f"view kind {request.view_kind!s} is not implemented in Phase 7")
@@ -230,6 +247,8 @@ def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
         hidden_counts={"nodes": len(reachable - visible_ids),
                        "edges": len(eligible_relations) + len(data_slice.edges) - len(edges)},
         query_context={"root_id": request.root_id, "selected_id": request.selected_id,
+                       "control_mode": "none", "structure_depth": request.structure_depth,
+                       "can_expand": False, "depth_limit": False,
                        "hops": request.hops, "has_more": bool(reachable - visible_ids),
                        "budget_truncated": bool(hidden_candidate_ids)},
         max_nodes=request.max_nodes, max_edges=request.max_edges,

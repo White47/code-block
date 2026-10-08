@@ -60,7 +60,9 @@ class EntryPointKind(StrEnum):
 class ViewKind(StrEnum):
     OVERVIEW = "Overview"
     ARCHITECTURE = "Architecture"
+    PROJECT_STRUCTURE = "ProjectStructure"
     EXECUTION = "Execution"
+    FUNCTION_FLOW = "FunctionFlow"
     CALLS = "Calls"
     DATA_FLOW = "DataFlow"
     GRADIENT = "Gradient"
