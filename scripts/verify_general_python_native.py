@@ -14,6 +14,21 @@ import traceback
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from scripts.native_source_assertions import (
+        anchor_from_card,
+        capture_screenshot,
+        expect_source_anchor,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "scripts":
+        raise
+    from native_source_assertions import (
+        anchor_from_card,
+        capture_screenshot,
+        expect_source_anchor,
+    )
+
 
 class NativeAcceptance:
     def __init__(self, page, project, output, report, expect):
@@ -38,7 +53,7 @@ class NativeAcceptance:
 
     def screenshot(self, name):
         path = self.output / f"{name}.png"
-        self.page.screenshot(path=str(path), full_page=True)
+        capture_screenshot(self.page, path=str(path), full_page=True)
         self.report.setdefault("screenshots", []).append(str(path))
 
     def checked(self, name):
@@ -164,14 +179,10 @@ class NativeAcceptance:
             has_text=re.compile(rf"{re.escape(filename)}:{line}–"))
         self.expect(cards).to_have_count(1)
         self.expect(cards.get_by_role("button").first).to_be_enabled()
+        anchor = anchor_from_card(cards)
+        assert anchor[:2] == (filename, line), anchor
         cards.get_by_role("button").first.click()
-        source = self.page.locator(f"{scope} .source-view")
-        self.expect(source.locator(".source-heading span[title]")).to_have_attribute("title", filename)
-        row = source.locator("tr.highlighted").filter(
-            has=self.page.locator(".line-number", has_text=re.compile(rf"^{line}$")))
-        self.expect(row).to_have_count(1)
-        self.expect(row.locator("pre")).to_have_text(text)
-        self.expect(source.locator(".code-table tr .line-number").first).to_have_text("1")
+        expect_source_anchor(self.page, scope, *anchor, text)
 
     def check_flow_source(self, assignment_line, assignment_text):
         self.overview()
@@ -229,11 +240,10 @@ class NativeAcceptance:
         card = self.page.locator(".inspector .anchor-card").filter(
             has_text=re.compile(rf"helpers\.py:{definition_line}–"))
         self.expect(card).to_have_count(1)
+        anchor = anchor_from_card(card)
+        assert anchor[:2] == ("helpers.py", definition_line), anchor
         card.get_by_role("button").nth(1).click()
-        self.expect(self.page.locator(".side-editor .source-view")).to_be_visible()
-        highlighted = self.page.locator(".side-editor tr.highlighted").first
-        self.expect(highlighted.locator(".line-number")).to_have_text(str(definition_line))
-        self.expect(highlighted.locator("pre")).to_have_text(definition_text)
+        expect_source_anchor(self.page, ".side-editor", *anchor, definition_text)
         self.expect(self.page.locator(".primary-editor .graph-editor")).to_be_visible()
         self.screenshot("split-source")
         self.page.locator(".side-title").get_by_role("button").click()
@@ -367,7 +377,7 @@ def main():
                 report["traceback"] = traceback.format_exc()
                 if page is not None and not page.is_closed():
                     try:
-                        page.screenshot(path=str(output / "failure.png"), full_page=True)
+                        capture_screenshot(page, path=str(output / "failure.png"), full_page=True)
                         report.setdefault("screenshots", []).append(str(output / "failure.png"))
                         (output / "failure.html").write_text(page.content(), encoding="utf-8")
                         report["failureDomText"] = page.locator("body").inner_text()[:12000]

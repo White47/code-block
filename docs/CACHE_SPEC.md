@@ -1,5 +1,7 @@
 # 缓存规范
 
+Monaco 编辑扩展的草稿仅存在当前进程内，不写入 Analysis Cache／View State／Annotations。显式保存成功后，已有分析置为 Outdated、保留旧图与独立注释，重新分析仍需用户触发。编辑版本绑定原始源码 bytes 与项目／文件身份，不复用分析缓存版本作为保存授权。合同见 [源码编辑](SOURCE_EDITING.md)。
+
 ## 三类数据
 
 1. Analysis Cache：Project Metadata、Symbol Index、Code Graph IR、Semantic Graph、Entry Points、Detected Models、Problems、analysis / parser / semantic rule version、source fingerprints、分析配置指纹。

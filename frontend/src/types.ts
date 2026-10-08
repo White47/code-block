@@ -15,6 +15,8 @@ export interface Overview { projectName: string; projectPath: string; language: 
 export interface InspectorData { id: string; displayName: string; codeName: string | null; role: string | null; confidence: string; evidence: string[]; children: string[]; relations: { type: string; otherId: string; direction: string; confidence: string }[]; data: [string, string][]; sourceAnchors: Anchor[]; memberIds: string[]; canOpenSource: boolean }
 export interface Problem { code: string; message: string; filePath: string | null; line: number | null; canOpenSource: boolean }
 export interface Source { filePath: string; text: string; startLine: number; endLine: number }
+export interface EditableSource { projectPath: string; filePath: string; text: string; revision: string; encoding: string; newline: 'LF' | 'CRLF' | 'CR' | 'Mixed'; readOnlyReason: string | null }
+export interface SaveSourceRequest { projectPath: string; filePath: string; text: string; revision: string }
 export interface Reveal { viewKind: ViewKind | null; rootId: string | null; selectedId: string | null; reason: string | null }
 export interface SearchResult { id: string; sourceKind: string; name: string; qualifiedName: string; kind: string; scope: string; sourceAnchor: Anchor; confidence: string; revealTarget: Reveal }
 export interface SearchResponse { results: SearchResult[]; totalCount: number; truncated: boolean }
@@ -22,6 +24,9 @@ export interface Island { id: string; viewKind: ViewKind; sourceNodeId: string; 
 export interface ViewState { activeView: ViewKind | null; selectedId: string | null; openTabs: string[]; graphRoots: Partial<Record<ViewKind, string | null>>; expandedIds: string[]; positions: Record<string, Point>; positionsByView: Partial<Record<ViewKind, Record<string, Point>>>; zoom: number; pan: Point; viewportByView: Partial<Record<ViewKind, { zoom: number; pan: Point }>>; detailIslands: Island[]; filters: string[] }
 export interface Layout { activeView: ViewKind | null; selectedId: string | null; openTabs: string[]; graphRoots: Partial<Record<ViewKind, string | null>> }
 export interface BridgeMethods {
+  open_source_document: { args: [string, Anchor]; data: EditableSource };
+  save_source_document: { args: [SaveSourceRequest]; data: EditableSource };
+  approve_close: { args: [string]; data: null }; cancel_close: { args: [string]; data: null };
   get_session: { args: []; data: Session }; open_project: { args: [string]; data: Session }; analyze: { args: []; data: Session };
   get_overview: { args: []; data: Overview }; get_view: { args: [ViewKind, string | null, string | null, number?, string?, number?]; data: Graph };
   get_detail_view: { args: [ViewKind, string | null, string]; data: Graph }; search: { args: [string, number?]; data: SearchResponse };

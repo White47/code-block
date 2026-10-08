@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@xyflow/react": "12.8.5",
+    "monaco-editor": "0.57.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },

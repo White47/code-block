@@ -32,7 +32,7 @@
 
 ## 4. 非目标
 
-首版不执行项目代码，不承诺真实 runtime tensor shape / dtype / device，不实现完整 autograd graph、DDP/FSDP/DeepSpeed、复杂 hooks、动态 graph surgery、通用无限层级系统、代码编辑器或源码重构。
+首版不执行项目代码，不承诺真实 runtime tensor shape / dtype / device，不实现完整 autograd graph、DDP/FSDP/DeepSpeed、复杂 hooks、动态 graph surgery、通用无限层级系统或源码重构。2026-10-08 用户批准在现有 PC 应用加入 Monaco 源码编辑 MVP，替代原“无代码编辑器”边界：仅显式安全保存、未保存保护、保存后分析过期，不包含终端、调试器或语言服务器；具体合同见 [SOURCE_EDITING](SOURCE_EDITING.md)。
 
 ## 5. 成功标准
 

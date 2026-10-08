@@ -1,5 +1,9 @@
 import type { Language } from '../types';
 const text = {
+  saveSource: ['保存', 'Save'], savingSource: ['保存中…', 'Saving…'], discardSource: ['放弃', 'Discard'], cancelSource: ['取消', 'Cancel'],
+  unsavedSource: ['源码有未保存的修改', 'Unsaved source changes'], unsavedSourcePrompt: ['保存修改后继续，或放弃修改？', 'Save changes before continuing, or discard them?'],
+  sourceStale: ['图与源码行定位可能已过期；保存后请重新分析。', 'Graph and source line anchors may be stale. Re-analyze after saving.'],
+  tabLimit: ['已达到 40 个标签，请先关闭一个标签。', 'The 40-tab limit has been reached. Close a tab first.'],
   repeatUnknown: ['重复次数未知：静态分析无法确定运行时配置。', 'Repeat count unknown: static analysis cannot determine the runtime configuration.'],
   routingFallback: ['保存的卡片重叠或路由达到计算上限；此关系仍保留，但备用路线可能穿过卡片。', 'Saved cards overlap or routing reached its calculation limit; this relation remains visible, but its fallback route may cross cards.'],
   ProjectStructure: ['项目结构', 'Project structure'], structure: ['结构层级', 'Structure depth'], moreLayers: ['更多层', 'More layers'], fewerLayers: ['更少层', 'Fewer layers'],

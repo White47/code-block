@@ -1,5 +1,7 @@
 # 实施计划
 
+2026-10-08 用户批准的源码编辑增量见 [Monaco 实施计划](superpowers/plans/2026-10-08-monaco-source-editing.md) 与 [接口合同](SOURCE_EDITING.md)。沿用现有 React Flow / WebView2 PC 壳，仅新增离线 Monaco 与显式保存／防丢稿边界，不改 Parser／Resolver 或自动执行项目。
+
 当前通用 Python 扩展的已授权任务、架构约束与逐阶段验收见 `GENERAL_PYTHON_PLAN.md`。下文保留原 MVP 阶段记录；新能力不得因普通项目没有 PyTorch 模型而不可达。
 
 ## 当前实施前提

@@ -1,14 +1,17 @@
 """Native pywebview launcher for the bundled React frontend."""
 
 import importlib
+import json
 import mimetypes
 import re
 import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
+from threading import RLock, Thread, Timer
 from types import ModuleType
 from typing import Any
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 from .web_bridge import DesktopBridge
 
@@ -20,6 +23,7 @@ _API_METHODS = (
     "get_analysis_settings", "set_analysis_settings", "get_cache_info", "save_layout",
     "move_node", "save_viewport", "expand", "collapse", "open_detail_island",
     "move_detail_island", "close_detail_island", "get_problems",
+    "open_source_document", "save_source_document", "approve_close", "cancel_close",
 )
 _API_ARITIES = {
     "get_session": (0, 0), "open_project": (1, 1), "choose_project": (0, 0),
@@ -32,14 +36,157 @@ _API_ARITIES = {
     "save_viewport": (3, 3), "expand": (1, 1), "collapse": (1, 1),
     "open_detail_island": (2, 3), "move_detail_island": (2, 2),
     "close_detail_island": (1, 1), "get_problems": (0, 0),
+    "open_source_document": (2, 2), "save_source_document": (1, 1),
+    "approve_close": (1, 1), "cancel_close": (1, 1),
 }
 _CALLBACK_TOKEN = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _CSP = (
     "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
     "frame-src 'none'; frame-ancestors 'none'; object-src 'none'; "
-    "base-uri 'none'; form-action 'none'; worker-src 'none'"
+    "base-uri 'none'; form-action 'none'; worker-src 'self'"
 )
+
+
+class _NativeCloseGuard:
+    """Veto synchronously; all renderer and destroy work runs off the UI thread."""
+
+    def __init__(self, window: Any) -> None:
+        self._window = window
+        self._lock = RLock()
+        self._nonce = uuid4().hex
+        self._epoch = uuid4().hex
+        self._ready = False
+        self._alive = True
+        self._request: str | None = None
+        self._approved_request: str | None = None
+        self._permit: str | None = None
+        self._timer: Timer | None = None
+
+    def _reset(self) -> None:
+        self._epoch = uuid4().hex
+        self._request = None
+        self._approved_request = None
+        self._permit = None
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
+
+    def before_load(self) -> None:
+        with self._lock:
+            self._ready = False
+            self._reset()
+
+    def loaded(self) -> None:
+        with self._lock:
+            self._reset()
+            self._ready = self._alive
+
+    def closed(self) -> None:
+        with self._lock:
+            self._alive = self._ready = False
+            self._reset()
+
+    def _expire(self, request: str) -> None:
+        with self._lock:
+            if self._request == request:
+                self._request = None
+
+    def closing(self) -> bool | None:
+        with self._lock:
+            if self._permit is not None:
+                self._permit = None
+                return None
+            if (not self._ready or not self._alive or self._request is not None
+                    or self._approved_request is not None):
+                return False
+            request = self._nonce + "." + self._epoch + "." + uuid4().hex
+            self._request = request
+            timer = Timer(120, self._expire, args=(request,))
+            timer.daemon = True
+            self._timer = timer
+        try:
+            timer.start()
+            Thread(target=self._dispatch, args=(request,), daemon=True).start()
+        except Exception:
+            timer.cancel()
+            self._expire(request)
+        return False
+
+    def _dispatch(self, request: str) -> None:
+        with self._lock:
+            if self._request != request or not self._ready or not self._alive:
+                return
+        # run_js executes the script verbatim; evaluate_js wraps it in eval,
+        # which is deliberately forbidden by our CSP. No return-value handshake.
+        script = "(() => { if (window.__codevizCloseReady !== true) return; "
+        script += "window.dispatchEvent(new CustomEvent('codeviz:close-request', {detail: "
+        script += json.dumps({"requestId": request}) + "})); })()"
+        try:
+            self._window.run_js(script)
+        except Exception:
+            self._expire(request)
+
+    def respond(self, request: str, approve: bool) -> None:
+        with self._lock:
+            if self._request != request or not self._ready or not self._alive:
+                raise ValueError("stale close request")
+            self._request = None
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+            if not approve:
+                return
+            self._approved_request = request
+            epoch = self._epoch
+        try:
+            Thread(target=self._destroy, args=(request, epoch), daemon=True).start()
+        except Exception:
+            with self._lock:
+                if self._approved_request == request:
+                    self._approved_request = None
+            raise ValueError("native close could not be scheduled") from None
+
+    def _destroy(self, request: str, epoch: str) -> None:
+        with self._lock:
+            if (self._epoch != epoch or not self._alive or not self._ready
+                    or self._approved_request != request):
+                return
+            self._permit = request
+        failed = False
+        try:
+            self._window.destroy()
+        except Exception:
+            failed = True
+        finally:
+            with self._lock:
+                if self._permit == request:
+                    self._permit = None
+                if self._approved_request == request:
+                    self._approved_request = None
+        if failed:
+            with self._lock:
+                if self._epoch != epoch or not self._alive or not self._ready:
+                    return
+            # Still on the destroy worker, after clearing its single-use permit.
+            # The frontend releases its freeze only for this exact request ID.
+            script = "window.dispatchEvent(new CustomEvent('codeviz:close-failed', {detail: "
+            script += json.dumps({"requestId": request}) + "}));"
+            try:
+                self._window.run_js(script)
+            except Exception:
+                # An unavailable renderer must never trigger an unguarded close.
+                pass
+
+
+def _install_close_guard(window: Any, api: Any) -> None:
+    guard = _NativeCloseGuard(window)
+    api._bind_close_handler(guard.respond)
+    # Old launcher doubles omit lifecycle events; the real 6.2.1 window has all.
+    for name in ("closing", "before_load", "loaded", "closed"):
+        event = getattr(window.events, name, None)
+        if event is not None:
+            event += getattr(guard, name)
 
 
 class _DispatchGuard:
@@ -249,6 +396,7 @@ def create_window(webview: Any = None, *, bridge: DesktopBridge | Any = None,
     _install_dispatch_guard(window, module.util)
     api._bind_window(window, int(module.FileDialog.FOLDER))
     _install_window_guards(window)
+    _install_close_guard(window, api)
     return window
 
 

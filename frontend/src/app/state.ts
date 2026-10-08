@@ -8,8 +8,9 @@ export function reducer(state: Workspace, action: Action): Workspace {
   switch (action.type) {
     case 'open': {
       const existing = state.tabs.find(t => t.id === action.tab.id);
+      if (!existing && state.tabs.length >= 40) return state;
       const tab = action.tab.kind === 'source' ? { ...action.tab, returnTabId: state.active !== action.tab.id ? state.active ?? undefined : existing?.returnTabId } : action.tab;
-      return { ...state, tabs: existing ? state.tabs.map(t => t.id === tab.id ? tab : t) : [...state.tabs, tab].slice(-40), active: tab.id, selectedId: tab.kind === 'graph' && tab.id !== state.active ? null : state.selectedId };
+      return { ...state, tabs: existing ? state.tabs.map(t => t.id === tab.id ? tab : t) : [...state.tabs, tab], active: tab.id, selectedId: tab.kind === 'graph' && tab.id !== state.active ? null : state.selectedId };
     }
     case 'close': {
       const index = state.tabs.findIndex(t => t.id === action.id); const closing = state.tabs[index];
