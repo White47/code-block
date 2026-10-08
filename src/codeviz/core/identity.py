@@ -20,6 +20,7 @@ class NodeKind(StrEnum):
     CLASS = "Class"
     FUNCTION = "Function"
     METHOD = "Method"
+    LEXICAL_SCOPE = "LexicalScope"
     VARIABLE = "Variable"
     PARAMETER = "Parameter"
     ATTRIBUTE = "Attribute"

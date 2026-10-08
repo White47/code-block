@@ -2,9 +2,13 @@
 
 Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
 
-当前已有本地桌面阅读、搜索与 Phase 10 本地缓存：首次显式点击 Analyze Project 后，重新打开未变化的项目会直接加载分析结果；源码、Ignore Paths 或版本变化时旧图标为 Outdated，并可 Re-analyze。Recent Projects、图布局、标签与选中节点保存在应用数据目录，Annotations 独立保存。Overview 中可选择模型或入口，浏览 Architecture / Training Flow 局部图；Search / Symbols 可查定义与语义节点，再 Reveal 到局部图、Inspector、只读源码或 Open to Side。Analysis Issues 有独立标签页。Architecture / Execution 对 Contains、Control Flow、Branch True / False 使用确定性的纵向 rank；Symbol / Data Flow 的其他关系可能使用确定性的同 rank 回退位置，不代表入口到结果的执行顺序，详见 `docs/UX_SPEC.md`。长图可纵向滚动，也可重置当前项目的手动布局；除概览外的图、源码和问题标签都可通过右侧 `×` 或 `Ctrl+W` 关闭。底层 `analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`；`build_visible_graph(...)` 只生成有预算的 Architecture / Execution / Symbol / Data Flow 局部图。Q/K/V → 矩阵得分 → softmax 只给出 Attention-like 候选；梯度关系是 Probable 静态模式，不是真实 autograd 图。源码只读，不导入或执行被分析代码。
+普通 Python 项目也可使用：打开目录 → 分析 → 项目概览的“函数 / 方法”目录 → 选择函数 → **函数流程** → 单击节点查看检查器 → 打开源码或侧边源码。无需模型、PyTorch 或自动入口。搜索普通变量可进入局部数据关系；main guard 等入口只代表静态候选，不等于真实运行轨迹。支持范围、限制与本轮验收见 [Python 支持矩阵](docs/PYTHON_SUPPORT_MATRIX.md) 和 [通用 Python 验证记录](docs/GENERAL_PYTHON_VALIDATION.md)。
+
+当前已有本地桌面阅读、搜索与 Phase 10 本地缓存：首次显式点击 Analyze Project 后，重新打开未变化的项目会直接加载分析结果；源码、Ignore Paths 或版本变化时旧图标为 Outdated，并可 Re-analyze。Recent Projects、图布局、标签与选中节点保存在应用数据目录，Annotations 独立保存。Overview 中可选择模型或入口，浏览 Architecture / Training Flow 局部图；Search / Symbols 可查定义与语义节点，再 Reveal 到局部图、Inspector、只读源码或 Open to Side。Analysis Issues 有独立标签页。自动布局按各视图关系方向从上到下分层，同层分支并列；Symbol / Data Flow 上游允许位于查询焦点上方，环稳定处理，不代表真实执行顺序，详见 `docs/UX_SPEC.md`。关系范围可用“更少层 / 更多层”在 1–5 层间调整；新图自动定位，正常用户视角和手动节点位置保留，详见 [画布恢复](docs/CANVAS_RECOVERY.md)。长图可继续平移、缩放和适应，不保证一屏全部容纳；除概览外的图、源码和问题标签都可通过右侧 `×` 或 `Ctrl+W` 关闭。底层 `analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`；`build_visible_graph(...)` 只生成有预算的 Architecture / Execution / FunctionFlow / Symbol / Data Flow 局部图。Q/K/V → 矩阵得分 → softmax 只给出 Attention-like 候选；梯度关系是 Probable 静态模式，不是真实 autograd 图。源码只读，不导入或执行被分析代码。
 
 桌面主入口采用 React Flow + pywebview 原生窗口。Windows 需要预先安装系统原生 **Microsoft Edge WebView2 Runtime**，打包目录不内置该系统运行时。生产前端 JS、CSS 等资源全部随应用分发，可离线使用，无 CDN。静态服务只绑定随机 loopback 端口、只提供 frontend 资源根；项目源码和应用 API 不通过 HTTP 暴露，应用操作经 pywebview bridge 完成。浏览器打开 Vite 页面仅用于前端开发，不能替代原生窗口。
+
+当前本地架构详情修复体验包：关闭旧应用，运行 `dist/architecture-detail-routing/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录。已完成 nanoGPT 的源码／wheel／冻结 PC 三入口验证与普通 Python、训练、搜索、源码、缓存回归，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。复杂图仍可能连线交叉；尚未提交或上传，不要把旧 GitHub 包当作此版本。此前画布恢复包保留为历史产物。
 
 从仓库根目录准备并启动（Python 3.11+、Node.js 22，首次安装与构建需获取依赖）：
 
@@ -51,7 +55,11 @@ npm --prefix frontend run dev
 
 默认使用简体中文，可在左侧 **设置 → 界面语言** 中切换“简体中文”或“English”，选择保存在应用数据目录，不会修改被分析项目。点击 **打开项目** 使用原生文件夹选择器；首次点击 **分析项目 / 重新分析** 才解析 `.py` 文件，之后若有效缓存存在则自动加载，不执行用户代码。发现变更时仍可查看带 Outdated 警告的旧图，并点 **重新分析** 更新。
 
-从概览点击模型进入架构、点击入口进入执行流程。单击节点显示检查器，双击或 Enter 在同一画布展开细节岛；源码可打开为独立标签或在侧边并排查看。标签的 `×` 或 `Ctrl+W` 只关闭当前标签，不退出整个应用。搜索名称或“反向传播”等语义词会自动返回结果，点击 **在图中定位** 或 **源码** 完成跳转。图工具栏可选择上游、下游或双向关系，并扩展到最多五跳；是否存在对应事实由 Python 视图查询决定。设置同时提供缓存状态和每行一项的项目相对 **忽略路径**；修改忽略路径后旧分析会标为过期，需重新分析。
+版本不兼容的缓存可能只保留布局、没有可用分析；此时需重新分析，不能查询旧图。文件夹选择等待选择或取消；项目写入和分析等待后台真实完成后才允许切换，避免晚到写入影响其他项目。布局保存的真实失败会提示，不应阻断显式打开或重新分析。异常停滞尚无后台取消协议，可正常关闭后重启应用；勿将单纯前端超时当作后台取消。修复与验证记录见 [项目操作恢复](docs/PROJECT_ACTION_RECOVERY.md)。
+
+从概览点击模型进入架构、点击训练入口进入训练执行流程；普通入口或具名函数进入独立函数流程。单击节点显示检查器，双击或 Enter 在同一画布展开细节岛；源码可打开为独立标签或在侧边并排查看。标签的 `×` 或 `Ctrl+W` 只关闭当前标签，不退出整个应用。搜索名称或“反向传播”等语义词会自动返回结果，点击 **在图中定位** 或 **源码** 完成跳转。设置同时提供缓存状态和每行一项的项目相对 **忽略路径**；修改忽略路径后旧分析会标为过期，需重新分析。
+
+本次结构探索修复采用分视图操作：**架构／项目结构**的“更多层／更少层”展开或收起真实组件层级，**符号／数据关系**的关系范围控制上游、下游及最多五跳；函数流程不再提供不起作用的层数按钮。普通 Python 项目可从项目结构查看模块、类、函数，不要求先识别出 PyTorch 模型。定义展开不是运行实例观测，节点仍链接真实源码。合同、开发状态及最终验证记录见 [结构探索修复](docs/STRUCTURE_EXPLORATION.md)；文档说明不替代该记录中的交付门禁。
 
 最小查询示例：
 

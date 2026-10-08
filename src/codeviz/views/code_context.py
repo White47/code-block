@@ -1,10 +1,13 @@
 """Bounded local contexts over the existing full code graph."""
 
 from collections import deque
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from codeviz.analysis.project import ProjectAnalysis
 from codeviz.core import (
+    CodeEdge,
+    CodeGraph,
     EdgeType,
     ViewIssue,
     ViewKind,
@@ -40,6 +43,45 @@ _STYLES = {
 }
 
 
+def _definition_edges(graph: CodeGraph, focus: str) -> tuple[CodeEdge, ...]:
+    """Project static occurrences without reopening killed binding histories.
+
+    Only definitions of the selected binding are folded into its proxy. Other
+    bindings retain their occurrence identity, including when the AST is absent.
+    """
+    binding = graph.nodes[focus].metadata.get("symbol_id")
+    selected_definitions = {node.id for node in graph.nodes.values()
+                            if binding is not None and node.metadata.get("binding_id") == binding}
+    projected: list[CodeEdge] = []
+    seen: set[tuple[str, str, EdgeType, object]] = set()
+    for edge in graph.edges:
+        if edge.type not in _DATA_EDGES:
+            continue
+        if not edge.metadata.get("generic_data"):
+            # Legacy critical summaries remain in the full graph and ML views;
+            # the local def-use projection uses the occurrence layer instead.
+            continue
+        if edge.metadata.get("def_use_projection") == "binding_summary":
+            continue
+        targets = [edge.target]
+        if edge.type == EdgeType.READS:
+            definitions = edge.metadata.get("reaching_definition_ids")
+            if isinstance(definitions, list) and definitions:
+                targets = [item for item in definitions if isinstance(item, str)]
+        elif edge.type == EdgeType.WRITES:
+            definition = edge.metadata.get("definition_id")
+            if isinstance(definition, str):
+                targets = [definition]
+        for target in targets:
+            source = focus if edge.source in selected_definitions else edge.source
+            target = focus if target in selected_definitions else target
+            key = source, target, edge.type, edge.source_anchor
+            if key not in seen:
+                seen.add(key)
+                projected.append(replace(edge, source=source, target=target))
+    return tuple(projected)
+
+
 def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
                        state: ViewState) -> VisibleGraph:
     if analysis.flow is None:
@@ -48,10 +90,17 @@ def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
     focus = request.selected_id or request.root_id
     if focus is None or focus not in graph.nodes:
         raise ValueError("selected code node is not available")
+    if request.view_kind == ViewKind.DATA_FLOW and graph.nodes[focus].kind.value != "Data":
+        proxy = next((node.id for node in graph.nodes.values()
+                      if node.kind.value == "Data" and node.metadata.get("symbol_id") == focus), None)
+        if proxy is not None:
+            focus = proxy
     allowed = _DATA_EDGES if request.view_kind == ViewKind.DATA_FLOW else _SYMBOL_EDGES
     if request.view_kind == ViewKind.DATA_FLOW and graph.nodes[focus].kind.value != "Data":
-        raise ValueError("data context must focus a critical data node")
-    edges = tuple(edge for edge in graph.edges if edge.type in allowed
+        raise ValueError("data context must focus a data node or mapped lexical binding")
+    context_edges = (_definition_edges(graph, focus)
+                     if request.view_kind == ViewKind.DATA_FLOW else tuple(graph.edges))
+    edges = tuple(edge for edge in context_edges if edge.type in allowed
                   and graph.nodes[edge.source].source_anchors
                   and graph.nodes[edge.target].source_anchors)
     outward: dict[str, list[str]] = {}
@@ -103,6 +152,8 @@ def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
     eligible = tuple(edge for edge in edges if edge.source in seen and edge.target in seen)
     shown = tuple(edge for edge in eligible if edge.source in visible_ids
                   and edge.target in visible_ids)[:request.max_edges]
+    hidden_edge_count = len(eligible) - len(shown)
+    budget_truncated = bool(hidden_ids or hidden_edge_count)
     visible_edges = tuple(VisibleEdge(
         edge.target if edge.type == EdgeType.READS else edge.source,
         edge.source if edge.type == EdgeType.READS else edge.target,
@@ -121,10 +172,10 @@ def build_code_context(analysis: ProjectAnalysis, request: "ViewRequest",
         request.view_kind, nodes, (focus,), visible_edges,
         aggregations=aggregation, layout_kind="directed", layout_hints=layout,
         legend=legend,
-        hidden_counts={"nodes": len(hidden_ids), "edges": len(eligible) - len(shown)},
+        hidden_counts={"nodes": len(hidden_ids), "edges": hidden_edge_count},
         query_context={"root_id": request.root_id, "selected_id": focus,
                        "hops": request.hops, "direction": request.direction,
-                       "has_more": bool(hidden_ids), "budget_truncated": bool(hidden_ids)},
+                       "has_more": budget_truncated, "budget_truncated": budget_truncated},
         max_nodes=request.max_nodes, max_edges=request.max_edges,
         issues=tuple(layout_issues),
     )

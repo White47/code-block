@@ -10,7 +10,7 @@ src/codeviz/
   analysis/       # 已建立：discovery、python、symbols、imports、resolution、graph_build、control_flow、data_flow、flow、call_cycles、model、training、project
   graph/          # 后续：flow、query；Code Graph IR 已在 core/
   semantic/      # 已建立：ModelRule、PyTorch 模型/训练规则、组件图
-  views/         # 已建立：语义查询、关键数据投影、局部代码图、View Builder、layout hints、ViewState
+  views/         # 语义查询、数据投影、局部代码图；architecture_structure / project_structure / structure_identity 管结构投影与身份；layout / ViewState 管布局
   persistence/   # Analysis Cache、View State、Annotations
   ui/             # presenter/controller；版本化 web_contract；React/pywebview 迁移中；Tk fallback 暂保留
 frontend/         # 后续 Task：bundled React Flow/Vite 源码；生产构建无 CDN
@@ -20,3 +20,5 @@ docs/
 ```
 
 规则：事实层不得依赖 UI；UI 不直接解析 AST；Resolver 只有一个权威入口；缓存 schema 与 UI 状态分离；所有跨层对象通过明确 DTO / domain type 传递。React 只调用 pywebview bridge，不通过 HTTP 获取应用数据；随机 loopback 服务器仅提供打包静态资源，不远程监听。搜索定位由 Python `plan_reveal` 决定。`ignore_paths` 属于分析设置，不属于 preferences。
+
+通用 Python 增量职责：`analysis/entries.py` 是候选入口；`lexical_scopes.py` 是共享词法边界；`relations.py` 使用 Resolver 建立模块 / 继承关系；`value_candidates.py` 只传播有限实例 / callable 候选；`def_use.py` 是按需普通数据依赖；`views/function_flow.py` 是所选函数的有界静态流程投影。它们不依赖 React，不执行被分析代码。

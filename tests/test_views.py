@@ -210,11 +210,14 @@ class VisibleBuilderTests(unittest.TestCase):
                 "    def forward(self, x): return self.layer(x)\n"
             ),
             "run.py": (
+                "import torch\n"
                 "def train(optimizer, loss):\n"
+                "    criterion = torch.nn.MSELoss()\n"
                 "    for epoch in range(2):\n"
                 "        loss.backward()\n"
                 "        optimizer.step()\n"
                 "def evaluate(model):\n"
+                "    criterion = torch.nn.MSELoss()\n"
                 "    model.eval()\n"
             ),
         })
@@ -239,7 +242,9 @@ class VisibleBuilderTests(unittest.TestCase):
 
     def test_expand_loop_reveals_internal_events_without_changing_facts(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(optimizer, loss):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    for epoch in range(2):\n"
             "        loss.backward()\n"
             "        optimizer.step()\n"
@@ -256,12 +261,14 @@ class VisibleBuilderTests(unittest.TestCase):
         self.assertEqual(result.semantic.graph, original)
 
     def test_source_anchor_and_manual_position_survive_view_query(self):
-        result = analyze_files({"run.py": "def train(optimizer):\n    optimizer.step()\n"})
+        result = analyze_files({"run.py": (
+            "import torch\ndef train(optimizer):\n"
+            "    criterion = torch.nn.MSELoss()\n    optimizer.step()\n")})
         entry_id = result.training.entry_points[0].id
         state = ViewState(positions={entry_id: (123.0, 456.0)})
         view = build_visible_graph(result, ViewRequest(ViewKind.EXECUTION), state)
         self.assertEqual(view.layout_hints[entry_id], (123.0, 456.0))
-        self.assertTrue(any(anchor.file_path == "run.py" and anchor.start_line == 2
+        self.assertTrue(any(anchor.file_path == "run.py" and anchor.start_line == 4
                             for node in view.nodes for anchor in node.source_anchors))
         self.assertEqual(view.legend[0].type, EdgeType.CONTAINS)
 
@@ -315,10 +322,39 @@ class VisibleBuilderTests(unittest.TestCase):
         container = next(item for item in result.model.instances if item.name == "layers")
         selected = container.member_instance_ids[0]
         self.assertIsNotNone(selected)
+        # Net -> layers -> member is depth two. Selecting a hidden member
+        # cannot override a shallower structural query.
+        shallow = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                          selected_id=selected, max_nodes=2,
+                                                          structure_depth=1))
+        self.assertEqual({node.id for node in shallow.nodes},
+                         {result.model.definitions[0].symbol_id, container.id})
+        self.assertIsNone(shallow.query_context["selected_id"])
+        self.assertFalse(shallow.query_context["budget_truncated"])
         view = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
-                                                       selected_id=selected, max_nodes=2))
-        self.assertIn(selected, {node.id for node in view.nodes})
+                                                       selected_id=selected, max_nodes=3,
+                                                       structure_depth=2))
+        root = result.model.definitions[0].symbol_id
+        self.assertEqual({node.id for node in view.nodes}, {root, container.id, selected})
         self.assertEqual(view.root_ids, (result.model.definitions[0].symbol_id,))
+        self.assertEqual(len(view.nodes), 3)
+        self.assertEqual({(edge.source, edge.target) for edge in view.edges
+                          if edge.type is EdgeType.CONTAINS},
+                         {(root, container.id), (container.id, selected)})
+        self.assertEqual(view.query_context["selected_id"], selected)
+        self.assertFalse(view.query_context["budget_truncated"])
+        limited = build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
+                                                          selected_id=selected, max_nodes=2,
+                                                          structure_depth=2))
+        self.assertEqual({node.id for node in limited.nodes}, {root, container.id})
+        self.assertEqual(limited.root_ids, (root,))
+        self.assertEqual(len(limited.nodes), 2)
+        self.assertEqual({(edge.source, edge.target) for edge in limited.edges},
+                         {(root, container.id)})
+        self.assertIsNone(limited.query_context["selected_id"])
+        self.assertTrue(limited.query_context["budget_truncated"])
+        self.assertTrue(limited.query_context["has_more"])
+        self.assertEqual(limited.hidden_counts["nodes"], 1)
 
     def test_one_node_budget_keeps_selected_component(self):
         result = analyze_files({"model.py": (
@@ -335,7 +371,9 @@ class VisibleBuilderTests(unittest.TestCase):
 
     def test_edge_budget_preserves_execution_main_flow(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(loss, optimizer):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    loss.backward()\n"
             "    optimizer.step()\n"
         )})
@@ -353,7 +391,9 @@ class VisibleBuilderTests(unittest.TestCase):
                 "        return prediction\n"
             ),
             "run.py": (
+                "from model import Net\n"
                 "def train(input, target):\n"
+                "    model = Net()\n"
                 "    prediction = input\n"
                 "    loss = prediction + target\n"
                 "    return loss\n"
@@ -393,7 +433,9 @@ class VisibleBuilderTests(unittest.TestCase):
 
     def test_selected_training_step_reveals_only_requested_hops(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(optimizer, loss, scheduler):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    for epoch in range(2):\n"
             "        optimizer.zero_grad()\n"
             "        loss.backward()\n"
@@ -411,7 +453,9 @@ class VisibleBuilderTests(unittest.TestCase):
 
     def test_tight_edge_budget_keeps_selected_one_hop_connection(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(optimizer, loss, scheduler):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    optimizer.zero_grad()\n"
             "    loss.backward()\n"
             "    optimizer.step()\n"
@@ -427,7 +471,9 @@ class VisibleBuilderTests(unittest.TestCase):
                             for edge in view.edges))
 
     def test_invalid_root_and_unsupported_view_are_explicit(self):
-        result = analyze_files({"run.py": "def train(optimizer):\n    optimizer.step()\n"})
+        result = analyze_files({"run.py": (
+            "import torch\ndef train(optimizer):\n"
+            "    criterion = torch.nn.MSELoss()\n    optimizer.step()\n")})
         with self.assertRaises(ValueError):
             build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
                                                     root_id="not-a-model"))
@@ -460,7 +506,9 @@ class VisibleBuilderTests(unittest.TestCase):
 
     def test_execution_layout_is_stable_and_loop_back_does_not_inflate_depth(self):
         result = analyze_files({"run.py": (
+            "import torch\n"
             "def train(optimizer, loss):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    for epoch in range(2):\n"
             "        loss.backward()\n"
             "        optimizer.step()\n"

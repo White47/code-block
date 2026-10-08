@@ -19,3 +19,9 @@
 | Shared | 多处引用同一实例或权重 |
 | Progressive Disclosure | 先整体、再组件、再内部、最后源码 |
 | Analysis Health | 解析与推断完成度的可见统计 |
+| GenericEntryCandidate | 具有识别类别、confidence、依据与源码锚点的普通入口结构候选，不证明实际运行 |
+| FunctionFlow | 所选函数 / 方法词法作用域的有界静态控制与调用位置图，区别于训练 Execution |
+| LexicalScope | lambda / comprehension 等非具名、非定义的结构作用域 owner |
+| Callable candidate | 某调用位置有限的可能函数 / 方法目标，与名称定义归属分开 |
+| May def-use | 某次读取可能依赖的定义发生点集合，不等于实际值流或值相等 |
+| generic_data | 按需用于普通变量关系的 Data 事实标记，不自动进入 ML 关键数据切片 |

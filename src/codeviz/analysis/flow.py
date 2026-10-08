@@ -22,9 +22,17 @@ from .call_cycles import find_call_cycles
 from .control_flow import add_control_flow
 from .data_flow import add_critical_data
 from .graph_build import build_symbol_graph
+from .lexical_scopes import (
+    ImplicitScope,
+    ImplicitScopeVisitor,
+    ScopeLocations,
+    definition_expressions,
+)
 from .python import AnalysisIssue, ParsedFile
+from .relations import add_relations
 from .resolution import ResolutionResult
-from .symbols import SymbolIndexEntry, SymbolReference
+from .symbols import SymbolReference
+from .value_candidates import CandidateValue, ValueCandidates
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,21 +43,20 @@ class FlowAnalysis:
     issues: tuple[AnalysisIssue, ...] = ()
 
 
-class _FlowVisitor(ast.NodeVisitor):
+class _FlowVisitor(ImplicitScopeVisitor):
     def __init__(self, parsed: ParsedFile, resolution: ResolutionResult, graph: CodeGraph,
-                 issues: list[AnalysisIssue]) -> None:
+                 issues: list[AnalysisIssue],
+                 values: dict[ast.Call, CandidateValue] | None = None) -> None:
         self.parsed = parsed
         self.index = resolution.symbol_index
         self.graph = graph
         self.issues = issues
+        self.values = values or {}
         self.step_id: str | None = None
         self.scope_id = next(entry.id for entry in self.index.entries.values()
                              if entry.kind == NodeKind.MODULE and entry.file_path == parsed.relative_path)
-        self.children: dict[tuple[str, str, NodeKind, int], SymbolIndexEntry] = {}
-        for entry in self.index.entries.values():
-            if entry.parent_symbol is not None:
-                self.children[(entry.parent_symbol, entry.name, entry.kind,
-                               entry.source_anchor.start_line)] = entry
+        assert parsed.tree is not None
+        self.locations = ScopeLocations(parsed.tree, self.index, parsed.relative_path)
         self.calls_seen: dict[str, int] = defaultdict(int)
         self.references: dict[tuple[str, int, int | None, str, str | None], SymbolReference] = {}
         for reference in self.index.references:
@@ -75,25 +82,11 @@ class _FlowVisitor(ast.NodeVisitor):
         finally:
             self.step_id = previous_step
 
-    def _visit_definition(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef,
-                          kind: NodeKind) -> None:
-        for decorator in node.decorator_list:
-            self.visit(decorator)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            for default in (*node.args.defaults,
-                            *(item for item in node.args.kw_defaults if item is not None)):
-                self.visit(default)
-            for argument in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs):
-                if argument.annotation is not None:
-                    self.visit(argument.annotation)
-            if node.returns is not None:
-                self.visit(node.returns)
-        else:
-            for base in node.bases:
-                self.visit(base)
-            for keyword in node.keywords:
-                self.visit(keyword.value)
-        entry = self.children.get((self.scope_id, node.name, kind, node.lineno))
+    def _visit_definition(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
+        for expression in definition_expressions(node):
+            self.visit(expression)
+        entry_id = self.locations.owners.get(node)
+        entry = self.index.entries.get(entry_id) if entry_id is not None else None
         if entry is None:
             return
         previous = self.scope_id
@@ -105,23 +98,28 @@ class _FlowVisitor(ast.NodeVisitor):
         self.scope_id = previous
         self.step_id = previous_step
 
+    def _visit_implicit_body(self, node: ImplicitScope, body: tuple[ast.AST, ...]) -> None:
+        previous_step = self.step_id
+        self.step_id = None
+        try:
+            super()._visit_implicit_body(node, body)
+        finally:
+            self.step_id = previous_step
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        parent = self.index.entries[self.scope_id]
-        kind = NodeKind.METHOD if parent.kind == NodeKind.CLASS else NodeKind.FUNCTION
-        self._visit_definition(node, kind)
+        self._visit_definition(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        parent = self.index.entries[self.scope_id]
-        kind = NodeKind.METHOD if parent.kind == NodeKind.CLASS else NodeKind.FUNCTION
-        self._visit_definition(node, kind)
+        self._visit_definition(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        self._visit_definition(node, NodeKind.CLASS)
+        self._visit_definition(node)
 
     def _dynamic_call(self, call_id: str, name: str, anchor: SourceAnchor,
                       binding_id: str | None = None,
                       possible_targets: tuple[str, ...] = (),
-                      issue_code: str = "DYNAMIC_CALL_UNRESOLVED") -> None:
+                      issue_code: str = "DYNAMIC_CALL_UNRESOLVED",
+                      metadata: dict[str, object] | None = None) -> None:
         owner = self.index.entries[self.scope_id]
         qualified_name = f"{owner.qualified_name}.{name}"
         unresolved_id = stable_node_id(
@@ -141,6 +139,7 @@ class _FlowVisitor(ast.NodeVisitor):
             call_id, unresolved_id, EdgeType.CALLS,
             Confidence.PROBABLE if possible_targets else Confidence.UNRESOLVED,
             source_anchor=anchor, possible_targets=possible_targets,
+            metadata=metadata or {},
         ))
         self.issues.append(AnalysisIssue(
             issue_code, reason, self.parsed.relative_path, anchor,
@@ -172,7 +171,31 @@ class _FlowVisitor(ast.NodeVisitor):
                                      source_anchor=anchor))
         reference = self.references.get((self.scope_id, expression.lineno,
                                          expression.col_offset, name, qualifier))
-        if reference is not None:
+        value = self.values.get(node)
+        if value is not None and (value.indirect or value.unknown or value.may_unbound
+                                  or value.truncated):
+            callable_ids = tuple(target for target in value.targets
+                                 if self.graph.nodes[target].kind in
+                                 (NodeKind.FUNCTION, NodeKind.METHOD, NodeKind.CLASS,
+                                  NodeKind.EXTERNAL_SYMBOL))
+            metadata: dict[str, object] = {
+                "unknown": value.unknown or len(callable_ids) != len(value.targets),
+                "may_unbound": value.may_unbound, "truncated": value.truncated,
+                "evidence": "bounded call-position value candidates",
+            }
+            if callable_ids:
+                self.graph.add_edge(CodeEdge(
+                    node_id, callable_ids[0], EdgeType.CALLS, Confidence.PROBABLE,
+                    source_anchor=anchor, possible_targets=callable_ids, metadata=metadata,
+                ))
+                if qualifier in ("self", "cls"):
+                    self.issues.append(AnalysisIssue(
+                        "DYNAMIC_DISPATCH_UNRESOLVED", "receiver may dispatch to an override",
+                        self.parsed.relative_path, anchor,
+                    ))
+            else:
+                self._dynamic_call(node_id, name, anchor, metadata=metadata)
+        elif reference is not None:
             if reference.resolved_definition_id is not None:
                 target = self.graph.nodes[reference.resolved_definition_id]
                 if target.kind == NodeKind.METHOD and qualifier in ("self", "cls"):
@@ -213,6 +236,7 @@ class _FlowVisitor(ast.NodeVisitor):
 def build_project_flow(files: tuple[ParsedFile, ...], resolution: ResolutionResult) -> FlowAnalysis:
     graph = build_symbol_graph(resolution)
     issues: list[AnalysisIssue] = []
+    relations = add_relations(files, resolution, graph, issues)
     add_control_flow(files, resolution.symbol_index, graph, issues)
     data_nodes = add_critical_data(files, resolution.symbol_index, graph, issues)
     for parsed in files:
@@ -220,7 +244,8 @@ def build_project_flow(files: tuple[ParsedFile, ...], resolution: ResolutionResu
                                            and entry.file_path == parsed.relative_path
                                            for entry in resolution.symbol_index.entries.values()):
             try:
-                _FlowVisitor(parsed, resolution, graph, issues).visit(parsed.tree)
+                values = ValueCandidates(parsed, resolution, graph, relations, issues).analyze()
+                _FlowVisitor(parsed, resolution, graph, issues, values).visit(parsed.tree)
             except Exception as error:
                 issues.append(AnalysisIssue(
                     "FLOW_ERROR", f"{type(error).__name__}: {error}",

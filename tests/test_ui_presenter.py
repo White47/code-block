@@ -19,9 +19,12 @@ class PresenterTests(unittest.TestCase):
                 "    def forward(self, x): return x\n"
             ),
             "run.py": (
+                "import torch\n"
                 "def train(optimizer):\n"
+                "    criterion = torch.nn.MSELoss()\n"
                 "    optimizer.step()\n"
                 "def evaluate(model):\n"
+                "    criterion = torch.nn.MSELoss()\n"
                 "    model.eval()\n"
             ),
         })
@@ -39,7 +42,9 @@ class PresenterTests(unittest.TestCase):
 
     def test_inspector_keeps_real_name_evidence_relations_and_source(self):
         analysis = analyze_files({"run.py": (
+            "import torch\n"
             "def train(loss, optimizer):\n"
+            "    criterion = torch.nn.MSELoss()\n"
             "    loss.backward()\n"
             "    optimizer.step()\n"
         )})
@@ -50,7 +55,7 @@ class PresenterTests(unittest.TestCase):
         self.assertTrue(inspector.evidence)
         self.assertTrue(inspector.relations)
         self.assertEqual(inspector.source_anchors[0].file_path, "run.py")
-        self.assertEqual(inspector.source_anchors[0].start_line, 3)
+        self.assertEqual(inspector.source_anchors[0].start_line, 5)
         self.assertTrue(inspector.can_open_source)
 
     def test_aggregation_and_problems_never_invent_source(self):

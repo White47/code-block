@@ -15,7 +15,8 @@ class NavigationTests(unittest.TestCase):
         analysis = analyze_files({
             "model.py": "import torch.nn as nn\nclass Net(nn.Module):\n"
                         "    def forward(self, x): return x\n",
-            "run.py": "def train(loss, optimizer):\n"
+            "run.py": "import torch\ndef train(loss, optimizer):\n"
+                      "    criterion = torch.nn.MSELoss()\n"
                       "    loss.backward()\n    optimizer.step()\n"
                       "def helper(): return 1\n",
         })

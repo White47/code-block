@@ -97,6 +97,8 @@ def _view_kind(value: object, field: str = "kind") -> ViewKind:
 
 
 def _point(value: object, field: str) -> tuple[float, float]:
+    if isinstance(value, (list, tuple)) and len(value) == 2:
+        value = {"x": value[0], "y": value[1]}
     if type(value) is not dict or set(value) != {"x", "y"}:
         raise ValueError(f"{field} must contain exactly x and y")
     x = value["x"]
@@ -160,7 +162,7 @@ class DesktopBridge:
         else:
             self._open_project(self._controller.project_root)
         self._snapshot: tuple[Path | None, AnalysisStatus, tuple[str, ...],
-                              str | None, tuple[Path, ...]]
+                              str | None, tuple[Path, ...], bool]
         self._publish_session()
 
     def _publish_session(self, status: AnalysisStatus | None = None) -> None:
@@ -168,7 +170,8 @@ class DesktopBridge:
                           status or self._controller.status,
                           self._controller.outdated_reasons,
                           self._controller.cache_issue,
-                          self._recent_projects_snapshot)
+                          self._recent_projects_snapshot,
+                          self._controller.analysis is not None)
 
     def _bind_window(self, window: ProjectWindow, folder_dialog_type: int) -> None:
         # Private: pywebview exposes public methods of js_api automatically.
@@ -418,17 +421,20 @@ class DesktopBridge:
 
     def get_view(self, kind: object, root_id: object = None,
                  selected_id: object = None, hops: object = 1,
-                 direction: object = "both") -> JsonObject:
+                 direction: object = "both", structure_depth: object = 1) -> JsonObject:
         def operation() -> JsonObject:
             parsed_kind = _view_kind(kind)
             root = _optional_string(root_id, "root_id")
             selected = _optional_string(selected_id, "selected_id")
+            if type(structure_depth) is not int or not 1 <= structure_depth <= 5:
+                raise ValueError("structure_depth must be an integer from 1 to 5")
             if type(hops) is not int or not 1 <= hops <= 5:
                 raise ValueError("hops must be an integer from 1 to 5")
-            if type(direction) is not str or direction not in _DIRECTIONS:
+            if type(direction) is not str or direction not in (*_DIRECTIONS, "upstream", "downstream"):
                 raise ValueError("direction must be in, out, or both")
             graph = self._controller.view(
-                parsed_kind, root, selected, hops=hops, direction=_DIRECTIONS[direction])
+                parsed_kind, root, selected, hops=hops,
+                direction=_DIRECTIONS.get(direction, direction), structure_depth=structure_depth)
             if "direction" in graph.query_context:
                 graph = replace(graph, query_context={**graph.query_context, "direction": direction})
             return graph_payload(graph)
@@ -449,15 +455,17 @@ class DesktopBridge:
             operation, invalid_message="The detail graph request is invalid.")
 
     def get_inspector(self, kind: object, root_id: object, selected_id: object,
-                      detail_source_id: object = None) -> JsonObject:
+                      detail_source_id: object = None, structure_depth: object = 1) -> JsonObject:
         def operation() -> JsonObject:
             parsed_kind = _view_kind(kind)
+            if type(structure_depth) is not int or not 1 <= structure_depth <= 5:
+                raise ValueError("structure_depth must be an integer from 1 to 5")
             root = _optional_string(root_id, "root_id")
             selected = _string(selected_id, "selected_id")
             detail_source = _optional_string(detail_source_id, "detail_source_id")
             view = (self._controller.detail_view(parsed_kind, root, detail_source)
                     if detail_source is not None else
-                    self._controller.view(parsed_kind, root, selected))
+                    self._controller.view(parsed_kind, root, selected, structure_depth=structure_depth))
             if selected not in {node.id for node in view.nodes}:
                 raise ValueError("selected node is not available in this view")
             return inspector_payload(build_inspector(view, selected, self._analysis()))
@@ -477,28 +485,9 @@ class DesktopBridge:
         # Annotations are a separate record and must never be purged here.
         if self._controller.analysis is None:
             return
-        state = self._controller.view_state
-        roots = dict(state.graph_roots)
-        for kind, root in roots.items():
-            if root is not None:
-                try:
-                    self._controller.view(ViewKind(kind), root)
-                except ValueError:
-                    roots[kind] = None
-        known = self._known_node_ids(roots)
-        restored = replace(
-            state, graph_roots=roots,
-            selected_id=state.selected_id if state.selected_id in known else None,
-            expanded_ids=tuple(node for node in state.expanded_ids if node in known),
-            positions={node: point for node, point in state.positions.items() if node in known},
-            positions_by_view={kind: {node: point for node, point in positions.items()
-                                      if node in known}
-                               for kind, positions in state.positions_by_view.items()},
-            detail_islands=tuple(island for island in state.detail_islands
-                                 if island.source_node_id in known),
-        )
-        if restored != state:
-            self._controller.view_state = restored
+        previous = self._controller.view_state
+        self._controller.sanitize_view_state()
+        if previous != self._controller.view_state:
             self._controller._persist_view_state()
 
     def search(self, query: object, max_results: object = 100,
@@ -573,8 +562,11 @@ class DesktopBridge:
                 kind = _view_kind(key, "graphRoots key")
                 roots[kind.value] = _optional_string(value, "graphRoots value")
                 if roots[kind.value] is not None:
-                    self._controller.view(kind, roots[kind.value])
-            if selected is not None and selected not in self._known_node_ids(roots):
+                    self._controller.view(kind, roots[kind.value],
+                        structure_depth=self._controller.current_structure_depth(kind, roots[kind.value]),
+                        _remember_depth=False)
+            if selected is not None and not self._controller.valid_identity(
+                    selected, active, roots.get(active.value) if active else None):
                 raise ValueError("unknown selected node ID")
             self._controller.save_layout(active, selected, tabs, roots)
             return view_state_payload(self._controller.view_state)
@@ -588,7 +580,7 @@ class DesktopBridge:
             kind = None if view_kind is None else _view_kind(view_kind, "view_kind")
             parsed_position = _point(position, "position")
             self._controller.move_node(
-                self._node_id(node_id), parsed_position, kind)
+                self._node_id(node_id, kind), parsed_position, kind)
             return view_state_payload(self._controller.view_state)
 
         return self._write_call(
@@ -626,8 +618,12 @@ class DesktopBridge:
                            position: object = None) -> JsonObject:
         def operation() -> JsonObject:
             parsed_position = None if position is None else _point(position, "position")
+            parsed_kind = _view_kind(kind)
+            source = self._node_id(source_node_id, parsed_kind)
+            self._controller.detail_view(parsed_kind,
+                                         self._controller.view_state.graph_roots.get(parsed_kind.value), source)
             self._controller.open_detail_island(
-                _view_kind(kind), self._node_id(source_node_id),
+                parsed_kind, source,
                 parsed_position)
             return view_state_payload(self._controller.view_state)
 
@@ -662,12 +658,11 @@ class DesktopBridge:
             known.update(node.id for node in view.nodes)
         return known
 
-    def _node_id(self, value: object) -> str:
+    def _node_id(self, value: object, kind: ViewKind | None = None) -> str:
         node_id = _string(value, "node_id")
-        known = self._analysis_node_ids()
-        if node_id not in known:
-            known = self._known_node_ids(self._controller.view_state.graph_roots)
-        if node_id not in known:
+        kind = kind or self._controller.view_state.active_view
+        if not self._controller.valid_identity(node_id, kind,
+                self._controller.view_state.graph_roots.get(kind.value) if kind else None):
             raise ValueError("unknown node ID")
         state = self._controller.view_state
         stored = set(state.positions) | set(state.expanded_ids)

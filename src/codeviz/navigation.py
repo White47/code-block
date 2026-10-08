@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from codeviz.analysis.project import ProjectAnalysis
-from codeviz.core import ViewKind, VisibleGraph
+from codeviz.core import NodeKind, ViewKind, VisibleGraph
 from codeviz.views.query import GraphQuery
 
 from .search import SearchResult
@@ -53,7 +53,7 @@ def _preferred_reveal(analysis: ProjectAnalysis, result: SearchResult) -> Reveal
     if analysis.flow is None or result.id not in analysis.flow.graph.nodes:
         return RevealTarget(None, None, None, "Code graph has no node for this symbol")
     for node in analysis.flow.graph.nodes.values():
-        if node.metadata.get("symbol_id") == result.id:
+        if node.kind == NodeKind.DATA and node.metadata.get("symbol_id") == result.id:
             return RevealTarget(ViewKind.DATA_FLOW, node.id, node.id)
     return RevealTarget(ViewKind.SYMBOL, result.id, result.id)
 

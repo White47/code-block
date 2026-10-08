@@ -373,6 +373,7 @@ class WebContractTests(unittest.TestCase):
         self.assertEqual(session, {
             "projectPath": str(Path("C:/demo")),
             "status": "Outdated",
+            "hasAnalysis": False,
             "outdatedReasons": ["source changed"],
             "cacheIssue": "cache unavailable",
             "recentProjects": [str(Path("C:/one")), str(Path("C:/two"))],

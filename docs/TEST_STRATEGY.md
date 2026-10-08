@@ -17,6 +17,10 @@
 
 ## 必备 fixture
 
+通用增量使用 `tests/fixtures/general_python_project` 与 bindings / objects / data / control 独立契约测试，覆盖 main guard、普通库、闭包 / 推导式 / match、实例与 callable 候选、普通 def-use、finally 各退出类型。旧 ML 正例必须提供真实框架证据，不能仅凭 `optimizer`、`loss` 或 `train` 名称；Full Graph 的普通 Data 与 ML 默认关键数据切片分别断言。
+
+`scripts/verify_general_python.py` 对固定 Click / Requests / HTTPX 提交仅静态扫描，报告包上下文、源码锚点、诊断、预算与无 AST 缓存往返；不安装或执行目标仓库。`scripts/verify_general_python_native.py` 使用实际 WebView2 / bridge 检查普通函数阅读链路，原 `verify_native_desktop.py` 保留 ML 黄金路径。验证报告不等于支持所有 Python。
+
 小型纯 Python 项目、PyTorch 自定义模块、Transformer-like 模块、训练 / 验证 / 推理多入口、同名变量、if / loop / recursion、动态调用、坏文件、忽略目录和共享模块实例。
 
 ## 验证原则
@@ -25,4 +29,10 @@
 
 ## 验收
 
+结构展开专项必须比较真实节点集合：MVP Classifier 从深度 1 的直接组件扩展到 Encoder.layers 与 Block.projection，减少深度时节点集合缩小；不能只验证按钮数字 / RPC 参数。另验证无模型的项目结构、源锚点、投影 Inspector、两实例 / 循环 / 预算、伪造投影拒绝、重开保留合法隐藏位置，以及无变化 / 等待 / 失败反馈。最终原生脚本通过真实控件操作，不用 API 写请求代替 UI。合同与结果见 `STRUCTURE_EXPLORATION.md`。
+
 以 `MVP_ACCEPTANCE.md` 三条黄金路径为集成门禁。来自用户源码的图节点必须能定位到 SourceAnchor；Project、聚合和 ExternalSymbol 等节点至少须显示来源依据或明确的不可跳转原因，不得出现失效的 Open Source 动作。
+
+画布专项包括真实 App 的层数 1→5→3→1、查询参数与 context 保留、待返回查询不卸载同 context 画布；低层相机测试覆盖节点测量 / 容器非零就绪、可见 / 离屏 viewport、换 root 与迟到完成隔离。布局测试按视图关系白名单检查纵向层次、分支并列、环有界、手动坐标与事实不变。低层 rig 不能替代实际 WebView2 测量：`scripts/verify_canvas_recovery_native.py` 从最终冻结包通过真实鼠标、按钮和节点矩形验收，不点击适应、不以 bridge 写调用绕过 UI。hops / direction 从真实工具栏读取，它们不是持久化 ViewState 字段。结果见 [画布恢复](CANVAS_RECOVERY.md)。
+
+实际画布矩形还必须填满扣除工具栏 / 静态说明后的可用编辑区，不能仅以节点与一个窄条相交判为通过。`--geometry-only` 只读取当前实际窗口，不导航、不点击、不调用 bridge，可独立捕获容器高度回归。自动定位操作不得使用可能晚到的库内 fit 队列：用真实 React Flow 受控节点路径验证 A→未就绪 B 时没有旧请求移动 B，再以最终 PC 包实际操作复核。

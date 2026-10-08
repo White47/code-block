@@ -1,6 +1,7 @@
 """Deterministic graph layout hints; UI may refine them without changing facts."""
 
-from collections import defaultdict
+from collections import defaultdict, deque
+from collections.abc import Iterator
 
 from codeviz.core import EdgeType, ViewIssue, ViewKind, VisibleEdge, VisibleNode
 
@@ -8,32 +9,98 @@ from .state import ViewState
 
 _X_GAP = 220.0
 _Y_GAP = 112.0
+_FLOW_EDGES = frozenset({EdgeType.CONTAINS, EdgeType.CONTROL_FLOW,
+                         EdgeType.BRANCH_TRUE, EdgeType.BRANCH_FALSE})
+_VIEW_EDGES = {
+    ViewKind.ARCHITECTURE: frozenset({EdgeType.CONTAINS}),
+    ViewKind.PROJECT_STRUCTURE: frozenset({EdgeType.CONTAINS}),
+    ViewKind.EXECUTION: _FLOW_EDGES,
+    ViewKind.FUNCTION_FLOW: _FLOW_EDGES,
+    ViewKind.DATA_FLOW: frozenset({EdgeType.READS, EdgeType.WRITES,
+                                 EdgeType.DATA_FLOW, EdgeType.PASSES_TO,
+                                 EdgeType.RETURNS_TO}),
+    ViewKind.SYMBOL: frozenset({EdgeType.CONTAINS, EdgeType.IMPORTS,
+                              EdgeType.EXPORTS, EdgeType.CALLS,
+                              EdgeType.INHERITS, EdgeType.IMPLEMENTS}),
+}
 
 
-def _forward_edges(edges: tuple[VisibleEdge, ...]) -> tuple[VisibleEdge, ...]:
-    allowed = {EdgeType.CONTAINS, EdgeType.CONTROL_FLOW,
-               EdgeType.BRANCH_TRUE, EdgeType.BRANCH_FALSE}
+def _forward_edges(edges: tuple[VisibleEdge, ...],
+                   view_kind: ViewKind | None = None) -> tuple[VisibleEdge, ...]:
+    # READS is already source -> use in the visible graph. Never reinterpret
+    # code facts or reverse the displayed relationship here.
+    allowed = _VIEW_EDGES.get(view_kind, _FLOW_EDGES) if view_kind else _FLOW_EDGES
     return tuple(edge for edge in edges if edge.type in allowed and edge.source != edge.target)
 
 
 def _ranks(node_ids: tuple[str, ...], edges: tuple[VisibleEdge, ...],
            roots: tuple[str, ...]) -> dict[str, int]:
-    rank = {node_id: 0 for node_id in roots}
+    """Rank the SCC condensation DAG, never repeatedly deepen a cycle."""
     root_ids = set(roots)
-    for _ in range(len(node_ids)):
-        changed = False
-        for edge in edges:
-            if edge.target in root_ids:
-                continue
-            candidate = rank.get(edge.source, 0) + 1
-            if candidate > rank.get(edge.target, 0) and candidate < len(node_ids):
-                rank[edge.target] = candidate
-                changed = True
-        if not changed:
-            break
-    return {node_id: 0 if node_id in root_ids
-            else min(rank.get(node_id, 0), len(node_ids) - 1)
-            for node_id in node_ids}
+    successors: dict[str, set[str]] = {node_id: set() for node_id in node_ids}
+    predecessors: dict[str, set[str]] = {node_id: set() for node_id in node_ids}
+    for edge in edges:
+        # Explicit structural/flow roots remain at the top. This omission is
+        # presentation-only; the original visible edges remain untouched.
+        if edge.target not in root_ids:
+            successors[edge.source].add(edge.target)
+            predecessors[edge.target].add(edge.source)
+
+    # Iterative Kosaraju avoids recursion depth limits on long visible chains.
+    visited: set[str] = set()
+    finished: list[str] = []
+    for node_id in node_ids:
+        if node_id in visited:
+            continue
+        visited.add(node_id)
+        stack: list[tuple[str, Iterator[str]]] = [
+            (node_id, iter(sorted(successors[node_id])))]
+        while stack:
+            current, children = stack[-1]
+            child = next(children, None)
+            if child is None:
+                finished.append(current)
+                stack.pop()
+            elif child not in visited:
+                visited.add(child)
+                stack.append((child, iter(sorted(successors[child]))))
+
+    components: dict[str, int] = {}
+    count = 0
+    for node_id in reversed(finished):
+        if node_id in components:
+            continue
+        component = count
+        count += 1
+        components[node_id] = component
+        pending = [node_id]
+        while pending:
+            current = pending.pop()
+            for parent in sorted(predecessors[current]):
+                if parent not in components:
+                    components[parent] = component
+                    pending.append(parent)
+
+    outgoing: list[set[int]] = [set() for _ in range(count)]
+    indegrees = [0] * count
+    for source in node_ids:
+        source_component = components[source]
+        for target in successors[source]:
+            target_component = components[target]
+            if (source_component != target_component
+                    and target_component not in outgoing[source_component]):
+                outgoing[source_component].add(target_component)
+                indegrees[target_component] += 1
+    ranks = [0] * count
+    ready = deque(index for index, degree in enumerate(indegrees) if degree == 0)
+    while ready:
+        component = ready.popleft()
+        for next_component in sorted(outgoing[component]):
+            ranks[next_component] = max(ranks[next_component], ranks[component] + 1)
+            indegrees[next_component] -= 1
+            if indegrees[next_component] == 0:
+                ready.append(next_component)
+    return {node_id: ranks[components[node_id]] for node_id in node_ids}
 
 
 def _layered_positions(
@@ -71,15 +138,18 @@ def layout_positions(nodes: tuple[VisibleNode, ...], edges: tuple[VisibleEdge, .
                      view_kind: ViewKind | None = None,
                      issues: list[ViewIssue] | None = None) -> dict[str, tuple[float, float]]:
     """Lay out supported graph views in deterministic top-to-bottom layers."""
-    del kind  # Both supported views use the same readable layered placement.
+    del kind  # Presentation policy follows the view, not its renderer label.
     node_ids = tuple(sorted({node.id for node in nodes}))
     if not node_ids:
         return {}
 
     known_ids = set(node_ids)
     roots = tuple(sorted({node_id for node_id in root_ids if node_id in known_ids}))
+    if view_kind in (ViewKind.DATA_FLOW, ViewKind.SYMBOL):
+        # These roots are query focus IDs, not graph-entry constraints.
+        roots = ()
     forward = tuple(sorted(
-        (edge for edge in _forward_edges(edges)
+        (edge for edge in _forward_edges(edges, view_kind)
          if edge.source in known_ids and edge.target in known_ids),
         key=lambda edge: (edge.source, edge.target, edge.type.value),
     ))

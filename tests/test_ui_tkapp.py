@@ -171,6 +171,46 @@ class TkAppHeadlessTests(unittest.TestCase):
             self.assertEqual(store.load_annotations(self.fixture_root),
                              {"note": "separate boundary"})
 
+    def test_switching_root_hides_valid_island_without_closing_or_losing_position(self):
+        with TemporaryDirectory() as data_dir:
+            store = CacheStore(Path(data_dir))
+            app = CodeVizApp.__new__(CodeVizApp)
+            app.controller = AppController(store)
+            app.controller.open_project(self.fixture_root)
+            app.controller.analyze()
+            kind = ViewKind.ARCHITECTURE
+            roots = app.controller.view(kind)
+            classifier = next(node for node in roots.nodes if node.display_name == "Classifier")
+            other = next(node for node in roots.nodes if node.display_name == "Baseline")
+            main = app.controller.view(kind, classifier.id)
+            encoder = next(node for node in main.nodes if node.display_name == "encoder")
+            island = app.controller.open_detail_island(kind, encoder.id, (600.0, 160.0))
+            app._roots = {kind: classifier.id}
+            app.language = "en"
+            app.status_label = SimpleNamespace(configure=lambda **_options: None)
+            original = app._detail_pairs(kind)
+            self.assertEqual(len(original), 1)
+            self.assertEqual(original[0][1].root_ids, (encoder.id,))
+            before = app.controller.view_state
+            persisted = store.load_view_state(self.fixture_root).to_dict()
+            app._roots[kind] = other.id
+            with patch.object(store, "save_view_state", wraps=store.save_view_state) as save:
+                hidden = app._detail_pairs(kind)
+            self.assertEqual(hidden, ())
+            with self.subTest(contract="hidden island remains open with its position"):
+                self.assertEqual(app.controller.detail_islands(kind), (island,))
+                self.assertEqual(app.controller.view_state, before)
+            with self.subTest(contract="no persistence while hidden"):
+                save.assert_not_called()
+                self.assertEqual(store.load_view_state(self.fixture_root).to_dict(), persisted)
+            app._roots[kind] = classifier.id
+            restored = app._detail_pairs(kind)
+            with self.subTest(contract="return to original root restores real detail"):
+                self.assertEqual(len(restored), 1)
+                self.assertEqual(restored[0][0], island)
+                self.assertEqual(restored[0][0].position, (600.0, 160.0))
+                self.assertEqual(restored[0][1], original[0][1])
+
     def test_layout_persists_main_selection_not_transient_detail_selection(self):
         saved = []
         app = CodeVizApp.__new__(CodeVizApp)
@@ -243,7 +283,7 @@ class TkAppHeadlessTests(unittest.TestCase):
             stale = next(node for node in detail.nodes
                          if node.id != detail.root_ids[0])
             island_id = f"{kind.value}:{encoder.id}"
-            graph = SimpleNamespace(detail_view=lambda _island_id: detail)
+            graph = SimpleNamespace(detail_view={island_id: detail}.__getitem__)
             app._active_kind = kind
             app._views = {kind: main}
             app._graph_tabs = {kind: (None, graph)}
@@ -260,8 +300,21 @@ class TkAppHeadlessTests(unittest.TestCase):
 
             self.assertEqual(opened, [(encoder.source_anchors[0], False)])
             self.assertEqual(app._selected_id, encoder.id)
-            self.assertIsNone(app._selected_context)
-            self.assertIs(app._inspection_view, main)
+            self.assertEqual(app._selected_context, island_id)
+            self.assertIs(app._inspection_view, detail)
+            self.assertEqual(detail.root_ids, (encoder.id,))
+            local_root = next(node for node in detail.nodes if node.id == encoder.id)
+            self.assertEqual(local_root.source_anchors[0], encoder.source_anchors[0])
+            self.assertEqual(app._selections, {kind: encoder.id})
+            before = app.controller.view_state
+            app._on_select(encoder.id + ":forged", island_id)
+            app._on_select(encoder.id, f"{kind.value}:wrong-source")
+            app._open_canvas_source(encoder.id + ":forged", island_id)
+            self.assertEqual(app._selected_id, encoder.id)
+            self.assertEqual(app._selected_context, island_id)
+            self.assertIs(app._inspection_view, detail)
+            self.assertEqual(opened, [(encoder.source_anchors[0], False)])
+            self.assertEqual(app.controller.view_state, before)
 
 
 class TkAppLiveTests(unittest.TestCase):
@@ -591,7 +644,14 @@ class TkAppLiveTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "run.py").write_text(
-                "def train(loss, optimizer):\n"
+                "import torch\n"
+                "import torch.nn as nn\n"
+                "def train(features, target):\n"
+                "    model = nn.Linear(2, 2)\n"
+                "    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)\n"
+                "    criterion = nn.CrossEntropyLoss()\n"
+                "    prediction = model(features)\n"
+                "    loss = criterion(prediction, target)\n"
                 "    loss.backward()\n"
                 "    optimizer.step()\n", encoding="utf-8")
             self.app.controller.open_project(root)
@@ -637,7 +697,14 @@ class TkAppLiveTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "run.py").write_text(
-                "def train(loss, optimizer):\n"
+                "import torch\n"
+                "import torch.nn as nn\n"
+                "def train(features, target):\n"
+                "    model = nn.Linear(2, 2)\n"
+                "    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)\n"
+                "    criterion = nn.CrossEntropyLoss()\n"
+                "    prediction = model(features)\n"
+                "    loss = criterion(prediction, target)\n"
                 "    loss.backward()\n    optimizer.step()\n", encoding="utf-8")
             self.app.controller.open_project(root)
             self.app.controller.analyze()
@@ -1018,16 +1085,21 @@ class TkAppLiveTests(unittest.TestCase):
             source = root / "model.py"
             source.write_text(
                 "import torch.nn as nn\n"
+                "class Block(nn.Module):\n"
+                "    def __init__(self):\n"
+                "        super().__init__()\n"
+                "        self.projection = nn.Linear(2, 2)\n"
+                "    def forward(self, x): return self.projection(x)\n"
                 "class Net(nn.Module):\n"
                 "    def __init__(self):\n"
-                "        self.layer = nn.Linear(2, 2)\n"
+                "        self.layer = Block()\n"
                 "    def forward(self, x): return self.layer(x)\n", encoding="utf-8")
             self.app._open_project_path(root)
             self.app.controller.analyze()
             self.app._open_graph(ViewKind.ARCHITECTURE)
             kind = ViewKind.ARCHITECTURE
             model = next(node for node in self.app._views[kind].nodes
-                         if node.metadata.get("has_children"))
+                         if node.code_name == "model.Net")
             self.app._open_detail_island(model.id)
             restored_id = self.app.controller.detail_islands(kind)[0].id
             self.app.root.update()
@@ -1044,7 +1116,7 @@ class TkAppLiveTests(unittest.TestCase):
             self.assertIn("OUTDATED", self.app._graph_warnings[kind].cget("text"))
 
             second = next(node for node in self.app._views[kind].nodes
-                          if node.id != model.id)
+                          if node.code_name == "model.Net.layer")
             self.app._open_detail_island(second.id)
             second_id = next(island.id for island in
                              self.app.controller.detail_islands(kind)

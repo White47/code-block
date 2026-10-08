@@ -18,6 +18,8 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 ## 2. Overview
 
+普通 Python 项目另有模块、类、函数 / 方法目录；选择具名函数可打开“函数流程”标签，无模型或训练入口也可以阅读。通用入口候选展示 confidence 和依据，不把函数名当作运行入口证明。FunctionFlow 节点同样支持 Inspector、源码标签 / 侧边源码、可关闭标签和缓存恢复；流程只覆盖所选作用域，不自动展开整个调用树。
+
 通过选择本地项目文件夹打开项目，并提供 Recent Projects。首屏显示项目名、Language、Framework、Entry Points、Models、Main Areas、Analysis Health，以及 Analyze Project、Open Architecture、Open Training Flow、Browse Symbols。多个模型和入口并列列出；选择入口时进入对应的独立 Execution Flow。
 
 ## 3. 交互
@@ -43,7 +45,17 @@ Editor 以 Tab 展示 Overview、Architecture、Training Flow、Source files；�
 
 Architecture 主关系为组件 + 数据流，Execution 主关系为控制流 + 数据流，Calls 主关系为 CALLS，Gradient 主关系为 GRADIENT_FLOW。Data Flow、Calls、Control、Loop、Gradient 使用不同视觉语义，并有 Legend；通用关系过滤器仍属后续能力。
 
-Architecture / Execution 中受支持的结构 / 控制关系（Contains、Control Flow、Branch True / False）使用确定性的纵向 rank：入口 / 根优先在上，同层分支向左右展开，汇合节点尽量回到前驱重心，回环不重复节点。未参与 rank 的关系不会被伪装成执行顺序；Symbol / Data Flow 的 Calls、Data Flow 等关系通常使用确定性的同 rank / Stable ID 回退位置，用户可再移动节点。所有视图都不使用随机坐标，且手动位置优先于自动布局。
+自动布局统一以从上到下为主，同级分支并列。Architecture 按 Contains；Execution / FunctionFlow 按容器与前向 Control Flow / Branch True / False，Loop Back 不推高层；Data Flow 按已投影的信息来源→使用方向；Symbol 按展示的包含 / 调用 / 导入 / 继承等依赖方向。Symbol / Data Flow 的查询焦点不强制位于最上方，允许上游在其上方。环压缩后稳定分层、环内并列，不代表并发或真实执行时序；断开的同级节点仍可并列。所有视图不使用随机坐标，手动位置保持原样、优先于自动布局。
+
+2026-10-07 确认的修复合同：ProjectStructure / Architecture 的“更多层 / 更少层”控制结构深度 1–5，沿真实所有权或可追溯的自定义组件定义引用展示内部。Symbol / DataFlow 单独显示关系范围及上游 / 下游；FunctionFlow 不显示未参与查询的层数控件。更新中有状态，完成后显示实际新增 / 收起数量；无变化必须说明已到底、缺少内部信息或预算限制。模型组件、普通项目结构、函数流程不能统称为一个无解释的“框架”。具体实施和验收见 [结构展开修复](STRUCTURE_EXPLORATION.md)。
+
+打开源码、设置或概览标签后返回同一图，不重置结构深度。React PC 界面按稳定的项目路径／视图／根记住本次应用会话中的显式层数；同一 context 的重渲染、重新分析或重开不能用迟到的初始提示覆盖它。首次进入未消费提示的 Architecture 模型根时，直属且已确认的 ModuleDict／ModuleList 容器可建议深度 2，其余默认 1；实际层数必须与工具栏一致。新项目或新根独立初始化，该会话深度不写入 Analysis Cache。投影卡片只增加“按定义展开”短标记，完整定义来源与实例上下文放 Inspector / 提示；节点和同级布局保持可读，不把未选中的深层结构淡化到难以辨认。
+
+Architecture 细节岛以所选 occurrence 为相对根，最多展开相对 3 层，仍受全局 5 层和 18 节点／40 边预算约束；根详情应展示主图初始层级未展示的真实内部结构，不得简单复刻主图。局部选择只用于当前 Inspector，不替换持久化的主图选择。切换模型根时，其他根的合法岛和手动位置仅隐藏而非删除；内部查询异常不能被当作过期身份清理。
+
+React 画布按实际测量卡片尺寸纵向分层，自动位置避让已保存的主卡及详情岛。尚未收到保存确认的手动拖动位置也必须保留。正交连线避让第三方卡片，平行关系分配不同主体通道；不删除真实关系来换取整洁。无法避障或达到路由预算时仍显示连线及警告，复杂图与用户手动重叠不承诺绝对零交叉。
+
+换项目 / view / root 后，待节点测量和非零容器就绪自动定位新图。相同 context 恢复正常用户 viewport，不强制重排；若恢复位置令所有节点屏外，则自动适应。新细节岛及新展开结构按实际测量边界自动显现，不依赖额外适应点击；选择不反复移动相机。空图和迟到的旧 context 不重复调整。此前相机 / 容器修复的历史证据见 [画布恢复](CANVAS_RECOVERY.md)，不能代替本轮真实结构增减验收。
 
 每个图视图分别保存 zoom / canvas pan，细节岛按视图保存来源节点与场景位置；重新打开项目时恢复有效状态。重新分析或加载旧结果时，引用已消失节点的岛会被安全清理。Outdated 状态允许继续浏览旧图，并在 Overview、图和源码区域保留警告。
 

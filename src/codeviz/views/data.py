@@ -28,7 +28,7 @@ def critical_data_slice(analysis: ProjectAnalysis, roots: tuple[str, ...],
     selected: list[CodeNode] = []
     root_by_node: dict[str, str] = {}
     for node in graph.nodes.values():
-        if node.kind != NodeKind.DATA:
+        if node.kind != NodeKind.DATA or node.metadata.get("generic_data"):
             continue
         symbol_id = node.metadata.get("symbol_id")
         symbol = analysis.symbol_index.entries.get(symbol_id) if isinstance(symbol_id, str) else None
@@ -39,6 +39,7 @@ def critical_data_slice(analysis: ProjectAnalysis, roots: tuple[str, ...],
         root_by_node[node.id] = owner_to_root[owner]
     selected_ids = set(root_by_node)
     edges = tuple(edge for edge in graph.edges
-                  if edge.type == EdgeType.DATA_FLOW and edge.source in selected_ids
+                  if edge.type == EdgeType.DATA_FLOW and not edge.metadata.get("generic_data")
+                  and edge.source in selected_ids
                   and edge.target in selected_ids)
     return CriticalDataSlice(tuple(selected), edges, root_by_node)

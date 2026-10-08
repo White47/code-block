@@ -14,7 +14,12 @@ from codeviz.views import DetailIslandState
 
 from . import theme
 from .canvas_scene import Point, Viewport
-from .controller import AnalysisStatus, AppController, SourceDocument
+from .controller import (
+    DETAIL_IDENTITY_ERRORS,
+    AnalysisStatus,
+    AppController,
+    SourceDocument,
+)
 from .graph_canvas import GraphCanvas
 from .i18n import translate
 from .preferences import SUPPORTED_LANGUAGES, PreferencesStore
@@ -1029,8 +1034,17 @@ class CodeVizApp:
                 detail = self.controller.detail_view(
                     kind, self._roots.get(kind), state.source_node_id)
             except ValueError as error:
-                if str(error) == "node has no local detail graph":
-                    self.controller.close_detail_island(state.id)
+                if str(error) in DETAIL_IDENTITY_ERRORS:
+                    # A valid island belonging to another root is retained but
+                    # not rendered in the current root's context.
+                    try:
+                        self.controller.detail_view(kind, None, state.source_node_id)
+                    except ValueError as identity_error:
+                        if str(identity_error) not in DETAIL_IDENTITY_ERRORS:
+                            raise
+                        self.controller.close_detail_island(state.id)
+                    else:
+                        continue
                 self.status_label.configure(
                     text=f"{self._t('No local details available')} · "
                          f"{state.source_node_id}: {error}")

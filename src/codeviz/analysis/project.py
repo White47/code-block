@@ -7,6 +7,7 @@ from codeviz.core import SourceAnchor
 from codeviz.semantic.components import SemanticAnalysis, build_semantic_analysis
 
 from .discovery import discover_python_files
+from .entries import GenericEntryCandidate, detect_generic_entries
 from .flow import FlowAnalysis, build_project_flow
 from .model import ModelAnalysis, build_project_model
 from .python import AnalysisIssue, ParsedFile, parse_python_file
@@ -25,6 +26,7 @@ class ProjectAnalysis:
     model: ModelAnalysis | None = None
     training: TrainingAnalysis | None = None
     semantic: SemanticAnalysis | None = None
+    generic_entries: tuple[GenericEntryCandidate, ...] = ()
 
 
 def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> ProjectAnalysis:
@@ -55,4 +57,5 @@ def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> P
     semantic = build_semantic_analysis(tuple(files), model, training)
     issues.extend(semantic.issues)
     return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues),
-                           resolution, flow, model, training, semantic)
+                           resolution, flow, model, training, semantic,
+                           detect_generic_entries(tuple(files), resolution.symbol_index))

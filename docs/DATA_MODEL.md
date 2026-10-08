@@ -6,6 +6,14 @@
 
 ## 2. SourceAnchor
 
+### 通用 Python 增量约定
+
+- `GenericEntryCandidate` 保存 `root_symbol_id`、`detection_kind`、confidence、evidence 与 SourceAnchor；入口结构识别不证明代码实际运行。
+- `LexicalScope` 是 `definition=False` 的结构 owner，不作为用户具名定义搜索结果。ID 使用可复算结构位置，不只依赖行号。
+- `ViewKind.FunctionFlow` 与训练 `Execution` 分开，即使根是同一函数，也拥有独立标签 / View State。
+- 实例 / callable 候选不改写 SymbolReference 的词法定义 ID；动态候选 CALLS 保留 Probable、未知和截断信息。
+- 普通 Data 代理及赋值 / 返回发生节点标记 `generic_data`、owner scope 和来源 symbol。DATA_FLOW 表示可能语法依赖，不是运行时值相等；ML 关键数据列表仍独立。
+
 ```text
 SourceAnchor {
   filePath: relative path
@@ -81,3 +89,7 @@ VisibleGraph 是查询结果，不是事实存储：包含 viewKind、rootIds、
 ## 9. SearchResult / RevealTarget
 
 Phase 9 的 `SearchResult` 只代表索引中的定义或带源码锚点的语义组件，包含 `id`、`source_kind`、`name`、`qualified_name`、`kind`、`scope`、`source_anchor` 与 `confidence`；`SearchResponse` 另给 `total_count` 和 `truncated`。未解析引用不被伪装成确定定义。`RevealTarget` 记录目标视图、根 ID、选中 ID 或无法定位的原因。关键变量搜索使用原 Symbol ID 查询，再显式关联对应 DataNode ID；语义组件使用真实组件 ID。搜索结果本身不创造新图事实。
+
+## 10. Desktop Session
+
+桌面会话 DTO 额外携带 backend 派生的 `hasAnalysis: boolean`；它不是持久化分析事实。`status=Outdated` 可以有 / 无可用 analysis，前端必须检查该位才能查询图或保存相关布局，不能仅依赖状态。具体生命周期见 [项目操作恢复](PROJECT_ACTION_RECOVERY.md)。
