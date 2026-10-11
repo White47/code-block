@@ -1,9 +1,10 @@
 import type { Anchor, Layout, ViewKind, ViewState } from '../types';
 import { viewKinds } from '../types';
+import { containsSourcePath, remapSourcePath } from './explorerState';
 export interface Tab { id: string; kind: 'Overview' | 'graph' | 'source' | 'settings'; view?: ViewKind; anchor?: Anchor; returnTabId?: string }
 export interface Workspace { tabs: Tab[]; active: string | null; selectedId: string | null; roots: Layout['graphRoots']; side: Anchor | null }
 export const initialState: Workspace = { tabs: [{ id: 'Overview', kind: 'Overview' }], active: 'Overview', selectedId: null, roots: {}, side: null };
-export type Action = { type: 'open'; tab: Tab } | { type: 'close'; id: string } | { type: 'select'; id: string | null } | { type: 'side'; anchor: Anchor | null } | { type: 'reveal'; view: ViewKind; root: string | null; selected: string | null } | { type: 'restore'; state: Workspace };
+export type Action = { type: 'open'; tab: Tab } | { type: 'close'; id: string } | { type: 'select'; id: string | null } | { type: 'side'; anchor: Anchor | null } | { type: 'reveal'; view: ViewKind; root: string | null; selected: string | null } | { type: 'restore'; state: Workspace } | { type: 'project-entry'; oldPath: string; newPath: string | null; affectedPaths: string[]; caseSensitive?: boolean };
 export function reducer(state: Workspace, action: Action): Workspace {
   switch (action.type) {
     case 'open': {
@@ -24,6 +25,21 @@ export function reducer(state: Workspace, action: Action): Workspace {
     case 'side': return { ...state, side: action.anchor };
     case 'reveal': return { ...reducer(state, { type: 'open', tab: viewTab(action.view) }), selectedId: action.selected, roots: { ...state.roots, [action.view]: action.root } };
     case 'restore': return action.state;
+    case 'project-entry': {
+      const caseSensitive = typeof action.caseSensitive === 'boolean' ? action.caseSensitive : true;
+      const affected = (path: string) => [action.oldPath, ...action.affectedPaths].some(parent => containsSourcePath(parent, path, caseSensitive));
+      const remap = (anchor: Anchor): Anchor | null => !affected(anchor.filePath) ? anchor : action.newPath === null ? null : { ...anchor, filePath: remapSourcePath(anchor.filePath, action.oldPath, action.newPath, caseSensitive) };
+      const identities = new Map<string, string>();
+      const tabs = state.tabs.flatMap(tab => {
+        if (!tab.anchor) return [tab];
+        const anchor = remap(tab.anchor); if (!anchor) return [];
+        const id = sourceTab(anchor).id; identities.set(tab.id, id); return [{ ...tab, id, anchor }];
+      });
+      const uniqueTabs = [...new Map(tabs.map(tab => [tab.id, tab])).values()]
+        .map(tab => ({ ...tab, returnTabId: tab.returnTabId ? identities.get(tab.returnTabId) ?? tab.returnTabId : undefined }));
+      const active = state.active ? identities.get(state.active) ?? state.active : null;
+      return { ...state, tabs: uniqueTabs, active: uniqueTabs.some(tab => tab.id === active) ? active : uniqueTabs.at(-1)?.id ?? null, side: state.side ? remap(state.side) : null };
+    }
   }
 }
 export function viewTab(view: ViewKind): Tab { return { id: view, kind: view === 'Overview' ? 'Overview' : 'graph', view }; }

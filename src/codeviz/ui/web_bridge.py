@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import sys
 from collections.abc import Callable
 from dataclasses import replace
 from hashlib import sha256
@@ -11,6 +12,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from threading import RLock
 from typing import Protocol, TypeVar
+from uuid import uuid4
 
 from codeviz import navigation
 from codeviz.analysis.discovery import _normalize_ignore
@@ -22,6 +24,7 @@ from codeviz.search import search_project
 from .controller import AnalysisStatus, AppController
 from .preferences import PreferencesStore
 from .presenter import build_inspector, build_overview, build_problems
+from .project_explorer import ProjectExplorerService, ProjectFileError
 from .source_editing import MAX_SOURCE_BYTES, SourceEditingError
 from .web_contract import (
     JsonObject,
@@ -151,6 +154,7 @@ class DesktopBridge:
         self._preferences_store = preferences_store or PreferencesStore(
             self._cache_store.data_dir)
         self._lock = RLock()
+        self._project_explorer = ProjectExplorerService()
         self._recent_projects_snapshot: tuple[Path, ...] = ()
         self._window: ProjectWindow | None = None
         self._folder_dialog_type = 20
@@ -256,6 +260,9 @@ class DesktopBridge:
         except Exception:
             self._controller.ignore_paths = previous
             raise
+        epoch = uuid4().hex
+        self._controller._source_editing.bind_project(root, epoch)
+        self._project_explorer.bind_project(root, epoch)
         self._sanitize_view_state()
 
     def _settings(self) -> JsonObject:
@@ -391,7 +398,9 @@ class DesktopBridge:
         return self._session_snapshot()
 
     def _session_snapshot(self) -> JsonObject:
-        return session_payload(*self._snapshot)
+        payload = session_payload(*self._snapshot)
+        payload["fileSystemCaseSensitive"] = sys.platform != "win32"
+        return payload
 
     def _analysis(self) -> ProjectAnalysis:
         if self._controller.analysis is None:
@@ -546,6 +555,96 @@ class DesktopBridge:
                 _source_anchor(anchor)))
 
         return self._call(operation, invalid_message="The source document request is invalid.")
+
+    @staticmethod
+    def _explorer_request(request: object, required: set[str],
+                          optional: set[str] | None = None) -> dict[str, object]:
+        if (type(request) is not dict or not required.issubset(request)
+                or not set(request).issubset(required | (optional or set()))):
+            raise ValueError("file request has unexpected or missing fields")
+        return request
+
+    @staticmethod
+    def _explorer_project(request: dict[str, object]) -> str:
+        return _string(request["projectPath"], "projectPath", max_length=_MAX_PATH_LENGTH)
+
+    def list_project_directory(self, request: object) -> JsonObject:
+        def operation() -> JsonObject:
+            payload = self._explorer_request(request, {"projectPath", "directory"},
+                                             {"projectEpoch", "cursor"})
+            return self._project_explorer.list_directory(
+                self._explorer_project(payload),
+                _string(payload["directory"], "directory", allow_empty=True),
+                _optional_string(payload.get("projectEpoch"), "projectEpoch"),
+                _optional_string(payload.get("cursor"), "cursor"))
+
+        return self._call(operation, invalid_message="The directory request is invalid.")
+
+    def _project_files_changed(self, affected_paths: tuple[str, ...]) -> None:
+        self._controller._source_editing.invalidate_paths(affected_paths)
+        if self._controller.analysis is not None:
+            self._controller.status = AnalysisStatus.OUTDATED
+            self._controller.outdated_reasons = tuple(dict.fromkeys(
+                (*self._controller.outdated_reasons, "project files changed; reanalysis required")))
+
+    def _file_mutation(self, operation: Callable[[], JsonObject]) -> JsonObject:
+        try:
+            result = operation()
+        except ProjectFileError as error:
+            if error.affected_paths:
+                self._project_files_changed(error.affected_paths)
+            raise
+        affected = result["affectedPaths"]
+        if type(affected) is not list or any(type(path) is not str for path in affected):
+            raise RuntimeError("invalid file service result")
+        self._project_files_changed(tuple(str(path) for path in affected))
+        return result
+
+    def create_project_entry(self, request: object) -> JsonObject:
+        def operation() -> JsonObject:
+            payload = self._explorer_request(request, {
+                "projectPath", "projectEpoch", "parent", "parentRevision", "name", "kind"})
+            return self._file_mutation(lambda: self._project_explorer.create_entry(
+                self._explorer_project(payload), _string(payload["projectEpoch"], "projectEpoch"),
+                _string(payload["parent"], "parent", allow_empty=True),
+                _string(payload["parentRevision"], "parentRevision", max_length=128),
+                _string(payload["name"], "name", allow_empty=True), _string(payload["kind"], "kind")))
+
+        return self._write_call(operation, invalid_message="The create request is invalid.")
+
+    def prepare_project_entry_operation(self, request: object) -> JsonObject:
+        def operation() -> JsonObject:
+            payload = self._explorer_request(request, {
+                "projectPath", "projectEpoch", "path", "revision", "operation"},
+                {"newName", "destinationDirectory", "destinationRevision"})
+            action = _string(payload["operation"], "operation")
+            fields = {"rename": {"newName"}, "delete": set(),
+                      "move": {"destinationDirectory", "destinationRevision"}}
+            if (action not in fields or set(payload) - {
+                    "projectPath", "projectEpoch", "path", "revision", "operation"}
+                    != fields[action]):
+                raise ValueError("unexpected or missing operation target")
+            return self._project_explorer.prepare_operation(
+                self._explorer_project(payload), _string(payload["projectEpoch"], "projectEpoch"),
+                _string(payload["path"], "path"),
+                _string(payload["revision"], "revision", max_length=128), action,
+                _string(payload["newName"], "newName", allow_empty=True)
+                if "newName" in payload else None,
+                _string(payload["destinationDirectory"], "destinationDirectory", allow_empty=True)
+                if action == "move" else None,
+                _string(payload["destinationRevision"], "destinationRevision", max_length=128)
+                if action == "move" else None)
+
+        return self._write_call(operation, invalid_message="The file operation request is invalid.")
+
+    def apply_project_entry_operation(self, request: object) -> JsonObject:
+        def operation() -> JsonObject:
+            payload = self._explorer_request(request, {"projectPath", "projectEpoch", "operationToken"})
+            return self._file_mutation(lambda: self._project_explorer.apply_operation(
+                self._explorer_project(payload), _string(payload["projectEpoch"], "projectEpoch"),
+                _string(payload["operationToken"], "operationToken", max_length=128)))
+
+        return self._write_call(operation, invalid_message="The file operation token is invalid.")
 
     def save_source_document(self, request: object) -> JsonObject:
         def operation() -> JsonObject:

@@ -6,7 +6,7 @@ export interface Anchor { filePath: string; startLine: number; startColumn: numb
 export interface VisibleNode { id: string; displayName: string; codeName: string | null; role: string | null; confidence: string; sourceAnchors: Anchor[]; semanticComponentIds: string[]; codeNodeIds: string[]; memberIds: string[]; metadata: Record<string, string | number | boolean | (number | null)[]> }
 export interface VisibleEdge { source: string; target: string; type: string; confidence: string; sourceAnchors: Anchor[]; codeEdgeIds: string[]; semanticComponentIds: string[] }
 export interface Graph { viewKind: ViewKind; nodes: VisibleNode[]; edges: VisibleEdge[]; rootIds: string[]; layoutKind: string; layoutHints: Record<string, Point>; legend: { type: string; label: string; style: string }[]; hiddenCounts: Record<string, number>; queryContext: { controlMode?: 'structure' | 'relations' | 'none'; structureDepth?: number; canExpand?: boolean; depthLimit?: boolean; hasMore?: boolean; budgetTruncated?: boolean }; issues: { code: string; message: string }[] }
-export interface Session { projectPath: string | null; status: 'NotAnalyzed' | 'Analyzing' | 'Ready' | 'Partial' | 'Outdated' | 'Failed'; hasAnalysis: boolean; outdatedReasons: string[]; cacheIssue: string | null; recentProjects: string[] }
+export interface Session { projectPath: string | null; fileSystemCaseSensitive?: boolean; status: 'NotAnalyzed' | 'Analyzing' | 'Ready' | 'Partial' | 'Outdated' | 'Failed'; hasAnalysis: boolean; outdatedReasons: string[]; cacheIssue: string | null; recentProjects: string[] }
 export interface Preferences { language: Language; issue: string | null }
 export interface AnalysisSettings { ignorePaths: string[]; issue: string | null }
 export interface CacheInfo { dataDir: string; analysisPath: string | null; exists: boolean; status: Session['status']; outdatedReasons: string[]; cacheIssue: string | null }
@@ -17,12 +17,28 @@ export interface Problem { code: string; message: string; filePath: string | nul
 export interface Source { filePath: string; text: string; startLine: number; endLine: number }
 export interface EditableSource { projectPath: string; filePath: string; text: string; revision: string; encoding: string; newline: 'LF' | 'CRLF' | 'CR' | 'Mixed'; readOnlyReason: string | null }
 export interface SaveSourceRequest { projectPath: string; filePath: string; text: string; revision: string }
+export interface ProjectEntry { path: string; name: string; kind: 'file' | 'directory' | 'link' | 'other'; revision: string; readOnlyReason: string | null; canOpen: boolean; canCreate: boolean; canRename: boolean; canDelete: boolean }
+export interface ProjectDirectoryRequest { projectPath: string; directory: string; projectEpoch?: string; cursor?: string | null }
+export interface ProjectDirectory { projectPath: string; projectEpoch: string; directory: string; directoryRevision: string; entries: ProjectEntry[]; nextCursor: string | null }
+export interface CreateProjectEntryRequest { projectPath: string; projectEpoch: string; parent: string; parentRevision: string; name: string; kind: 'file' | 'directory' }
+export interface PrepareProjectEntryRequest { projectPath: string; projectEpoch: string; path: string; revision: string; operation: 'rename' | 'delete' | 'move'; newName?: string; destinationDirectory?: string; destinationRevision?: string }
+export interface PreparedProjectEntry { operationToken: string; operation: 'rename' | 'delete' | 'move'; path: string; newPath: string | null; affectedPaths: string[] }
+export interface ProjectEntryResult { operation: 'create' | 'rename' | 'delete' | 'move'; oldPath: string | null; newPath: string | null; affectedPaths: string[] }
 export interface Reveal { viewKind: ViewKind | null; rootId: string | null; selectedId: string | null; reason: string | null }
 export interface SearchResult { id: string; sourceKind: string; name: string; qualifiedName: string; kind: string; scope: string; sourceAnchor: Anchor; confidence: string; revealTarget: Reveal }
 export interface SearchResponse { results: SearchResult[]; totalCount: number; truncated: boolean }
 export interface Island { id: string; viewKind: ViewKind; sourceNodeId: string; position: Point | null }
 export interface ViewState { activeView: ViewKind | null; selectedId: string | null; openTabs: string[]; graphRoots: Partial<Record<ViewKind, string | null>>; expandedIds: string[]; positions: Record<string, Point>; positionsByView: Partial<Record<ViewKind, Record<string, Point>>>; zoom: number; pan: Point; viewportByView: Partial<Record<ViewKind, { zoom: number; pan: Point }>>; detailIslands: Island[]; filters: string[] }
 export interface Layout { activeView: ViewKind | null; selectedId: string | null; openTabs: string[]; graphRoots: Partial<Record<ViewKind, string | null>> }
+export interface ProjectBridgeMethods {
+  list_project_directory: { args: [ProjectDirectoryRequest]; data: ProjectDirectory };
+  create_project_entry: { args: [CreateProjectEntryRequest]; data: ProjectEntryResult };
+  prepare_project_entry_operation: { args: [PrepareProjectEntryRequest]; data: PreparedProjectEntry };
+  apply_project_entry_operation: { args: [{ projectPath: string; projectEpoch: string; operationToken: string }]; data: ProjectEntryResult };
+}
+// Optional project browsing is an extension; legacy native bridge contracts
+// and typed adapters remain compatible without implementing the extension.
+export type AllBridgeMethods = BridgeMethods & ProjectBridgeMethods;
 export interface BridgeMethods {
   open_source_document: { args: [string, Anchor]; data: EditableSource };
   save_source_document: { args: [SaveSourceRequest]; data: EditableSource };

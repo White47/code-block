@@ -10,7 +10,7 @@ Python-first 的代码模块可视化与程序理解项目。目标是从源码�
 
 桌面主入口采用 React Flow + pywebview 原生窗口。Windows 需要预先安装系统原生 **Microsoft Edge WebView2 Runtime**，打包目录不内置该系统运行时。生产前端 JS、CSS 等资源全部随应用分发，可离线使用，无 CDN。静态服务只绑定随机 loopback 端口、只提供 frontend 资源根；项目源码和应用 API 不通过 HTTP 暴露，应用操作经 pywebview bridge 完成。浏览器打开 Vite 页面仅用于前端开发，不能替代原生窗口。
 
-本轮源码编辑 PC 包：关闭旧应用，运行 `dist/monaco-source-editing/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录，不要只复制 exe。该包沿用架构详情与普通 Python 能力；编辑增量尚未提交或推送。此前 `dist/architecture-detail-routing/CodeViz/CodeViz.exe` 等只读体验包作为历史产物保留。复杂图仍可能连线交叉，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。
+本轮资源管理器 PC 包：关闭旧应用，运行 `dist/project-explorer/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录，不要只复制 exe。包含彩色源码编辑、真实文件树、新建／改名／回收站删除和树内拖拽／菜单移动；沿用架构详情与普通 Python 能力。源码、隔离 wheel 和 EXE 已通过原生验收，改动尚未提交或推送。此前 `dist/monaco-source-editing/CodeViz/CodeViz.exe`、`dist/architecture-detail-routing/CodeViz/CodeViz.exe` 等体验包作为历史产物保留。复杂图仍可能连线交叉，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。
 
 从仓库根目录准备并启动（Python 3.11+、Node.js 22，首次安装与构建需获取依赖）：
 
@@ -56,6 +56,8 @@ npm --prefix frontend run dev
 分析核心安装无需 `[desktop]`，基础依赖为空，不强制安装 Linux GTK / Qt GUI 系统库。desktop 固定 pywebview 6.2.1，packaging 固定 PyInstaller 6.22.3 与 setuptools 84.0.0；这是直接工具版本锁定，不是传递依赖的完整哈希锁。当前原生入口显式使用 Windows Edge Chromium，Linux / macOS 桌面后端尚未实现；分析核心仍可独立跨平台使用。
 
 默认使用简体中文，可在左侧 **设置 → 界面语言** 中切换“简体中文”或“English”，选择保存在应用数据目录，不会修改被分析项目。点击 **打开项目** 使用原生文件夹选择器；首次点击 **分析项目 / 重新分析** 才解析 `.py` 文件，之后若有效缓存存在则自动加载，不执行用户代码。发现变更时仍可查看带 Outdated 警告的旧图，并点 **重新分析** 更新。
+
+资源管理器扩展在现有左侧展示真实文件树，无需先分析即可展开目录、打开安全文本及侧边查看；提供新建文件/目录、重命名、回收站删除、刷新及树内拖拽／“移动到…”菜单。移动仅限同项目同卷，不覆盖目标、不自动修复 import。未保存内容使用保存/放弃/取消保护；保护路径可只读查看，不可修改。功能及最终验收见 [项目资源管理器](docs/PROJECT_EXPLORER.md) 和 [验收记录](docs/PROJECT_EXPLORER_VALIDATION.md)。回收站恢复在系统中进行，不提供永久删除回退。
 
 版本不兼容的缓存可能只保留布局、没有可用分析；此时需重新分析，不能查询旧图。文件夹选择等待选择或取消；项目写入和分析等待后台真实完成后才允许切换，避免晚到写入影响其他项目。布局保存的真实失败会提示，不应阻断显式打开或重新分析。异常停滞尚无后台取消协议，可正常关闭后重启应用；勿将单纯前端超时当作后台取消。修复与验证记录见 [项目操作恢复](docs/PROJECT_ACTION_RECOVERY.md)。
 

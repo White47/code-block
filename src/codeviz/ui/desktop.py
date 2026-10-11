@@ -24,6 +24,8 @@ _API_METHODS = (
     "move_node", "save_viewport", "expand", "collapse", "open_detail_island",
     "move_detail_island", "close_detail_island", "get_problems",
     "open_source_document", "save_source_document", "approve_close", "cancel_close",
+    "list_project_directory", "create_project_entry", "prepare_project_entry_operation",
+    "apply_project_entry_operation",
 )
 _API_ARITIES = {
     "get_session": (0, 0), "open_project": (1, 1), "choose_project": (0, 0),
@@ -38,6 +40,8 @@ _API_ARITIES = {
     "close_detail_island": (1, 1), "get_problems": (0, 0),
     "open_source_document": (2, 2), "save_source_document": (1, 1),
     "approve_close": (1, 1), "cancel_close": (1, 1),
+    "list_project_directory": (1, 1), "create_project_entry": (1, 1),
+    "prepare_project_entry_operation": (1, 1), "apply_project_entry_operation": (1, 1),
 }
 _CALLBACK_TOKEN = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _CSP = (

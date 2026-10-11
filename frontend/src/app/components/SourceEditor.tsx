@@ -16,15 +16,15 @@ export default function SourceEditor({ document, anchor, onChange, onSave, locke
     // A basic accessible editor remains available if browser layout APIs are absent.
     if (!window.matchMedia || !globalThis.ResizeObserver) return;
     let live = true; let cleanup: (() => void) | undefined;
-    void import('../monaco').then(({ monaco }) => {
+    void import('../monaco').then(({ monaco, sourceLanguage }) => {
       if (!live || !host.current) return;
       const current = latest.current.document;
       let model = getSourceModel(current.key);
       if (!model || model.isDisposed()) {
-        model = monaco.editor.createModel(current.text, 'python', monaco.Uri.parse(`codeviz-source://document/${encodeURIComponent(current.key)}.py`));
+        model = monaco.editor.createModel(current.text, sourceLanguage(current.filePath), monaco.Uri.parse(`codeviz-source://document/${encodeURIComponent(current.key)}/${encodeURIComponent(current.filePath)}`));
         retainSourceModel(current.key, model);
       }
-      const view = monaco.editor.create(host.current, { model, theme: 'vs-dark', automaticLayout: true,
+      const view = monaco.editor.create(host.current, { model, theme: 'codeviz-source', automaticLayout: true,
         readOnly: latest.current.locked || Boolean(current.readOnlyReason), fontFamily: 'Cascadia Code, Consolas, monospace', fontSize: 12,
         minimap: { enabled: false }, lineNumbers: 'on', folding: true, scrollBeyondLastLine: false,
         ariaLabel: current.filePath, padding: { top: 12 }, wordWrap: 'off' });

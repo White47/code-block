@@ -1,5 +1,14 @@
 import type { Language } from '../types';
 const text = {
+  moveEntry: ['移动到…', 'Move to…'], destinationDirectory: ['目标目录', 'Destination directory'], moveSubmit: ['移动', 'Move'], projectRoot: ['项目根目录', 'Project root'],
+  moveRelativeHint: ['输入项目内相对目录；留空表示项目根目录。', 'Enter a relative project directory; leave empty for the project root.'],
+  moveSourceBlocked: ['此条目不可移动。', 'This entry cannot be moved.'], moveTargetBlocked: ['目标必须是可写目录。', 'Choose a writable directory.'],
+  moveCollisionBlocked: ['目标目录已有同名条目。', 'The destination already contains an entry with this name.'],
+  moveDescendantBlocked: ['不能移动到自身或子目录。', 'Cannot move into itself or a descendant.'], moveSameBlocked: ['条目已在此目录中。', 'The entry is already in this directory.'], moveDropHint: ['放下以移动到此目录。', 'Drop to move into this directory.'],
+  projectFiles: ['项目文件', 'Project files'], newFile: ['新建文件', 'New file'], newFolder: ['新建文件夹', 'New folder'], explorerRefresh: ['刷新', 'Refresh'], collapseAll: ['全部折叠', 'Collapse all'],
+  renameEntry: ['重命名', 'Rename'], deleteEntry: ['删除', 'Delete'], explorerSide: ['侧边打开', 'Open to side'], entryName: ['名称', 'Name'], createEntry: ['创建', 'Create'], moveToRecycle: ['移到回收站', 'Move to recycle bin'],
+  recyclePrompt: ['确认将此项目条目移到回收站？', 'Move this project entry to the recycle bin?'], explorerLoading: ['正在加载文件…', 'Loading files…'], explorerRetry: ['重试', 'Retry'], explorerMore: ['加载更多', 'Load more'], explorerEmpty: ['空文件夹', 'Empty folder'],
+  explorerUnavailable: ['桌面服务暂不支持项目文件浏览。', 'Project browsing is unavailable in this desktop bridge.'], explorerRootProtected: ['项目根目录不能移动、重命名或删除。', 'The project root cannot be moved, renamed or deleted.'],
   saveSource: ['保存', 'Save'], savingSource: ['保存中…', 'Saving…'], discardSource: ['放弃', 'Discard'], cancelSource: ['取消', 'Cancel'],
   unsavedSource: ['源码有未保存的修改', 'Unsaved source changes'], unsavedSourcePrompt: ['保存修改后继续，或放弃修改？', 'Save changes before continuing, or discard them?'],
   sourceStale: ['图与源码行定位可能已过期；保存后请重新分析。', 'Graph and source line anchors may be stale. Re-analyze after saving.'],

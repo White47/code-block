@@ -1,10 +1,14 @@
 # 已知限制
 
+## 资源管理器增量状态（2026-10-11）
+
+真实文件树、新建文件／目录、改名、回收站删除及树内拖拽／菜单移动已完成三入口原生验收，见 [资源管理器验收](PROJECT_EXPLORER_VALIDATION.md)。移动只支持当前项目内同卷无覆盖操作；不能把外部系统文件拖入，不做复制后删除 fallback，也不自动修复 Python import。保护路径／保护源子树、链接、重名及过期版本明确拒绝。移动后旧图保持但标过期，需显式重新分析。Git 徽标、监听器、应用内文件操作 Undo、永久删除回退与完整 IDE 功能不在本轮范围内。
+
 ## 源码编辑增量状态（2026-10-08）
 
 React PC 源码区已经使用离线 Monaco 并支持显式保存，源码／安装 wheel／冻结 PC 均有真实验收证据，见 [编辑验收](SOURCE_EDITING_VALIDATION.md)。下方“不编辑源码”描述属于旧只读／Tk 基线，不适用于本轮 React 产物。
 
-本轮不提供终端、调试器、Python 语言服务器、自动保存、新建任意文件或强制覆盖。混合换行、不可安全往返的编码、链接／reparse traversal 等目标可以只读并说明原因。跨平台检查与原子替换不能保证恶意外部并发修改下的系统级 CAS；强制结束进程后的未保存恢复不在范围内。彩色语法不等于 Pylance 语义分析。详见 [源码编辑合同](SOURCE_EDITING.md)。
+不提供终端、调试器、Python 语言服务器、自动保存、项目外任意写入或强制覆盖；当前项目内的新建通过独占 Explorer 接口完成，不由源码保存接口补建。混合换行、不可安全往返的编码、链接／reparse traversal 等目标可以只读并说明原因。跨平台检查与原子替换不能保证恶意外部并发修改下的系统级 CAS；强制结束进程后的未保存恢复不在范围内。彩色语法不等于 Pylance 语义分析。详见 [源码编辑合同](SOURCE_EDITING.md)。
 
 ## 通用 Python 增量口径（2026-10-05）
 
@@ -60,7 +64,7 @@ React 的 Inspector 暂未把所有关系 / 成员 ID 转换为易读名称，�
 - Python + PyTorch 优先，其他语言只保留 Adapter 接口。
 - 静态推断不等于 runtime observation；shape / dtype / device 只展示静态可确认值。
 - DDP、FSDP、DeepSpeed、复杂 distributed、自定义 autograd 深层分析、复杂 hooks、完整 autograd graph、动态 graph surgery 后置。
-- `.ipynb`、YAML、JSON、TOML、Hydra 等只预留接口，首版重点 `.py`。
+- `.ipynb`、YAML、JSON、TOML、Hydra 的语义分析只预留接口，首版重点 `.py`；资源管理器可查看/编辑符合安全文本策略的配置和文档，但不意味着分析这些格式。
 - 复杂动态 import、monkey patch、反射和运行时生成代码可能保持 Unresolved。
 - 语义组件不是类 / 函数的一一映射，某些 Probable 结果必须保留原名。
 

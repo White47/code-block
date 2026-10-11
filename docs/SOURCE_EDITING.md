@@ -27,11 +27,12 @@ interface SaveSourceRequest {
 // approve_close(requestId) / cancel_close(requestId): each takes 1 argument
 ```
 
-projectPath 必须匹配当前已打开项目的真实身份；filePath 是项目相对路径，不接受绝对路径、路径穿越、NUL、网络路径或非 `.py` 文件。revision 绑定规范化项目／文件身份、原始 bytes 指纹与项目打开 epoch；A → B → A 后旧 revision 也失效，而非行号或修改时间单独决定。服务在内存保留有界的原始编码／版本 metadata，不把完整源码写入 Analysis Cache 或 View State。
+projectPath 必须匹配当前已打开项目的真实身份；filePath 是项目相对路径，不接受绝对路径、路径穿越、NUL、网络路径或不在安全文本策略内的文件。2026-10-09 用户批准 Explorer 后，`.py` 之外的常见文本由独立类型／编码策略处理，不能泛用 Python coding cookie。revision 绑定规范化项目／文件身份、原始 bytes 指纹与项目打开 epoch；A → B → A 后旧 revision 也失效，而非行号或修改时间单独决定。服务在内存保留有界的原始编码／版本 metadata，不把完整源码写入 Analysis Cache 或 View State。
 
 ## 保存规则
 
-- 只保存当前项目内已存在且安全可核验的常规 `.py` 文件，读写上限 5,000,000 bytes。
+- 只保存当前项目内已存在、安全可核验且符合显式文本类型策略的常规文件，读写上限 5,000,000 bytes；Explorer 创建路径是另一个独占创建接口，不由 save 接口补建文件。
+- `.git/.venv/venv/node_modules` 及后代保持只读，包括原 `.py` 保存入口。常见文本支持严格 UTF-8／UTF-8 BOM／UTF-16 BOM 的 bytes 往返；拒绝 UTF-32、二进制／控制数据与不支持的编码。详见 [PROJECT_EXPLORER](PROJECT_EXPLORER.md)。
 - 编辑读取必须使用 Python 源码编码检测并严格解码；不以 replacement 字符偷偷改写原数据。支持的可往返编码、BOM 和一致换行保留；混合换行或无法安全往返时只读并说明原因。
 - 路径各级的 symlink／junction 与多硬链接文件不可编辑；目录或目标身份变化拒绝保存。旧只读查看策略保持兼容。
 - 保存前以及同目录临时文件完成后再次核验目标原始内容、文件身份、项目和父目录。外部修改／删除／替换时返回 `SOURCE_CONFLICT`；不提供强制覆盖按钮。
@@ -65,7 +66,7 @@ projectPath 必须匹配当前已打开项目的真实身份；filePath 是项�
 
 Monaco 固定版本、Python language、editor Worker 和字体随 Vite／wheel／冻结包本地分发。CSP 仅放行同源 Worker，继续禁止远程资源、任意 frame、popup 和导航；不使用 CDN、远程 loader、unsafe-eval 或 blob Worker 放宽策略。
 
-首版不含终端、调试器、语言服务器、自动保存、自动重构、新建任意文件。彩色语法不等于 Python/Pylance 语义推断。强制结束进程时恢复未保存草稿不在本轮范围。
+首版不含终端、调试器、语言服务器、自动保存或自动重构。2026-10-09 用户另行批准项目范围内的文件／目录创建、改名与回收站删除，其独立权限和实施状态见 [PROJECT_EXPLORER](PROJECT_EXPLORER.md)；仍不提供任意路径写入。彩色语法不等于 Python/Pylance 语义推断。强制结束进程时恢复未保存草稿不在本轮范围。
 
 ## 验收
 

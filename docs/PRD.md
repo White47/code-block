@@ -34,6 +34,8 @@
 
 首版不执行项目代码，不承诺真实 runtime tensor shape / dtype / device，不实现完整 autograd graph、DDP/FSDP/DeepSpeed、复杂 hooks、动态 graph surgery、通用无限层级系统或源码重构。2026-10-08 用户批准在现有 PC 应用加入 Monaco 源码编辑 MVP，替代原“无代码编辑器”边界：仅显式安全保存、未保存保护、保存后分析过期，不包含终端、调试器或语言服务器；具体合同见 [SOURCE_EDITING](SOURCE_EDITING.md)。
 
+2026-10-09 用户批准真实项目 Explorer：按需目录树、打开常见文本、新建文件／文件夹、重命名和回收站删除，基础功能完成后加入树内拖拽移动。沿用现有 PC 界面和草稿保护，不升级成完整 IDE，不放宽静态分析／不上传／不运行代码边界。保护目录首版只读，合同与实施门禁见 [PROJECT_EXPLORER](PROJECT_EXPLORER.md)。
+
 ## 5. 成功标准
 
 MVP 不以 AST 节点数量为成功标准，而以第一次看到项目的人能否完成三条黄金路径为标准：

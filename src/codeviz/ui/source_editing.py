@@ -5,22 +5,27 @@ against an uncooperative process replacing directories concurrently.
 """
 
 import codecs
-import io
 import json
 import os
-import re
 import stat
 import sys
 import tempfile
 from collections import OrderedDict
 from dataclasses import dataclass
 from hashlib import sha256
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 from threading import RLock
-from tokenize import detect_encoding
 from uuid import uuid4
 
 from codeviz.source_handles import opened_file_path
+
+from .project_file_policy import (
+    decode_text,
+    encode_text,
+    is_text_file,
+    protected_path_reason,
+    relative_path,
+)
 
 MAX_SOURCE_BYTES = 5_000_000
 _MAX_DOCUMENTS = 128
@@ -162,12 +167,22 @@ class SourceEditingService:
         self._epoch = uuid4().hex
         self._documents: OrderedDict[str, _Baseline] = OrderedDict()
 
-    def bind_project(self, root: Path) -> None:
+    def bind_project(self, root: Path, epoch: str | None = None) -> None:
         with self._lock:
             self._root = root
             self._root_identity = _identity(root.stat())
-            self._epoch = uuid4().hex
+            self._epoch = epoch if epoch is not None else uuid4().hex
             self._documents.clear()
+
+    def invalidate_paths(self, affected_paths: tuple[str, ...]) -> None:
+        with self._lock:
+            paths = (tuple(os.path.normcase(path).replace("\\", "/") for path in affected_paths)
+                     if sys.platform == "win32" else affected_paths)
+            for key, baseline in tuple(self._documents.items()):
+                file_path = (os.path.normcase(baseline.file_path).replace("\\", "/")
+                             if sys.platform == "win32" else baseline.file_path)
+                if any(file_path == path or file_path.startswith(path + "/") for path in paths):
+                    del self._documents[key]
 
     def _project(self, project_path: str) -> Path:
         root = self._root
@@ -184,14 +199,10 @@ class SourceEditingService:
 
     @staticmethod
     def _relative(file_path: str) -> str:
-        windows = PureWindowsPath(file_path)
-        parts = file_path.replace("\\", "/").split("/")
-        if (not file_path or len(file_path) > 4096 or "\x00" in file_path
-                or ":" in file_path or windows.drive or windows.root
-                or any(part in {"", ".", ".."} for part in parts)
-                or Path(file_path).is_absolute() or not file_path.endswith(".py")):
+        relative = relative_path(file_path)
+        if not is_text_file(relative):
             raise ValueError("invalid source path")
-        return "/".join(parts)
+        return relative
 
     @staticmethod
     def _directories(path: Path) -> tuple[tuple[int, int], ...]:
@@ -226,36 +237,25 @@ class SourceEditingService:
                 or (opened.st_size, opened.st_mtime_ns, opened.st_ctime_ns)
                 != (after.st_size, after.st_mtime_ns, after.st_ctime_ns)):
             raise SourceConflictError()
-        reason = None
-        if after.st_nlink != 1:
+        reason = protected_path_reason(relative)
+        if reason is None and after.st_nlink != 1:
             reason = "Files with multiple hard links cannot be edited."
-        elif not _writable(after):
+        elif reason is None and not _writable(after):
             reason = "The source file is read-only."
         snapshot = _Snapshot(sha256(content).hexdigest(), _identity(after), directories,
                              after.st_mode, _security(path))
         return content, snapshot, reason
 
     @staticmethod
-    def _decode(content: bytes) -> tuple[str, str, str, str | None]:
+    def _decode(content: bytes, relative: str = "source.py") -> tuple[str, str, str, str | None]:
         try:
-            encoding, _ = detect_encoding(io.BytesIO(content).readline)
-            text = content.decode(encoding, errors="strict")
-            if text.encode(encoding, errors="strict") != content:
-                raise _read_only()
-        except (SyntaxError, UnicodeError, LookupError):
+            return decode_text(relative, content)
+        except (SyntaxError, UnicodeError, LookupError, ValueError):
             raise _read_only() from None
-        ends = set(re.findall(r"\r\n|\r|\n", text))
-        newline = ("Mixed" if len(ends) > 1 else
-                   {"\n": "LF", "\r\n": "CRLF", "\r": "CR"}.get(next(iter(ends), "\n"), "LF"))
-        reason = {
-            "Mixed": "Mixed line endings cannot be edited safely.",
-            "CR": "CR-only line endings cannot be edited safely in this editor.",
-        }.get(newline)
-        return text, encoding, newline, reason
 
     def _document(self, relative: str, content: bytes, snapshot: _Snapshot,
                   reason: str | None, *, fresh: bool = False) -> EditableSource:
-        text, encoding, newline, encoding_reason = self._decode(content)
+        text, encoding, newline, encoding_reason = self._decode(content, relative)
         baseline = _Baseline(relative, snapshot, encoding, newline, reason or encoding_reason)
         revision = next((key for key, value in self._documents.items() if value == baseline), None)
         if fresh or revision is None:
@@ -275,6 +275,8 @@ class SourceEditingService:
                 content, snapshot, reason = self._read(root, relative)
                 self._project(project_path)
                 return self._document(relative, content, snapshot, reason)
+            except FileNotFoundError:
+                raise ValueError("source path does not exist") from None
             except OSError:
                 raise SourceEditingError("SOURCE_READ_ONLY", "Source could not be opened safely.") from None
 
@@ -305,10 +307,10 @@ class SourceEditingService:
             ending = {"LF": "\n", "CRLF": "\r\n", "CR": "\r"}[baseline.newline]
             committed = normalized.replace("\n", ending)
             try:
-                content = committed.encode(baseline.encoding, errors="strict")
+                content = encode_text(relative, committed, baseline.encoding)
                 if len(content) > MAX_SOURCE_BYTES:
                     raise ValueError("source exceeds size limit")
-                decoded, encoding, _, reason = self._decode(content)
+                decoded, encoding, _, reason = self._decode(content, relative)
                 if (decoded != committed or reason is not None
                         or codecs.lookup(encoding).name != codecs.lookup(baseline.encoding).name):
                     raise _read_only()

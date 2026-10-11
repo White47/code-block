@@ -1,4 +1,4 @@
-import type { BridgeMethods, Envelope } from '../types';
+import type { AllBridgeMethods as BridgeMethods, Envelope } from '../types';
 type Api = Partial<{ [K in keyof BridgeMethods]: (...args: BridgeMethods[K]['args']) => Promise<Envelope<BridgeMethods[K]['data']>> }>;
 // A frontend deadline cannot cancel native mutations. Keep their callers and
 // the project write queue pending until Python actually returns.
@@ -7,6 +7,7 @@ const projectMutations: ReadonlySet<keyof BridgeMethods> = new Set<keyof BridgeM
   'save_viewport', 'expand', 'collapse', 'open_detail_island',
   'move_detail_island', 'close_detail_island', 'set_analysis_settings',
   'save_source_document', 'approve_close', 'cancel_close',
+  'create_project_entry', 'prepare_project_entry_operation', 'apply_project_entry_operation',
 ]);
 declare global { interface Window { pywebview?: { api?: Api }; __codevizCloseReady?: boolean } }
 export class BridgeError extends Error {
