@@ -1,3 +1,5 @@
+import type { AssistantBridgeMethods } from './app/assistant/types';
+
 export const viewKinds = ['Overview', 'ProjectStructure', 'Architecture', 'Execution', 'FunctionFlow', 'Calls', 'DataFlow', 'Gradient', 'Symbol'] as const;
 export type ViewKind = typeof viewKinds[number];
 export type Language = 'zh-CN' | 'en';
@@ -38,7 +40,7 @@ export interface ProjectBridgeMethods {
 }
 // Optional project browsing is an extension; legacy native bridge contracts
 // and typed adapters remain compatible without implementing the extension.
-export type AllBridgeMethods = BridgeMethods & ProjectBridgeMethods;
+export type AllBridgeMethods = BridgeMethods & ProjectBridgeMethods & AssistantBridgeMethods;
 export interface BridgeMethods {
   open_source_document: { args: [string, Anchor]; data: EditableSource };
   save_source_document: { args: [SaveSourceRequest]; data: EditableSource };

@@ -1,5 +1,9 @@
 # 代码模块可视化
 
+2026-10-30 当前版本包含源码编辑、项目文件树、静态调用概览及聚焦上下游、项目级 AI 理解，以及精确搜索误报和项目预取过早截断修复。后端阶段门禁为1659通过/106跳过；前端未变，复用653通过/2待办的验证。真实 API 回答质量及完整原生交互的验收范围见[交付记录](docs/PROJECT_UNDERSTANDING_DELIVERY.md)；简略修复的原请求原因仍未确定，不能据此宣称完整项目覆盖。
+
+2026-10-29 项目级理解：先生成本地静态初稿，再由显式 AI 分析更新原项目概述、结构和架构；可切回静态结果，从模块准备细节问题并通过可信引用查看源码。AI 只分析与解释，不修改或执行目标源码；配置、授权和打开侧栏不自动发送，个人密钥仅内存保存。当前阶段验收、独立桌面产物及未完成的真实 API / 原生验证，以[项目理解交付记录](docs/PROJECT_UNDERSTANDING_DELIVERY.md)为准；操作见[助手指南](docs/CODE_AGENT_GUIDE.md)，历史包结论不自动继承到本轮。
+
 Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
 
 2026-10-08 源码编辑增量：React PC 源码标签与侧边源码已接入离线 Monaco，支持 Python 彩色语法、行号、查找替换、撤销、折叠和显式保存。修改后标签显示 `●`，点击“保存”或按 `Ctrl+S`；关闭最后一个源码视图、切换项目、重新分析或退出时提供保存／放弃／取消。外部文件变化拒绝覆盖并保留草稿；保存后旧图标为过期，需手动重新分析。混合换行、CR-only、链接、只读或不可安全往返的编码目标不可编辑。源码不会自动运行或上传，未保存草稿不在强制退出后恢复。下方只读描述属于早期／Tk 基线，React 编辑合同以 [SOURCE_EDITING.md](docs/SOURCE_EDITING.md) 为准。
@@ -10,7 +14,7 @@ Python-first 的代码模块可视化与程序理解项目。目标是从源码�
 
 桌面主入口采用 React Flow + pywebview 原生窗口。Windows 需要预先安装系统原生 **Microsoft Edge WebView2 Runtime**，打包目录不内置该系统运行时。生产前端 JS、CSS 等资源全部随应用分发，可离线使用，无 CDN。静态服务只绑定随机 loopback 端口、只提供 frontend 资源根；项目源码和应用 API 不通过 HTTP 暴露，应用操作经 pywebview bridge 完成。浏览器打开 Vite 页面仅用于前端开发，不能替代原生窗口。
 
-本轮资源管理器 PC 包：关闭旧应用，运行 `dist/project-explorer/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录，不要只复制 exe。包含彩色源码编辑、真实文件树、新建／改名／回收站删除和树内拖拽／菜单移动；沿用架构详情与普通 Python 能力。源码、隔离 wheel 和 EXE 已通过原生验收，改动尚未提交或推送。此前 `dist/monaco-source-editing/CodeViz/CodeViz.exe`、`dist/architecture-detail-routing/CodeViz/CodeViz.exe` 等体验包作为历史产物保留。复杂图仍可能连线交叉，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。
+本轮资源管理器 PC 包：关闭旧应用，运行 `dist/project-explorer/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录，不要只复制 exe。包含彩色源码编辑、真实文件树、新建／改名／回收站删除和树内拖拽／菜单移动；沿用架构详情与普通 Python 能力。该历史资源管理器包的源码、隔离 wheel 和 EXE 已通过当时的原生验收；当前版本状态以顶部交付记录为准。此前 `dist/monaco-source-editing/CodeViz/CodeViz.exe`、`dist/architecture-detail-routing/CodeViz/CodeViz.exe` 等体验包作为历史产物保留。复杂图仍可能连线交叉，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。
 
 从仓库根目录准备并启动（Python 3.11+、Node.js 22，首次安装与构建需获取依赖）：
 

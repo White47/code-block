@@ -1,5 +1,6 @@
 """The pywebview bridge is bounded, JSON-safe, and owns desktop state."""
 
+import inspect
 import json
 import math
 import os
@@ -11,6 +12,9 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from codeviz.analysis.project import analyze_project
+from codeviz.core import SourceAnchor
+from codeviz.persistence.fingerprint import fingerprint_project
 from codeviz.persistence.store import CacheStore
 from codeviz.ui.controller import AnalysisStatus, AppController
 from codeviz.ui.preferences import PreferencesStore
@@ -34,6 +38,13 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(response["schemaVersion"], 1)
         json.dumps(response)
         return response["data"]  # type: ignore[return-value]
+
+    def snapshot_pair(self, snapshot):
+        if hasattr(snapshot, "display"):
+            self.assertEqual(len(snapshot.display), 6)
+            return snapshot.project_epoch, snapshot.analysis_generation
+        self.assertEqual(len(snapshot), 8)
+        return snapshot[6], snapshot[7]
 
     def assert_invalid(self, response: dict[str, object]) -> None:
         self.assertFalse(response["ok"])
@@ -416,6 +427,9 @@ class DesktopBridgeTests(unittest.TestCase):
         }))
         self.assertEqual(self.assert_success(self.bridge.get_view_state())["activeView"], "Architecture")
         original = self.bridge._snapshot
+        published = self.controller.capture_assistant_context()
+        self.assertEqual(self.snapshot_pair(original),
+                         (published.project_epoch, published.analysis_generation))
         with self.bridge._lock:
             self.controller.status = AnalysisStatus.FAILED
             self.controller.project_root = None
@@ -423,6 +437,8 @@ class DesktopBridgeTests(unittest.TestCase):
             snapshot = self.bridge._session_snapshot()
             self.assertEqual(snapshot["projectPath"], str(self.fixture_root.resolve()))
             self.assertNotEqual(snapshot["status"], "Failed")
+            self.assertEqual((snapshot["projectEpoch"], snapshot["analysisGeneration"]),
+                             self.snapshot_pair(original))
 
     def test_layout_rejects_unknown_selection_and_roots_for_the_wrong_view(self) -> None:
         self.analyze_fixture()
@@ -508,6 +524,100 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertFalse(response["ok"])
         self.assertEqual(self.bridge._session_snapshot()["status"], "Failed")
         self.assertIsNotNone(self.controller.analysis)
+
+    def test_task2_cached_open_survives_eligible_mirror_failure_and_finishes_bindings(self):
+        class EligibleCommitMirror:
+            """One trusted slot; fail only on the cached eligible commit."""
+
+            def __init__(self, when):
+                self.when = when
+                self.current = None
+                self.armed = False
+                self.calls = 0
+                self.invalidated = None
+                self.eligible_attempted = None
+
+            def replace_current(self, identity):
+                if self.armed:
+                    self.calls += 1
+                    if self.calls == 1:
+                        self.invalidated = identity
+                    if identity.eligible:
+                        self.eligible_attempted = identity
+                    if self.calls == 2:
+                        if self.when == "after":
+                            self.current = identity
+                        raise RuntimeError("trusted eligible mirror failure")
+                self.current = identity
+
+        for when in ("before", "after"):
+            with self.subTest(eligible_mirror_failure=when), TemporaryDirectory() as temporary:
+                projects = Path(temporary).resolve()
+                first = projects / "first"
+                second = projects / "second"
+                first.mkdir()
+                second.mkdir()
+                (first / "run.py").write_text("def f(x):\n    return x + 1\n", encoding="utf-8")
+                (first / "ignored.py").write_text("secret = 1\n", encoding="utf-8")
+                (second / "other.py").write_text("value = 2\n", encoding="utf-8")
+                mirror = EligibleCommitMirror(when)
+                store = self.bridge._cache_store
+                controller = AppController(store, assistant_publication_mirror=mirror)
+                bridge = DesktopBridge(controller, store, self.preferences)
+                self.assert_success(bridge.open_project(str(first)))
+                self.assert_success(bridge.set_analysis_settings({"ignorePaths": ["ignored.py"]}))
+                self.assert_success(bridge.analyze())  # Actual CacheStore save.
+                self.assertIsNotNone(store.load_analysis(first))
+                self.assert_success(bridge.open_project(str(second)))
+                old = controller.capture_assistant_context()
+                self.assertEqual(controller.ignore_paths, ())
+                mirror.armed = True
+
+                opened = self.assert_success(bridge.open_project(str(first)))
+                self.assertEqual(opened["projectPath"], str(first))
+                self.assertIsNotNone(controller.analysis)
+                self.assertTrue(all(file.tree is None for file in controller.analysis.files))
+                self.assertEqual(controller.status,
+                                 AppController._result_status(controller.analysis))
+                self.assertIn(controller.status, (AnalysisStatus.READY, AnalysisStatus.PARTIAL))
+                self.assertEqual(controller.ignore_paths, ("ignored.py",))
+                self.assertEqual(self.assert_success(bridge.get_analysis_settings())["ignorePaths"],
+                                 ["ignored.py"])
+                self.assertEqual(self.assert_success(bridge.get_session())["status"],
+                                 controller.status.value)
+                self.assert_success(bridge.get_view("Architecture"))
+
+                current = controller.capture_assistant_context()
+                self.assertEqual(mirror.calls, 3)
+                self.assertFalse(mirror.invalidated.eligible)
+                self.assertEqual(mirror.invalidated.analysis_generation,
+                                 old.analysis_generation + 1)
+                self.assertTrue(mirror.eligible_attempted.eligible)
+                self.assertFalse(current.eligible)
+                self.assertIsNone(current.snapshot)
+                self.assertEqual(dict(current.navigation_facts), {})
+                self.assertEqual(dict(current.context_map), {})
+                self.assertEqual(current.status, controller.status)
+                self.assertEqual(current.root, first)
+                self.assertEqual(current.ignore_paths, ("ignored.py",))
+                self.assertEqual(current.analysis_generation, old.analysis_generation + 1)
+                self.assertNotEqual(current.project_epoch, old.project_epoch)
+                self.assertGreater(current.publication_revision,
+                                   mirror.eligible_attempted.publication_revision)
+                self.assertFalse(mirror.current.eligible)
+                self.assertEqual(mirror.current.publication_revision,
+                                 current.publication_revision)
+
+                listing = self.assert_success(bridge.list_project_directory({
+                    "projectPath": str(first), "directory": "",
+                }))
+                self.assertEqual(bridge._project_explorer._root, first)
+                self.assertEqual(bridge._project_explorer._epoch, listing["projectEpoch"])
+                opened_source = controller.open_source_document(
+                    str(first), SourceAnchor("run.py", 1))
+                self.assertEqual(controller._source_editing._root, first)
+                self.assertTrue(opened_source.revision.startswith(
+                    bridge._project_explorer._epoch + "."))
 
     def test_preferences_source_and_layout_mutations_round_trip(self) -> None:
         self.analyze_fixture()
@@ -691,6 +801,162 @@ class DesktopBridgeTests(unittest.TestCase):
                 analyze_thread.join(2)
                 session_thread.join(2)
         self.assertTrue(analyze_done.is_set())
+
+    def test_task2_trusted_notification_precedes_expensive_work_and_busy_display(self) -> None:
+        for seam in ("publisher", "fingerprint", "no_cache_analysis"):
+            with self.subTest(seam=seam), TemporaryDirectory() as temporary:
+                parameter = inspect.signature(AppController.analyze).parameters.get(
+                    "before_analysis")
+                self.assertIsNotNone(parameter, "Missing C3 Task2 before_analysis keyword")
+                root = Path(temporary).resolve() / "project"
+                root.mkdir()
+                (root / "run.py").write_text("def f(x):\n    return x + 1\n", encoding="utf-8")
+                store = CacheStore(Path(temporary) / "data")
+                controller = AppController(store if seam != "no_cache_analysis" else None)
+                bridge = DesktopBridge(controller, store, PreferencesStore(store.data_dir))
+                if seam == "no_cache_analysis":
+                    # Bridge composition supplies a cache; disable that optional
+                    # controller analysis path explicitly for the no-cache seam.
+                    controller.cache_store = None
+                self.assert_success(bridge.open_project(str(root)))
+                self.assert_success(bridge.analyze())
+                before = controller.capture_assistant_context()
+                ready, release = threading.Event(), threading.Event()
+                responses, errors, observations, work = [], [], [], []
+                original_publisher = bridge._publish_session
+
+                def pause(ready=ready, release=release):
+                    ready.set()
+                    if not release.wait(5):
+                        raise AssertionError("analysis notification barrier was not released")
+
+                def publisher(*args, observations=observations, controller=controller,
+                              original_publisher=original_publisher, work=work, seam=seam,
+                              **kwargs):
+                    if not observations:
+                        observations.append((controller.capture_assistant_context(),
+                                             controller.status,
+                                             controller._assistant_publication_lock.locked(),
+                                             tuple(work), args, kwargs))
+                        original_publisher(*args, **kwargs)
+                        if seam == "publisher":
+                            pause()
+                    else:
+                        original_publisher(*args, **kwargs)
+
+                def fingerprint(*args, work=work, seam=seam, **kwargs):
+                    work.append("fingerprint")
+                    if seam == "fingerprint" and work == ["fingerprint"]:
+                        pause()
+                    return fingerprint_project(*args, **kwargs)
+
+                def analyze(*args, work=work, seam=seam, **kwargs):
+                    work.append("analysis")
+                    if seam == "no_cache_analysis":
+                        pause()
+                    return analyze_project(*args, **kwargs)
+
+                def run(responses=responses, errors=errors, bridge=bridge):
+                    try:
+                        responses.append(bridge.analyze())
+                    except Exception as error:
+                        errors.append(error)
+
+                with patch.object(bridge, "_publish_session", publisher), \
+                        patch("codeviz.ui.controller.fingerprint_project", fingerprint), \
+                        patch("codeviz.ui.controller.analyze_project", analyze):
+                    worker = threading.Thread(target=run, daemon=True)
+                    worker.start()
+                    try:
+                        self.assertTrue(ready.wait(2), "notification/work barrier was not reached")
+                        current, ordinary_status, locked, earlier_work, args, kwargs = observations[0]
+                        self.assertEqual(current.status, AnalysisStatus.ANALYZING)
+                        self.assertEqual(ordinary_status, AnalysisStatus.ANALYZING)
+                        self.assertFalse(current.eligible)
+                        self.assertIsNone(current.snapshot)
+                        self.assertEqual(dict(current.context_map), {})
+                        self.assertEqual(dict(current.navigation_facts), {})
+                        self.assertEqual(current.analysis_generation, before.analysis_generation + 1)
+                        self.assertEqual(current.project_epoch, before.project_epoch)
+                        self.assertFalse(locked)
+                        self.assertEqual(earlier_work, ())
+                        self.assertEqual((args, kwargs), ((), {}), "premature forced-status publisher")
+                        self.assertIs(bridge._snapshot[1], AnalysisStatus.ANALYZING)
+                        self.assertEqual(self.snapshot_pair(bridge._snapshot),
+                                         (current.project_epoch, current.analysis_generation))
+
+                        # Both calls must finish while the real operation lock remains held.
+                        finished = threading.Event()
+                        quick = []
+                        operation = Mock(side_effect=AssertionError("write entered during analysis"))
+
+                        def quick_calls(quick=quick, bridge=bridge, operation=operation,
+                                        finished=finished):
+                            try:
+                                quick.extend((bridge.get_session(), bridge._write_call(
+                                    operation, invalid_message="test state write")))
+                            finally:
+                                finished.set()
+
+                        reader = threading.Thread(target=quick_calls, daemon=True)
+                        reader.start()
+                        try:
+                            self.assertTrue(finished.wait(2), "busy display/write waited for analysis")
+                            busy_session = self.assert_success(quick[0])
+                            self.assertEqual(busy_session["status"], "Analyzing")
+                            self.assertEqual(
+                                (busy_session["projectEpoch"],
+                                 busy_session["analysisGeneration"]),
+                                (current.project_epoch, current.analysis_generation))
+                            self.assertFalse(quick[1]["ok"])
+                            self.assertEqual(quick[1]["error"]["code"], "NOT_READY")
+                            operation.assert_not_called()
+                        finally:
+                            release.set()
+                            reader.join(2)
+                        self.assertFalse(reader.is_alive())
+                    finally:
+                        release.set()
+                        worker.join(2)
+                self.assertFalse(worker.is_alive())
+                self.assertEqual(errors, [])
+                self.assertEqual(len(responses), 1)
+                self.assert_success(responses[0])
+                self.assertEqual(controller.capture_assistant_context().analysis_generation,
+                                 before.analysis_generation + 1)
+
+    def test_task2_failed_notification_skips_fingerprint_ast_and_publishes_failed(self) -> None:
+        parameter = inspect.signature(AppController.analyze).parameters.get("before_analysis")
+        self.assertIsNotNone(parameter, "Missing C3 Task2 before_analysis keyword")
+        self.analyze_fixture()
+        before = self.controller.capture_assistant_context()
+        old_result = self.controller.analysis
+        original_publisher = self.bridge._publish_session
+        observations = []
+
+        def fail_once(*args, **kwargs):
+            if not observations:
+                observations.append(self.controller.capture_assistant_context())
+                raise RuntimeError("trusted publisher failure")
+            original_publisher(*args, **kwargs)
+
+        with patch.object(self.bridge, "_publish_session", fail_once), \
+                patch("codeviz.ui.controller.fingerprint_project") as fingerprint, \
+                patch("codeviz.ui.controller.analyze_project") as analysis:
+            response = self.bridge.analyze()
+        fingerprint.assert_not_called()
+        analysis.assert_not_called()
+        self.assertFalse(response["ok"])
+        self.assertEqual(observations[0].status, AnalysisStatus.ANALYZING)
+        self.assertFalse(observations[0].eligible)
+        self.assertIs(self.controller.analysis, old_result)
+        failed = self.controller.capture_assistant_context()
+        self.assertEqual(failed.status, AnalysisStatus.FAILED)
+        self.assertEqual(failed.analysis_generation, before.analysis_generation + 1)
+        self.assertEqual(failed.project_epoch, before.project_epoch)
+        self.assertFalse(failed.eligible)
+        self.assertIsNone(failed.snapshot)
+        self.assertEqual(self.assert_success(self.bridge.get_session())["status"], "Failed")
 
 
 if __name__ == "__main__":

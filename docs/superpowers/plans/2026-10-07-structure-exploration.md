@@ -1,6 +1,8 @@
 # Structure Exploration Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Follow repository role routing; use disjoint ownership for backend, frontend, tests and native verification.
+>
+> **Process amendment (2026-10-15):** process is governed by the repository `AGENTS.md`. Do not load `subagent-driven-development` or `executing-plans`; do not run a per-task spec/quality review pair. Technical requirements below are unchanged.
 
 **Goal:** Make structural expansion change actual visible contents and make project/model graphs understandable, without sacrificing source traceability.
 

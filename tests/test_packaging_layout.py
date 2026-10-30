@@ -93,7 +93,7 @@ class PackagingLayoutTests(unittest.TestCase):
         self.assert_expression(analysis.args[0], '[str(root / "scripts" / "desktop_entry.py")]')
         self.assert_expression(self.keyword(analysis, "pathex"), '[str(root / "src")]')
         self.assert_expression(self.keyword(analysis, "datas"),
-                               '[(str(frontend), "frontend/dist"), *webview_data]')
+                               '[(str(frontend), "frontend/dist"), *webview_data, *ssl_data]')
         self.assert_expression(self.keyword(analysis, "binaries"), "webview_binaries")
         self.assert_expression(self.keyword(analysis, "hiddenimports"),
                                '["codeviz.ui.desktop", *webview_imports]')

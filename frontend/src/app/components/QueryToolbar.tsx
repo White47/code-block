@@ -1,11 +1,14 @@
 import type { Graph } from '../../types';
 import type { Translate } from '../i18n';
-export default function QueryToolbar({ mode, depth, canExpand, depthLimit, budgetTruncated, direction, hops, setDirection, more, fewer, disabled, t, inspectorVisible, toggleInspector }: {
+export default function QueryToolbar({ mode, depth, canExpand, depthLimit, budgetTruncated, direction, hops, setDirection, more, fewer, disabled, t, inspectorVisible, toggleInspector, calls }: {
   mode: NonNullable<Graph['queryContext']['controlMode']>; depth: number; canExpand?: boolean; depthLimit?: boolean; budgetTruncated?: boolean;
   direction: 'in' | 'out' | 'both'; hops: number; setDirection: (value: 'in' | 'out' | 'both') => void;
   more: () => void; fewer: () => void; disabled: boolean; t: Translate; inspectorVisible: boolean; toggleInspector: () => void;
+  calls?: { focused: boolean; canFocus: boolean; focus: () => void; overview: () => void };
 }) {
   return <div className="query-toolbar">
+    {calls && <><button disabled={disabled || !calls.focused} onClick={calls.overview}>{t('callsOverview')}</button>
+      <button disabled={disabled || !calls.canFocus} onClick={calls.focus}>{t('callsFocus')}</button></>}
     {mode === 'structure' && <><span>{t('structure')} · {depth}/5</span>
       <button disabled={disabled || depth <= 1} onClick={fewer}>{t('fewerLayers')} · {depth}/5</button>
       <button disabled={disabled || depth >= 5 || depthLimit === true || canExpand === false} title={depth >= 5 || depthLimit ? t('depthMaximum') : budgetTruncated ? t('graphTruncated') : canExpand === false ? t('noDeeper') : undefined} onClick={more}>{t('moreLayers')} · {depth}/5</button></>}

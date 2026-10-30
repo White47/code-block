@@ -3,9 +3,11 @@
 import ast
 import tokenize
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 
 from codeviz.core import SourceAnchor
+from codeviz.source_handles import SourceReadError, read_source_bytes
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +26,7 @@ class ParsedFile:
     line_count: int
     issues: tuple[AnalysisIssue, ...] = ()
     parsed_success: bool | None = None
+    content_hash: str | None = None
 
     @property
     def was_parsed(self) -> bool:
@@ -38,9 +41,10 @@ def _module_name(relative_path: str) -> str:
     return ".".join(parts)
 
 
-def _failed(relative_path: str, module_name: str, code: str, message: str, line: int = 1) -> ParsedFile:
+def _failed(relative_path: str, module_name: str, code: str, message: str, line: int = 1,
+            *, content_hash: str | None = None) -> ParsedFile:
     issue = AnalysisIssue(code, message, relative_path, SourceAnchor(relative_path, line))
-    return ParsedFile(relative_path, module_name, None, 0, (issue,))
+    return ParsedFile(relative_path, module_name, None, 0, (issue,), content_hash=content_hash)
 
 
 def parse_python_file(
@@ -49,8 +53,8 @@ def parse_python_file(
     *,
     max_file_bytes: int = 5_000_000,
 ) -> ParsedFile:
-    if max_file_bytes < 1:
-        raise ValueError("max_file_bytes must be positive")
+    if type(max_file_bytes) is not int or max_file_bytes < 1:
+        raise ValueError("max_file_bytes must be a positive integer")
     relative = SourceAnchor(relative_path, 1).file_path
     if not relative.casefold().endswith(".py"):
         raise ValueError("relative_path must point to a Python file")
@@ -58,35 +62,33 @@ def parse_python_file(
     if not root.is_dir():
         raise ValueError("project_root must be an existing directory")
     module_name = _module_name(relative)
-    source_path = root.joinpath(*relative.split("/"))
-    if not source_path.resolve().is_relative_to(root):
-        raise ValueError("source file resolves outside project_root")
-
-    current = root
-    for segment in relative.split("/"):
-        current = current / segment
-        if current.is_symlink():
-            return _failed(relative, module_name, "SYMLINK_UNSUPPORTED", "linked source files are not scanned")
+    try:
+        verified = read_source_bytes(root, relative, max_bytes=max_file_bytes)
+    except SourceReadError as error:
+        return _failed(relative, module_name, error.code, error.message)
 
     try:
-        if source_path.stat().st_size > max_file_bytes:
-            return _failed(relative, module_name, "FILE_TOO_LARGE", "source file exceeds size limit")
-        with tokenize.open(source_path) as stream:
-            source = stream.read()
+        encoding, _ = tokenize.detect_encoding(BytesIO(verified.raw_bytes).readline)
+        source = verified.raw_bytes.decode(encoding, errors="strict")
     except (SyntaxError, UnicodeError, LookupError) as error:
-        return _failed(relative, module_name, "DECODE_ERROR", str(error))
-    except OSError as error:
-        return _failed(relative, module_name, "READ_ERROR", str(error))
+        return _failed(relative, module_name, "DECODE_ERROR", str(error),
+                       content_hash=verified.content_hash)
 
-    line_count = max(1, len(source.splitlines()))
+    source = source.replace("\r\n", "\n").replace("\r", "\n")
+    line_count = max(1, source.count("\n") + (not source.endswith("\n")))
     try:
         tree = ast.parse(source, filename=relative, type_comments=True)
     except RecursionError:
-        return _failed(relative, module_name, "PARSE_DEPTH_EXCEEDED", "Python syntax tree is too deep")
+        return _failed(relative, module_name, "PARSE_DEPTH_EXCEEDED", "Python syntax tree is too deep",
+                       content_hash=verified.content_hash)
+    except UnicodeError as error:
+        return _failed(relative, module_name, "DECODE_ERROR", str(error),
+                       content_hash=verified.content_hash)
     except SyntaxError as error:
         issue = AnalysisIssue(
             "SYNTAX_ERROR", error.msg, relative,
             SourceAnchor(relative, error.lineno or 1),
         )
-        return ParsedFile(relative, module_name, None, line_count, (issue,))
-    return ParsedFile(relative, module_name, tree, line_count)
+        return ParsedFile(relative, module_name, None, line_count, (issue,),
+                          content_hash=verified.content_hash)
+    return ParsedFile(relative, module_name, tree, line_count, content_hash=verified.content_hash)

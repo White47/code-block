@@ -65,3 +65,13 @@ Architecture 使用独立结构深度，`ProjectStructure` 从既有 Symbol Inde
 ## 6. 后续技术决策
 
 桌面壳、图绘制与源码查看按 ADR-008 迁移到 React Flow + pywebview；ADR-006 的 Tkinter 实现暂作 fallback。Analysis Cache、Annotations、Recent Projects 和 View State 的 JSON 格式由 Phase 10 落地。壳层必须保留 UI 无关的 Controller / Presenter、VisibleGraph 与版本化 Web Contract；`ignore_paths` 后续作为独立分析设置，不进入语言 preferences DTO。`.drawio` 导出仍是独立后续能力，只能从 Visible Graph / Canvas Scene 生成，不能反向成为分析事实来源。
+
+## 项目理解版本与解释来源层（2026-10-29）
+
+静态 Parse / Resolve / Code Graph / Semantic Graph 保持独立。显式项目任务基于当前授权的项目索引、代表文件和真实跨文件关系取得证据；其已校验 Answer 在原 ConversationStore 事务中保留一个 ProjectUnderstanding 引用。三个主视图消费该引用，成功更新原子替换，失败保留原有效结果；普通追问不会写入此项目版本。
+
+项目理解是解释层，不向静态 IR、C3 视图映射或用户文件注入 AI 节点。ProjectStructure 与 Architecture 始终分别消费原静态 GraphEditor；AI 七段解释只在同主区附加，不生成第三张合成图或独立 AI 布局。静态位置/相机继续走原规则。语义分组与关系两端没有确定映射时，不构造伪造的调用/包含边。主区C6导航附加 artifact/revision/item 约束，保留原lease、授权、源码新鲜度、精确身份与发布CAS；面板显示状态及当前聊天不授予引用权威。
+
+跨会话条目追问分别核对原项目解释owner和新问题owner。先前解释是最多1000个Unicode字符的不可信衍生数据，使用服务拥有的 AnswerOriginManifest / PriorInterpretationOrigin 说明其完整可能披露来源；不伪装为 AST 源码、不授予新的证据或组成员。Manifest 绑定原 Answer 摘要、原owner、当前项目/分析/配置/授权/来源范围以及全部依赖文件的内容指纹，与原保留事务一起计容量，不保存原prompt或完整wire。
+
+私有 interpretation occurrence 在 generic / DeepSeek 组装与最终插入后均需保持精确归属，SDK 不向服务商转发内部标签或manifest。C5在原子准入中将衍生解释字符与源码字符相加，依赖文件取并集，重复发送重复计量，原公开额度不变。缺闭包、复制未归属、源码变化或权限失效必须拒绝；旧证据ID不能成为新任务的provided。新的事实仍由只读工具重新取得并绑定；派生来源回合不因没有新的read而被误标source-free。具体契约见项目理解实施计划及设计规格。

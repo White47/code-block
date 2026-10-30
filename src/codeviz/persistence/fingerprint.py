@@ -1,16 +1,13 @@
 """Content fingerprints for explicit, one-shot project analysis."""
 
-import os
 import sys
 from dataclasses import dataclass
-from hashlib import sha256
 from pathlib import Path
-from stat import S_ISREG
 
 from codeviz.analysis.discovery import _normalize_ignore, discover_python_files
-from codeviz.source_handles import opened_file_path
+from codeviz.source_handles import read_source_bytes
 
-ANALYSIS_VERSION = "3"
+ANALYSIS_VERSION = "4"
 PARSER_VERSION = f"python-{sys.version_info.major}.{sys.version_info.minor}"
 SEMANTIC_VERSION = "3"
 _MAX_SOURCE_BYTES = 50_000_000
@@ -67,35 +64,7 @@ class ProjectFingerprint:
 
 
 def _file_digest(root: Path, relative_path: str) -> str:
-    path = root.joinpath(*relative_path.split("/"))
-    if path.is_symlink():
-        raise ValueError("linked source files cannot be fingerprinted")
-    resolved = path.resolve(strict=True)
-    if not resolved.is_relative_to(root):
-        raise ValueError("source file resolves outside the project")
-    before = resolved.stat()
-    if not S_ISREG(before.st_mode) or before.st_size > _MAX_SOURCE_BYTES:
-        raise ValueError("source file cannot be safely fingerprinted")
-    digest = sha256()
-    with resolved.open("rb") as source:
-        opened = os.fstat(source.fileno())
-        if not opened_file_path(source).is_relative_to(root):
-            raise ValueError("opened source file is outside the project")
-        if (not before.st_ino or not opened.st_ino or
-                (before.st_dev, before.st_ino) != (opened.st_dev, opened.st_ino) or
-                not S_ISREG(opened.st_mode) or opened.st_size > _MAX_SOURCE_BYTES):
-            raise ValueError("source file changed during fingerprinting")
-        total = 0
-        while chunk := source.read(1024 * 1024):
-            total += len(chunk)
-            if total > _MAX_SOURCE_BYTES:
-                raise ValueError("source file exceeds fingerprint size limit")
-            digest.update(chunk)
-        after = os.fstat(source.fileno())
-        if (after.st_size != opened.st_size or after.st_mtime_ns != opened.st_mtime_ns or
-                path.resolve(strict=True) != resolved):
-            raise ValueError("source file changed during fingerprinting")
-    return digest.hexdigest()
+    return read_source_bytes(root, relative_path, max_bytes=_MAX_SOURCE_BYTES).content_hash
 
 
 def fingerprint_project(

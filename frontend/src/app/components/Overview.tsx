@@ -1,7 +1,8 @@
 import type { Overview as OverviewData, OverviewChoice, ViewKind } from '../../types';
+import type { ReactNode } from 'react';
 import type { Translate } from '../i18n';
 
-export default function Overview({ data, openView, t }: { data: OverviewData | null; openView: (v: ViewKind, root?: string) => void; t: Translate }) {
+export default function Overview({ data, openView, t, children }: { data: OverviewData | null; openView: (v: ViewKind, root?: string) => void; t: Translate; children?: ReactNode }) {
   const choices = (items: OverviewChoice[], kind: ViewKind) => items.map(item =>
     <button className="entity-row" key={`${item.viewKind ?? kind}:${item.id}`} onClick={() => openView(item.viewKind ?? kind, item.id)} title={item.evidence?.join('\n')}>
       <span className="entity-icon">{kind === 'Architecture' ? 'M' : 'ƒ'}</span>
@@ -12,6 +13,7 @@ export default function Overview({ data, openView, t }: { data: OverviewData | n
   return <section className="overview-page">
     <div className="eyebrow">CODE INTELLIGENCE / 01</div><h1>{data?.projectName ?? 'CodeViz'}</h1>
     <p className="overview-subtitle">{data ? [data.language, data.framework, data.projectPath].filter(Boolean).join(' · ') : t('empty')}</p>
+    {children}
     {data && <>
       <div className="metrics">{[[t('files'), `${data.health.filesParsed}/${data.health.filesTotal}`], [t('symbols'), data.health.symbolsResolved], [t('exact'), data.health.exact], [t('problems'), data.health.issueCount]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong><div className="metric-rule"/></article>)}</div>
       <div className="overview-columns">

@@ -967,7 +967,7 @@ class Other(nn.Module):
         self.invalid(self.bridge.save_layout(payload))
         self.assertEqual(self.data(self.bridge.get_view_state()), closed)
 
-    def test_control_modes_match_supported_views_and_calls_remains_unsupported(self):
+    def test_control_modes_match_supported_views_and_gradient_remains_unsupported(self):
         self.require_depth_contract()
         analysis = self.analyze()
         function = next(entry for entry in analysis.symbol_index.entries.values()
@@ -983,6 +983,7 @@ class Other(nn.Module):
             ("Execution", execution["rootIds"][0], "none"),
             ("Symbol", function.id, "relations"),
             ("DataFlow", data_node.id, "relations"),
+            ("Calls", function.id, "relations"),
         )
         for kind, root, mode in cases:
             with self.subTest(kind=kind):
@@ -991,4 +992,4 @@ class Other(nn.Module):
                 if mode == "none":
                     self.assertEqual(self.ids(graph), self.ids(self.view(5, root, kind=kind)))
                     self.assertIs(graph["queryContext"].get("canExpand"), False)
-        self.invalid(self.bridge.get_view("Calls", function.id))
+        self.invalid(self.bridge.get_view("Gradient", function.id))

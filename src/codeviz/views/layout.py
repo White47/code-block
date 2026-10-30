@@ -12,6 +12,7 @@ _Y_GAP = 112.0
 _FLOW_EDGES = frozenset({EdgeType.CONTAINS, EdgeType.CONTROL_FLOW,
                          EdgeType.BRANCH_TRUE, EdgeType.BRANCH_FALSE})
 _VIEW_EDGES = {
+    ViewKind.CALLS: frozenset({EdgeType.CONTAINS, EdgeType.CALLS}),
     ViewKind.ARCHITECTURE: frozenset({EdgeType.CONTAINS}),
     ViewKind.PROJECT_STRUCTURE: frozenset({EdgeType.CONTAINS}),
     ViewKind.EXECUTION: _FLOW_EDGES,
@@ -145,7 +146,7 @@ def layout_positions(nodes: tuple[VisibleNode, ...], edges: tuple[VisibleEdge, .
 
     known_ids = set(node_ids)
     roots = tuple(sorted({node_id for node_id in root_ids if node_id in known_ids}))
-    if view_kind in (ViewKind.DATA_FLOW, ViewKind.SYMBOL):
+    if view_kind in (ViewKind.DATA_FLOW, ViewKind.SYMBOL, ViewKind.CALLS):
         # These roots are query focus IDs, not graph-entry constraints.
         roots = ()
     forward = tuple(sorted(

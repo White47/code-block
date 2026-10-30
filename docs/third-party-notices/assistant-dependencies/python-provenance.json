@@ -1,0 +1,2135 @@
+{
+  "documentary_c1_task1": {
+    "fresh_local_verification": {
+      "sdk_copied_notice_hash_checks": 30,
+      "historical_proxy_copied_notice_hash_checks": 1,
+      "verbatim_proxy_license_bytes": 1436,
+      "verbatim_proxy_original_sha256_and_git_blob_sha1": "PASS",
+      "failures": 0,
+      "historical_fields_preserved": true
+    },
+    "sdk": {
+      "task": "DOCUMENTARY C1 Task 1, 2026-10-12",
+      "evidence_attribution": "Main-agent supplied independent SDK lock/source/frozen-fake-probe review PASS and Windows CPython 3.12 offline lock reproduction; not rerun or independent review by this documentary worker.",
+      "acquisition_notices": "PASS: 26 exact pins, 41 distinct wheels, 104 target/artifact associations, four offline resolver targets, 30 original notice copies",
+      "integration_subgate": "INDEPENDENT CLOSE CANDIDATE based on supplied applicable SDK review/reproduction; no combined production acceptance",
+      "production_gate": "OFF",
+      "historical_results": "All original audit/source/frozen-probe and SKIP/FAIL fields below retained; acquisition on four targets is not execution on four targets."
+    },
+    "proxy_tools_immutable_supplement": {
+      "commit": "db43f1e35d4f90a65c5a4d56d9e9af88212ec6e6",
+      "source_url": "https://codeload.github.com/jtushman/proxy_tools/tar.gz/db43f1e35d4f90a65c5a4d56d9e9af88212ec6e6",
+      "archive_sha256": "b4d1d008932b2bdafa8c3c83a3d8e34e8a8940351ebcbb219741cf3c4871ab76",
+      "file_count": 12,
+      "inventory": [
+        {
+          "path": ".gitignore",
+          "sha256": "9278fc493e2b62900dd80c4ba63d6426507ac1872d3a194df3faa748424a8bf1",
+          "bytes": 398
+        },
+        {
+          "path": ".travis.yml",
+          "sha256": "25e832b735213e700f2bcc17745e65f0be27bb2cb86b75ddbd94a3b2f14fa18b",
+          "bytes": 142
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "a428fb8a2e762af3eb0a6edbbb88e9b42ccfee80fd9b423958bcacf9b9abbfe4",
+          "bytes": 1436
+        },
+        {
+          "path": "README.rst",
+          "sha256": "e377a5d27a2dd1447ad2a5ccac59a72d56ec0fccc3ea45858cfba70ec4be405c",
+          "bytes": 1748
+        },
+        {
+          "path": "development_requirements.txt",
+          "sha256": "97eef643266877378c5e0a8be5c8be58b99575c77ed4f89321f307f676de4b59",
+          "bytes": 5
+        },
+        {
+          "path": "docs/Makefile",
+          "sha256": "fb12ebf379a50ad4dadb05d65033be3146faf9df1d1f8089128c6e2b359c24de",
+          "bytes": 6790
+        },
+        {
+          "path": "docs/conf.py",
+          "sha256": "71b740f28e5010da0795dfeb63eba8f16cc6d1aa3f5dec971c0b9c4ad79b0a8e",
+          "bytes": 8162
+        },
+        {
+          "path": "docs/index.rst",
+          "sha256": "b9685b67611bbbe61409c0e424dc1f2027604c27b5054ddf4239aa4083e4e995",
+          "bytes": 1548
+        },
+        {
+          "path": "proxy_tools/__init__.py",
+          "sha256": "d1539d95e1a713c068ca81d42e047b2c76568964cf277596d4e19efb22f476be",
+          "bytes": 6409
+        },
+        {
+          "path": "setup.py",
+          "sha256": "2bb5e8e3c91a5cc5768310b67c2da6c7e5942f8d348402b5e9cee2fcce558b5b",
+          "bytes": 717
+        },
+        {
+          "path": "tests.py",
+          "sha256": "1574dc9961ee33654686e778593d223dbfc484343e80a6e320cfe752f73885af",
+          "bytes": 1400
+        },
+        {
+          "path": "tox.ini",
+          "sha256": "5cbef60eef6612f9bfa014d54401ddeb83e28f9b9828f3f3252fbb98c1931f52",
+          "bytes": 172
+        }
+      ],
+      "source_member": "proxy_tools/__init__.py",
+      "source_sha256": "d1539d95e1a713c068ca81d42e047b2c76568964cf277596d4e19efb22f476be",
+      "sdist_sha256": "ccb3751f529c047e2d8a58440d86b205303cf0fe8146f784d1cbcd94f0a28010",
+      "source_sdist_installed_identical": true,
+      "license_url": "https://raw.githubusercontent.com/jtushman/proxy_tools/db43f1e35d4f90a65c5a4d56d9e9af88212ec6e6/LICENSE.txt",
+      "license_sha256": "a428fb8a2e762af3eb0a6edbbb88e9b42ccfee80fd9b423958bcacf9b9abbfe4",
+      "license_bytes": 1436,
+      "git_blob_sha1": "078411c7399fbc0454f36cbe8c8cdbaaba7ebc95",
+      "license_verbatim_text": "The BSD License (BSD)\n\nCopyright (c) 2013 Armin Ronacher\nCopyright (c) 2014 Jonathan Tushman\n\nRedistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions are met:\n\n  * Redistributions of source code must retain the above copyright\n    notice, this list of conditions and the following disclaimer.\n  * Redistributions in binary form must reproduce the above copyright\n    notice, this list of conditions and the following disclaimer in the\n    documentation and/or other materials provided with the distribution.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\nAND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\nIMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\nARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY\nDIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\nLOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND\nON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF\nTHIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+      "facts": [
+        "Immutable official source member is byte-identical to the 0.1.0 sdist and installed source; no full-tree equality with sdist is asserted.",
+        "Source header says BSD and credits Armin Ronacher 2013, adapted by Jonathan Tushman 2014; distribution PKG-INFO/setup.py retain MIT declarations.",
+        "Actual official LICENSE has two BSD redistribution conditions, both original holders and unusual trailing wording, preserved verbatim here with its absent final newline."
+      ],
+      "inference": "Retain actual BSD terms and all original attributions as bounded notice disposition; not a determination of which conflicting declaration legally controls.",
+      "notice_acceptance": "Qualified independent PASS for actual BSD text and attribution retention; metadata conflict retained; not legal certainty",
+      "werkzeug_ancestry": "No exact ancestor version, license or copyright established; no additional ancestor notice invented."
+    }
+  },
+  "scope": "Isolated SDK[openai] runtime only; not production approval",
+  "closure_count": 26,
+  "targets": {
+    "312-win_amd64": "acquisition/hash PASS; prior source compatibility PASS",
+    "311-win_amd64": "acquisition/hash PASS; execution SKIP",
+    "312-linux-glibc228": "acquisition/hash PASS; execution SKIP",
+    "311-linux-glibc228": "acquisition/hash PASS; execution SKIP",
+    "manylinux2014_x86_64": "FAIL: tiktoken 0.14.0 wheel unavailable for glibc 2.17-only target"
+  },
+  "edges": [
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "anyio>=4.7.0"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "genai-prices>=0.1.9"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "griffelib>=2.0"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "httpx2>=2.7"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "opentelemetry-api>=1.28.0"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "pydantic-graph==2.55.0"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "pydantic>=2.12"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "typing-inspection>=0.4.0"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "openai>=3.26.0; extra == 'openai'"
+    },
+    {
+      "from": "pydantic-ai-slim",
+      "extra": "openai",
+      "requirement": "tiktoken>=0.12.0; extra == 'openai'"
+    },
+    {
+      "from": "anyio",
+      "extra": "",
+      "requirement": "idna>=2.8"
+    },
+    {
+      "from": "anyio",
+      "extra": "",
+      "requirement": "typing_extensions>=4.16.0; python_version < \"3.15\""
+    },
+    {
+      "from": "genai-prices",
+      "extra": "",
+      "requirement": "httpx2>=2.0"
+    },
+    {
+      "from": "genai-prices",
+      "extra": "",
+      "requirement": "pydantic>=2.10"
+    },
+    {
+      "from": "httpx2",
+      "extra": "",
+      "requirement": "anyio>=4.10; sys_platform != 'emscripten'"
+    },
+    {
+      "from": "httpx2",
+      "extra": "",
+      "requirement": "httpcore2==2.13.1; sys_platform != 'emscripten'"
+    },
+    {
+      "from": "httpx2",
+      "extra": "",
+      "requirement": "idna>=3.18"
+    },
+    {
+      "from": "httpx2",
+      "extra": "",
+      "requirement": "truststore>=0.10; sys_platform != 'emscripten'"
+    },
+    {
+      "from": "httpx2",
+      "extra": "",
+      "requirement": "typing-extensions>=4.5.0; python_version < '3.13'"
+    },
+    {
+      "from": "opentelemetry-api",
+      "extra": "",
+      "requirement": "typing-extensions>=4.5.0"
+    },
+    {
+      "from": "pydantic-graph",
+      "extra": "",
+      "requirement": "anyio>=4.7.0"
+    },
+    {
+      "from": "pydantic-graph",
+      "extra": "",
+      "requirement": "logfire-api>=3.14.1"
+    },
+    {
+      "from": "pydantic-graph",
+      "extra": "",
+      "requirement": "pydantic>=2.12"
+    },
+    {
+      "from": "pydantic-graph",
+      "extra": "",
+      "requirement": "typing-inspection>=0.4.0"
+    },
+    {
+      "from": "pydantic",
+      "extra": "",
+      "requirement": "annotated-types>=0.6.0"
+    },
+    {
+      "from": "pydantic",
+      "extra": "",
+      "requirement": "pydantic-core==2.50.1"
+    },
+    {
+      "from": "pydantic",
+      "extra": "",
+      "requirement": "typing-extensions>=4.16.0"
+    },
+    {
+      "from": "pydantic",
+      "extra": "",
+      "requirement": "typing-inspection>=0.4.4"
+    },
+    {
+      "from": "typing-inspection",
+      "extra": "",
+      "requirement": "typing-extensions>=4.15.0"
+    },
+    {
+      "from": "openai",
+      "extra": "",
+      "requirement": "anyio<5,>=4.10.0"
+    },
+    {
+      "from": "openai",
+      "extra": "",
+      "requirement": "httpx2<3,>=2.12.0"
+    },
+    {
+      "from": "openai",
+      "extra": "",
+      "requirement": "jiter<1,>=0.16.0"
+    },
+    {
+      "from": "openai",
+      "extra": "",
+      "requirement": "pydantic!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,<3,>=1.10.13"
+    },
+    {
+      "from": "openai",
+      "extra": "",
+      "requirement": "sniffio"
+    },
+    {
+      "from": "openai",
+      "extra": "",
+      "requirement": "typing-extensions<5,>=4.14"
+    },
+    {
+      "from": "tiktoken",
+      "extra": "",
+      "requirement": "regex"
+    },
+    {
+      "from": "tiktoken",
+      "extra": "",
+      "requirement": "requests"
+    },
+    {
+      "from": "httpcore2",
+      "extra": "",
+      "requirement": "h11>=0.16"
+    },
+    {
+      "from": "httpcore2",
+      "extra": "",
+      "requirement": "truststore>=0.10"
+    },
+    {
+      "from": "pydantic-core",
+      "extra": "",
+      "requirement": "typing-extensions>=4.16.0"
+    },
+    {
+      "from": "requests",
+      "extra": "",
+      "requirement": "charset_normalizer<4,>=2"
+    },
+    {
+      "from": "requests",
+      "extra": "",
+      "requirement": "idna<4,>=2.5"
+    },
+    {
+      "from": "requests",
+      "extra": "",
+      "requirement": "urllib3<3,>=1.26"
+    },
+    {
+      "from": "requests",
+      "extra": "",
+      "requirement": "certifi>=2023.5.7"
+    }
+  ],
+  "packages": [
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Homepage, https://github.com/annotated-types/annotated-types",
+        "Source, https://github.com/annotated-types/annotated-types",
+        "Changelog, https://github.com/annotated-types/annotated-types/releases"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/annotated-types-0.8.0/1-LICENSE",
+          "source_sha256": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d",
+          "copied_sha256": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d",
+          "archive_member": "annotated_types-0.8.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Documentation, https://anyio.readthedocs.io/en/latest/",
+        "Changelog, https://anyio.readthedocs.io/en/stable/versionhistory.html",
+        "Source code, https://github.com/agronholm/anyio",
+        "Issue tracker, https://github.com/agronholm/anyio/issues"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/anyio-4.15.1/1-LICENSE",
+          "source_sha256": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0",
+          "copied_sha256": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0",
+          "archive_member": "anyio-4.15.1.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "declared_license": "MPL-2.0",
+      "project_urls": [
+        "Source, https://github.com/certifi/python-certifi"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/certifi-2026.7.22/1-LICENSE",
+          "source_sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7",
+          "copied_sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7",
+          "archive_member": "certifi-2026.7.22.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Changelog, https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md",
+        "Documentation, https://charset-normalizer.readthedocs.io/",
+        "Code, https://github.com/jawah/charset_normalizer",
+        "Issue tracker, https://github.com/jawah/charset_normalizer/issues"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/charset-normalizer-3.5.2/1-LICENSE",
+          "source_sha256": "18577485d3704f1a479ded8e573c0976cfed315fd2fd17983fa988da4c2f70d1",
+          "copied_sha256": "6d0d41bfe170ac6c7dc248c9a63e254d0fb45a60d50a8257d0af92c6e249b887",
+          "archive_member": "charset_normalizer-3.5.2.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/eb/e6/e6e083884cbcfd49c64865af05027fe7011be7b2d9179524f099a1b611f3/charset_normalizer-3.5.2-cp312-cp312-win_amd64.whl"
+        }
+      ]
+    },
+    {
+      "name": "genai-prices",
+      "version": "0.1.10",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Homepage, https://github.com/pydantic/genai-prices",
+        "Source, https://github.com/pydantic/genai-prices",
+        "Changelog, https://github.com/pydantic/genai-prices/releases"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/genai-prices-0.1.10/1-LICENSE",
+          "source_sha256": "ab47bf0bbd619cd73e16fd7873c7e0798e7aa62bcc9ae2fc79cbcb9799e609f6",
+          "copied_sha256": "ab47bf0bbd619cd73e16fd7873c7e0798e7aa62bcc9ae2fc79cbcb9799e609f6",
+          "archive_member": "genai_prices-0.1.10.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/11/0c/379fe71fccf01d829f1d72f805189453f12ba4b96e4b49a5cde8e1afd5ba/genai_prices-0.1.10-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "griffelib",
+      "version": "2.3.2",
+      "declared_license": "ISC",
+      "project_urls": [],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/griffelib-2.3.2/1-LICENSE",
+          "source_sha256": "d746d07b994c49910d0212f098ec5981658f95cadb82d725ad52d72afb99ad88",
+          "copied_sha256": "d746d07b994c49910d0212f098ec5981658f95cadb82d725ad52d72afb99ad88",
+          "archive_member": "griffelib-2.3.2.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/04/e5/0ae74c83c1cab2c14daadf28bd0143eb14bb81503834af987b66badc7b61/griffelib-2.3.2-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "declared_license": "MIT",
+      "project_urls": [],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/h11-0.16.0/1-LICENSE.txt",
+          "source_sha256": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361",
+          "copied_sha256": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361",
+          "archive_member": "h11-0.16.0.dist-info/licenses/LICENSE.txt",
+          "source_url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.13.1",
+      "declared_license": "BSD-3-Clause",
+      "project_urls": [
+        "Changelog, https://github.com/pydantic/httpx2/blob/main/src/httpcore2/CHANGELOG.md",
+        "Homepage, https://github.com/pydantic/httpx2",
+        "Source, https://github.com/pydantic/httpx2/blob/main/src/httpcore2"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/httpcore2-2.13.1/1-LICENSE.md",
+          "source_sha256": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9",
+          "copied_sha256": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9",
+          "archive_member": "httpcore2-2.13.1.dist-info/licenses/LICENSE.md",
+          "source_url": "https://files.pythonhosted.org/packages/09/ba/a4568248771ce81957bfb7cc600264a40fbcda092391ee1c415c50be4bea/httpcore2-2.13.1-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "httpx2",
+      "version": "2.13.1",
+      "declared_license": "BSD-3-Clause",
+      "project_urls": [
+        "Changelog, https://github.com/pydantic/httpx2/blob/main/src/httpx2/CHANGELOG.md",
+        "Homepage, https://github.com/pydantic/httpx2",
+        "Source, https://github.com/pydantic/httpx2"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/httpx2-2.13.1/1-LICENSE.md",
+          "source_sha256": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30",
+          "copied_sha256": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30",
+          "archive_member": "httpx2-2.13.1.dist-info/licenses/LICENSE.md",
+          "source_url": "https://files.pythonhosted.org/packages/d8/9c/6fe8931fd9f381042a9e4c7d5a7b4cbf7016b252bec0c99a49fce42c3326/httpx2-2.13.1-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "declared_license": "BSD-3-Clause",
+      "project_urls": [
+        "Changelog, https://github.com/kjd/idna/blob/master/HISTORY.md",
+        "Issue tracker, https://github.com/kjd/idna/issues",
+        "Source, https://github.com/kjd/idna"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/idna-3.20/1-LICENSE.md",
+          "source_sha256": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04",
+          "copied_sha256": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04",
+          "archive_member": "idna-3.20.dist-info/licenses/LICENSE.md",
+          "source_url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "jiter",
+      "version": "0.17.0",
+      "declared_license": "MIT",
+      "project_urls": [],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/jiter-0.17.0/1-LICENSE",
+          "source_sha256": "e65c152aa65deaaa52019855bf1bbce4a0d592a048cb523b6ca691965741241e",
+          "copied_sha256": "7c7134b9f7b978c03fca875517cf398db91f19bbb8109b6685e742aa3f57468e",
+          "archive_member": "jiter-0.17.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/6c/d9/98265a005b2473ec2be5a84e2b64c2f65382c673879f1574845cd4bcd77c/jiter-0.17.0-cp312-cp312-win_amd64.whl"
+        }
+      ]
+    },
+    {
+      "name": "logfire-api",
+      "version": "5.1.1",
+      "declared_license": "MIT",
+      "project_urls": [],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/logfire-api-5.1.1/LICENSE",
+          "source_sha256": "035507b8a1e787a16c7f138f092557a30a8ee9cc9cef6e84d11546ee3b9a45cd",
+          "copied_sha256": "035507b8a1e787a16c7f138f092557a30a8ee9cc9cef6e84d11546ee3b9a45cd",
+          "source_url": "https://raw.githubusercontent.com/pydantic/logfire/v5.1.1/LICENSE",
+          "package_metadata_url": "https://raw.githubusercontent.com/pydantic/logfire/v5.1.1/logfire-api/pyproject.toml"
+        }
+      ]
+    },
+    {
+      "name": "openai",
+      "version": "3.29.0",
+      "declared_license": "Apache-2.0",
+      "project_urls": [
+        "Homepage, https://github.com/openai/openai-python",
+        "Repository, https://github.com/openai/openai-python"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/openai-3.29.0/1-LICENSE",
+          "source_sha256": "154759c1e9eb58e42643ee43ec59d556def4d1d702d911a484c469e02f85dd5d",
+          "copied_sha256": "154759c1e9eb58e42643ee43ec59d556def4d1d702d911a484c469e02f85dd5d",
+          "archive_member": "openai/_vendor/httpx_aiohttp/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl"
+        },
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/openai-3.29.0/2-LICENSE",
+          "source_sha256": "636eb7d79da9bb6d515a4b3fd417aa26679eb3cf16396ddab4bc55fa74e616e4",
+          "copied_sha256": "636eb7d79da9bb6d515a4b3fd417aa26679eb3cf16396ddab4bc55fa74e616e4",
+          "archive_member": "openai-3.29.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "declared_license": "Apache-2.0",
+      "project_urls": [
+        "Homepage, https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api",
+        "Repository, https://github.com/open-telemetry/opentelemetry-python"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/opentelemetry-api-1.45.1/1-LICENSE",
+          "source_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "copied_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "archive_member": "opentelemetry_api-1.45.1.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/1e/41/f7dcf80b81ee8e71c1a2b59f14208bc723edbd89ed027a73b175abf6348e/opentelemetry_api-1.45.1-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Homepage, https://github.com/pydantic/pydantic",
+        "Documentation, https://pydantic.dev/docs/validation/latest/get-started/",
+        "Funding, https://github.com/sponsors/samuelcolvin",
+        "Source, https://github.com/pydantic/pydantic",
+        "Changelog, https://pydantic.dev/docs/validation/latest/get-started/changelog/"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/pydantic-2.14.1/1-LICENSE",
+          "source_sha256": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3",
+          "copied_sha256": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3",
+          "archive_member": "pydantic-2.14.1.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "pydantic-ai-slim",
+      "version": "2.55.0",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Homepage, https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim",
+        "Source, https://github.com/pydantic/pydantic-ai/tree/main/pydantic_ai_slim",
+        "Documentation, https://pydantic.dev/docs/ai/overview/install/#slim-install",
+        "Changelog, https://github.com/pydantic/pydantic-ai/releases"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/pydantic-ai-slim-2.55.0/1-LICENSE",
+          "source_sha256": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4",
+          "copied_sha256": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4",
+          "archive_member": "pydantic_ai_slim-2.55.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/93/cc/16c6bc21748e3705a4c1f8e7d71dfc54228dbf142f8506a36689acb1e9c9/pydantic_ai_slim-2.55.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.1",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Funding, https://github.com/sponsors/samuelcolvin",
+        "Homepage, https://github.com/pydantic",
+        "Source, https://github.com/pydantic/pydantic/tree/main/pydantic-core"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/pydantic-core-2.50.1/1-LICENSE",
+          "source_sha256": "fbe7f615f18d135c07000e5a86325db27f42c7729699ef166ac1f7a3f4586bf4",
+          "copied_sha256": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a",
+          "archive_member": "pydantic_core-2.50.1.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/c5/17/8bbd530b8659e9d963f5b16f6cb8e159f4cd174b4d6304e48969ab12dba8/pydantic_core-2.50.1-cp312-cp312-win_amd64.whl"
+        }
+      ]
+    },
+    {
+      "name": "pydantic-graph",
+      "version": "2.55.0",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Homepage, https://pydantic.dev/docs/ai/graph/graph/",
+        "Source, https://github.com/pydantic/pydantic-ai",
+        "Documentation, https://pydantic.dev/docs/ai/graph/graph/",
+        "Changelog, https://github.com/pydantic/pydantic-ai/releases"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/pydantic-graph-2.55.0/1-LICENSE",
+          "source_sha256": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4",
+          "copied_sha256": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4",
+          "archive_member": "pydantic_graph-2.55.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/59/b5/630fc830897cfb0e458dea8ffcac5dd58791784220255637e99817b04cdd/pydantic_graph-2.55.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "declared_license": "Apache-2.0 AND CNRI-Python",
+      "project_urls": [
+        "Homepage, https://github.com/mrabarnett/mrab-regex"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/regex-2026.9.29/1-LICENSE.txt",
+          "source_sha256": "3d220c06594b826bbabf110312f60f385f99e57e529fa4b9e536f79091f8b4c7",
+          "copied_sha256": "bff55ef4cdcc8c14ce259f8e8ab60e264418440d6335f4dc138273fbd506144d",
+          "archive_member": "regex-2026.9.29.dist-info/licenses/LICENSE.txt",
+          "source_url": "https://files.pythonhosted.org/packages/93/19/489bc8db91196381c935752df01ba3f607140daece33b78d88573f028e64/regex-2026.9.29-cp312-cp312-win_amd64.whl"
+        }
+      ]
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "declared_license": "Apache-2.0",
+      "project_urls": [
+        "Documentation, https://requests.readthedocs.io",
+        "Source, https://github.com/psf/requests"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/requests-2.34.2/1-LICENSE",
+          "source_sha256": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+          "copied_sha256": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+          "archive_member": "requests-2.34.2.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl"
+        },
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/requests-2.34.2/2-NOTICE",
+          "source_sha256": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc",
+          "copied_sha256": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc",
+          "archive_member": "requests-2.34.2.dist-info/licenses/NOTICE",
+          "source_url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "declared_license": "MIT OR Apache-2.0",
+      "project_urls": [
+        "Homepage, https://github.com/python-trio/sniffio",
+        "Documentation, https://sniffio.readthedocs.io/",
+        "Changelog, https://sniffio.readthedocs.io/en/latest/history.html"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/sniffio-1.3.1/1-LICENSE",
+          "source_sha256": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+          "copied_sha256": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+          "archive_member": "sniffio-1.3.1.dist-info/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl"
+        },
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/sniffio-1.3.1/2-LICENSE.APACHE2",
+          "source_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "copied_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "archive_member": "sniffio-1.3.1.dist-info/LICENSE.APACHE2",
+          "source_url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl"
+        },
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/sniffio-1.3.1/3-LICENSE.MIT",
+          "source_sha256": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b",
+          "copied_sha256": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b",
+          "archive_member": "sniffio-1.3.1.dist-info/LICENSE.MIT",
+          "source_url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.14.0",
+      "declared_license": "MIT License\n\nCopyright (c) 2022 OpenAI, Shantanu Jain\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "project_urls": [
+        "homepage, https://github.com/openai/tiktoken",
+        "repository, https://github.com/openai/tiktoken",
+        "changelog, https://github.com/openai/tiktoken/blob/main/CHANGELOG.md"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/tiktoken-0.14.0/1-LICENSE",
+          "source_sha256": "258463fc3788f1f9b6a3f1820d8a87481ac24018d53167597e25d3e9031851ca",
+          "copied_sha256": "418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86",
+          "archive_member": "tiktoken-0.14.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/bd/bd/a2e884fb1402cba5be08836590320012b2d8ada0e2eef9911a64df4bcd2d/tiktoken-0.14.0-cp312-cp312-win_amd64.whl"
+        }
+      ]
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.4",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Documentation, https://truststore.readthedocs.io",
+        "Source, https://github.com/sethmlarson/truststore"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/truststore-0.10.4/1-LICENSE",
+          "source_sha256": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca",
+          "copied_sha256": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca",
+          "archive_member": "truststore-0.10.4.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "declared_license": "PSF-2.0",
+      "project_urls": [
+        "Bug Tracker, https://github.com/python/typing_extensions/issues",
+        "Changes, https://github.com/python/typing_extensions/blob/main/CHANGELOG.md",
+        "Documentation, https://typing-extensions.readthedocs.io/",
+        "Home, https://github.com/python/typing_extensions",
+        "Q & A, https://github.com/python/typing/discussions",
+        "Repository, https://github.com/python/typing_extensions"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/typing-extensions-4.16.0/1-LICENSE",
+          "source_sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+          "copied_sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf",
+          "archive_member": "typing_extensions-4.16.0.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Homepage, https://github.com/pydantic/typing-inspection",
+        "Documentation, https://pydantic.github.io/typing-inspection/dev/",
+        "Source, https://github.com/pydantic/typing-inspection",
+        "Changelog, https://github.com/pydantic/typing-inspection/blob/main/HISTORY.md"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/typing-inspection-0.4.4/1-LICENSE",
+          "source_sha256": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3",
+          "copied_sha256": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3",
+          "archive_member": "typing_inspection-0.4.4.dist-info/licenses/LICENSE",
+          "source_url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "declared_license": "MIT",
+      "project_urls": [
+        "Changelog, https://github.com/urllib3/urllib3/blob/main/CHANGES.rst",
+        "Documentation, https://urllib3.readthedocs.io",
+        "Code, https://github.com/urllib3/urllib3",
+        "Issue tracker, https://github.com/urllib3/urllib3/issues",
+        "Security policy, https://urllib3.readthedocs.io/en/latest/security.html"
+      ],
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/python/urllib3-2.8.0/1-LICENSE.txt",
+          "source_sha256": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686",
+          "copied_sha256": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686",
+          "archive_member": "urllib3-2.8.0.dist-info/licenses/LICENSE.txt",
+          "source_url": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "target": "312-win_amd64",
+      "filename": "annotated_types-0.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "metadata_url": "https://pypi.org/pypi/annotated-types/0.8.0/json",
+      "notice_members_sha256": {
+        "annotated_types-0.8.0.dist-info/licenses/LICENSE": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d"
+      }
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "target": "311-win_amd64",
+      "filename": "annotated_types-0.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "metadata_url": "https://pypi.org/pypi/annotated-types/0.8.0/json",
+      "notice_members_sha256": {
+        "annotated_types-0.8.0.dist-info/licenses/LICENSE": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d"
+      }
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "target": "312-linux-glibc228",
+      "filename": "annotated_types-0.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "metadata_url": "https://pypi.org/pypi/annotated-types/0.8.0/json",
+      "notice_members_sha256": {
+        "annotated_types-0.8.0.dist-info/licenses/LICENSE": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d"
+      }
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "target": "311-linux-glibc228",
+      "filename": "annotated_types-0.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "metadata_url": "https://pypi.org/pypi/annotated-types/0.8.0/json",
+      "notice_members_sha256": {
+        "annotated_types-0.8.0.dist-info/licenses/LICENSE": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d"
+      }
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "target": "312-win_amd64",
+      "filename": "anyio-4.15.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl",
+      "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
+      "metadata_url": "https://pypi.org/pypi/anyio/4.15.1/json",
+      "notice_members_sha256": {
+        "anyio-4.15.1.dist-info/licenses/LICENSE": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0"
+      }
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "target": "311-win_amd64",
+      "filename": "anyio-4.15.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl",
+      "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
+      "metadata_url": "https://pypi.org/pypi/anyio/4.15.1/json",
+      "notice_members_sha256": {
+        "anyio-4.15.1.dist-info/licenses/LICENSE": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0"
+      }
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "target": "312-linux-glibc228",
+      "filename": "anyio-4.15.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl",
+      "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
+      "metadata_url": "https://pypi.org/pypi/anyio/4.15.1/json",
+      "notice_members_sha256": {
+        "anyio-4.15.1.dist-info/licenses/LICENSE": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0"
+      }
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "target": "311-linux-glibc228",
+      "filename": "anyio-4.15.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl",
+      "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
+      "metadata_url": "https://pypi.org/pypi/anyio/4.15.1/json",
+      "notice_members_sha256": {
+        "anyio-4.15.1.dist-info/licenses/LICENSE": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0"
+      }
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "target": "312-win_amd64",
+      "filename": "certifi-2026.7.22-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "metadata_url": "https://pypi.org/pypi/certifi/2026.7.22/json",
+      "notice_members_sha256": {
+        "certifi-2026.7.22.dist-info/licenses/LICENSE": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+      }
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "target": "311-win_amd64",
+      "filename": "certifi-2026.7.22-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "metadata_url": "https://pypi.org/pypi/certifi/2026.7.22/json",
+      "notice_members_sha256": {
+        "certifi-2026.7.22.dist-info/licenses/LICENSE": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+      }
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "target": "312-linux-glibc228",
+      "filename": "certifi-2026.7.22-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "metadata_url": "https://pypi.org/pypi/certifi/2026.7.22/json",
+      "notice_members_sha256": {
+        "certifi-2026.7.22.dist-info/licenses/LICENSE": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+      }
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "target": "311-linux-glibc228",
+      "filename": "certifi-2026.7.22-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "metadata_url": "https://pypi.org/pypi/certifi/2026.7.22/json",
+      "notice_members_sha256": {
+        "certifi-2026.7.22.dist-info/licenses/LICENSE": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+      }
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "target": "312-win_amd64",
+      "filename": "charset_normalizer-3.5.2-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/eb/e6/e6e083884cbcfd49c64865af05027fe7011be7b2d9179524f099a1b611f3/charset_normalizer-3.5.2-cp312-cp312-win_amd64.whl",
+      "sha256": "780fbe7cab297b81dad9fb8dc5eb003c0468ffb0d9e5f65068c53a34661a96bc",
+      "metadata_url": "https://pypi.org/pypi/charset-normalizer/3.5.2/json",
+      "notice_members_sha256": {
+        "charset_normalizer-3.5.2.dist-info/licenses/LICENSE": "18577485d3704f1a479ded8e573c0976cfed315fd2fd17983fa988da4c2f70d1"
+      }
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "target": "311-win_amd64",
+      "filename": "charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/e8/fc/fdf8cf52ff21cd5bf158f20978991cf985325842f74283eb6df26c8a39d8/charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl",
+      "sha256": "87e50a3e7cb90af586b6c5faf23e302a970415ac73bd7bd90a515a04b427ef96",
+      "metadata_url": "https://pypi.org/pypi/charset-normalizer/3.5.2/json",
+      "notice_members_sha256": {
+        "charset_normalizer-3.5.2.dist-info/licenses/LICENSE": "18577485d3704f1a479ded8e573c0976cfed315fd2fd17983fa988da4c2f70d1"
+      }
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "target": "312-linux-glibc228",
+      "filename": "charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/7f/c5/38806a25ab5e65fc178f39affeda20858efafede2fce1ffc2556cfc9fe73/charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "3d31298449090ab8d47b7b1b2a555ff73cac7ed438a08b7ac160980c7ebed649",
+      "metadata_url": "https://pypi.org/pypi/charset-normalizer/3.5.2/json",
+      "notice_members_sha256": {
+        "charset_normalizer-3.5.2.dist-info/licenses/LICENSE": "6d0d41bfe170ac6c7dc248c9a63e254d0fb45a60d50a8257d0af92c6e249b887"
+      }
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "target": "311-linux-glibc228",
+      "filename": "charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/e4/ed/cf505d3011ffceb12c2067a7a5d3cfe92b875d4d44bb0ff0d69375e2c184/charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "211d5a3eb6af8f513b8d4ca19a8c1b7accab1b5f0d3175f9826b03c1a920dc1f",
+      "metadata_url": "https://pypi.org/pypi/charset-normalizer/3.5.2/json",
+      "notice_members_sha256": {
+        "charset_normalizer-3.5.2.dist-info/licenses/LICENSE": "6d0d41bfe170ac6c7dc248c9a63e254d0fb45a60d50a8257d0af92c6e249b887"
+      }
+    },
+    {
+      "name": "genai-prices",
+      "version": "0.1.10",
+      "target": "312-win_amd64",
+      "filename": "genai_prices-0.1.10-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/11/0c/379fe71fccf01d829f1d72f805189453f12ba4b96e4b49a5cde8e1afd5ba/genai_prices-0.1.10-py3-none-any.whl",
+      "sha256": "1f0eb9ff0b02f3a40b3aa590098fbc3bfc9e08ef124fa0bd132e9d899a6fec88",
+      "metadata_url": "https://pypi.org/pypi/genai-prices/0.1.10/json",
+      "notice_members_sha256": {
+        "genai_prices-0.1.10.dist-info/licenses/LICENSE": "ab47bf0bbd619cd73e16fd7873c7e0798e7aa62bcc9ae2fc79cbcb9799e609f6"
+      }
+    },
+    {
+      "name": "genai-prices",
+      "version": "0.1.10",
+      "target": "311-win_amd64",
+      "filename": "genai_prices-0.1.10-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/11/0c/379fe71fccf01d829f1d72f805189453f12ba4b96e4b49a5cde8e1afd5ba/genai_prices-0.1.10-py3-none-any.whl",
+      "sha256": "1f0eb9ff0b02f3a40b3aa590098fbc3bfc9e08ef124fa0bd132e9d899a6fec88",
+      "metadata_url": "https://pypi.org/pypi/genai-prices/0.1.10/json",
+      "notice_members_sha256": {
+        "genai_prices-0.1.10.dist-info/licenses/LICENSE": "ab47bf0bbd619cd73e16fd7873c7e0798e7aa62bcc9ae2fc79cbcb9799e609f6"
+      }
+    },
+    {
+      "name": "genai-prices",
+      "version": "0.1.10",
+      "target": "312-linux-glibc228",
+      "filename": "genai_prices-0.1.10-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/11/0c/379fe71fccf01d829f1d72f805189453f12ba4b96e4b49a5cde8e1afd5ba/genai_prices-0.1.10-py3-none-any.whl",
+      "sha256": "1f0eb9ff0b02f3a40b3aa590098fbc3bfc9e08ef124fa0bd132e9d899a6fec88",
+      "metadata_url": "https://pypi.org/pypi/genai-prices/0.1.10/json",
+      "notice_members_sha256": {
+        "genai_prices-0.1.10.dist-info/licenses/LICENSE": "ab47bf0bbd619cd73e16fd7873c7e0798e7aa62bcc9ae2fc79cbcb9799e609f6"
+      }
+    },
+    {
+      "name": "genai-prices",
+      "version": "0.1.10",
+      "target": "311-linux-glibc228",
+      "filename": "genai_prices-0.1.10-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/11/0c/379fe71fccf01d829f1d72f805189453f12ba4b96e4b49a5cde8e1afd5ba/genai_prices-0.1.10-py3-none-any.whl",
+      "sha256": "1f0eb9ff0b02f3a40b3aa590098fbc3bfc9e08ef124fa0bd132e9d899a6fec88",
+      "metadata_url": "https://pypi.org/pypi/genai-prices/0.1.10/json",
+      "notice_members_sha256": {
+        "genai_prices-0.1.10.dist-info/licenses/LICENSE": "ab47bf0bbd619cd73e16fd7873c7e0798e7aa62bcc9ae2fc79cbcb9799e609f6"
+      }
+    },
+    {
+      "name": "griffelib",
+      "version": "2.3.2",
+      "target": "312-win_amd64",
+      "filename": "griffelib-2.3.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/e5/0ae74c83c1cab2c14daadf28bd0143eb14bb81503834af987b66badc7b61/griffelib-2.3.2-py3-none-any.whl",
+      "sha256": "8e710afededd5607f95bf3c8ccc175ee306e7084459faf27b9f9f44ef2a7a274",
+      "metadata_url": "https://pypi.org/pypi/griffelib/2.3.2/json",
+      "notice_members_sha256": {
+        "griffelib-2.3.2.dist-info/licenses/LICENSE": "d746d07b994c49910d0212f098ec5981658f95cadb82d725ad52d72afb99ad88"
+      }
+    },
+    {
+      "name": "griffelib",
+      "version": "2.3.2",
+      "target": "311-win_amd64",
+      "filename": "griffelib-2.3.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/e5/0ae74c83c1cab2c14daadf28bd0143eb14bb81503834af987b66badc7b61/griffelib-2.3.2-py3-none-any.whl",
+      "sha256": "8e710afededd5607f95bf3c8ccc175ee306e7084459faf27b9f9f44ef2a7a274",
+      "metadata_url": "https://pypi.org/pypi/griffelib/2.3.2/json",
+      "notice_members_sha256": {
+        "griffelib-2.3.2.dist-info/licenses/LICENSE": "d746d07b994c49910d0212f098ec5981658f95cadb82d725ad52d72afb99ad88"
+      }
+    },
+    {
+      "name": "griffelib",
+      "version": "2.3.2",
+      "target": "312-linux-glibc228",
+      "filename": "griffelib-2.3.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/e5/0ae74c83c1cab2c14daadf28bd0143eb14bb81503834af987b66badc7b61/griffelib-2.3.2-py3-none-any.whl",
+      "sha256": "8e710afededd5607f95bf3c8ccc175ee306e7084459faf27b9f9f44ef2a7a274",
+      "metadata_url": "https://pypi.org/pypi/griffelib/2.3.2/json",
+      "notice_members_sha256": {
+        "griffelib-2.3.2.dist-info/licenses/LICENSE": "d746d07b994c49910d0212f098ec5981658f95cadb82d725ad52d72afb99ad88"
+      }
+    },
+    {
+      "name": "griffelib",
+      "version": "2.3.2",
+      "target": "311-linux-glibc228",
+      "filename": "griffelib-2.3.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/e5/0ae74c83c1cab2c14daadf28bd0143eb14bb81503834af987b66badc7b61/griffelib-2.3.2-py3-none-any.whl",
+      "sha256": "8e710afededd5607f95bf3c8ccc175ee306e7084459faf27b9f9f44ef2a7a274",
+      "metadata_url": "https://pypi.org/pypi/griffelib/2.3.2/json",
+      "notice_members_sha256": {
+        "griffelib-2.3.2.dist-info/licenses/LICENSE": "d746d07b994c49910d0212f098ec5981658f95cadb82d725ad52d72afb99ad88"
+      }
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "target": "312-win_amd64",
+      "filename": "h11-0.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "metadata_url": "https://pypi.org/pypi/h11/0.16.0/json",
+      "notice_members_sha256": {
+        "h11-0.16.0.dist-info/licenses/LICENSE.txt": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361"
+      }
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "target": "311-win_amd64",
+      "filename": "h11-0.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "metadata_url": "https://pypi.org/pypi/h11/0.16.0/json",
+      "notice_members_sha256": {
+        "h11-0.16.0.dist-info/licenses/LICENSE.txt": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361"
+      }
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "target": "312-linux-glibc228",
+      "filename": "h11-0.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "metadata_url": "https://pypi.org/pypi/h11/0.16.0/json",
+      "notice_members_sha256": {
+        "h11-0.16.0.dist-info/licenses/LICENSE.txt": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361"
+      }
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "target": "311-linux-glibc228",
+      "filename": "h11-0.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "metadata_url": "https://pypi.org/pypi/h11/0.16.0/json",
+      "notice_members_sha256": {
+        "h11-0.16.0.dist-info/licenses/LICENSE.txt": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361"
+      }
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.13.1",
+      "target": "312-win_amd64",
+      "filename": "httpcore2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/09/ba/a4568248771ce81957bfb7cc600264a40fbcda092391ee1c415c50be4bea/httpcore2-2.13.1-py3-none-any.whl",
+      "sha256": "e1e05d4f25f7d7d496bfb96748f6f4b67657b03da069b3a68c36069f3db73d0a",
+      "metadata_url": "https://pypi.org/pypi/httpcore2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpcore2-2.13.1.dist-info/licenses/LICENSE.md": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9"
+      }
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.13.1",
+      "target": "311-win_amd64",
+      "filename": "httpcore2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/09/ba/a4568248771ce81957bfb7cc600264a40fbcda092391ee1c415c50be4bea/httpcore2-2.13.1-py3-none-any.whl",
+      "sha256": "e1e05d4f25f7d7d496bfb96748f6f4b67657b03da069b3a68c36069f3db73d0a",
+      "metadata_url": "https://pypi.org/pypi/httpcore2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpcore2-2.13.1.dist-info/licenses/LICENSE.md": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9"
+      }
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.13.1",
+      "target": "312-linux-glibc228",
+      "filename": "httpcore2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/09/ba/a4568248771ce81957bfb7cc600264a40fbcda092391ee1c415c50be4bea/httpcore2-2.13.1-py3-none-any.whl",
+      "sha256": "e1e05d4f25f7d7d496bfb96748f6f4b67657b03da069b3a68c36069f3db73d0a",
+      "metadata_url": "https://pypi.org/pypi/httpcore2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpcore2-2.13.1.dist-info/licenses/LICENSE.md": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9"
+      }
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.13.1",
+      "target": "311-linux-glibc228",
+      "filename": "httpcore2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/09/ba/a4568248771ce81957bfb7cc600264a40fbcda092391ee1c415c50be4bea/httpcore2-2.13.1-py3-none-any.whl",
+      "sha256": "e1e05d4f25f7d7d496bfb96748f6f4b67657b03da069b3a68c36069f3db73d0a",
+      "metadata_url": "https://pypi.org/pypi/httpcore2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpcore2-2.13.1.dist-info/licenses/LICENSE.md": "c4df125c807b0613501e943a5c92496dd11d2c16604ce396097a8dde396304d9"
+      }
+    },
+    {
+      "name": "httpx2",
+      "version": "2.13.1",
+      "target": "312-win_amd64",
+      "filename": "httpx2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/d8/9c/6fe8931fd9f381042a9e4c7d5a7b4cbf7016b252bec0c99a49fce42c3326/httpx2-2.13.1-py3-none-any.whl",
+      "sha256": "6dff50fabc270ee5fd25d845d0b078ed20564579744d6d962850975996d2f9a4",
+      "metadata_url": "https://pypi.org/pypi/httpx2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpx2-2.13.1.dist-info/licenses/LICENSE.md": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30"
+      }
+    },
+    {
+      "name": "httpx2",
+      "version": "2.13.1",
+      "target": "311-win_amd64",
+      "filename": "httpx2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/d8/9c/6fe8931fd9f381042a9e4c7d5a7b4cbf7016b252bec0c99a49fce42c3326/httpx2-2.13.1-py3-none-any.whl",
+      "sha256": "6dff50fabc270ee5fd25d845d0b078ed20564579744d6d962850975996d2f9a4",
+      "metadata_url": "https://pypi.org/pypi/httpx2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpx2-2.13.1.dist-info/licenses/LICENSE.md": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30"
+      }
+    },
+    {
+      "name": "httpx2",
+      "version": "2.13.1",
+      "target": "312-linux-glibc228",
+      "filename": "httpx2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/d8/9c/6fe8931fd9f381042a9e4c7d5a7b4cbf7016b252bec0c99a49fce42c3326/httpx2-2.13.1-py3-none-any.whl",
+      "sha256": "6dff50fabc270ee5fd25d845d0b078ed20564579744d6d962850975996d2f9a4",
+      "metadata_url": "https://pypi.org/pypi/httpx2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpx2-2.13.1.dist-info/licenses/LICENSE.md": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30"
+      }
+    },
+    {
+      "name": "httpx2",
+      "version": "2.13.1",
+      "target": "311-linux-glibc228",
+      "filename": "httpx2-2.13.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/d8/9c/6fe8931fd9f381042a9e4c7d5a7b4cbf7016b252bec0c99a49fce42c3326/httpx2-2.13.1-py3-none-any.whl",
+      "sha256": "6dff50fabc270ee5fd25d845d0b078ed20564579744d6d962850975996d2f9a4",
+      "metadata_url": "https://pypi.org/pypi/httpx2/2.13.1/json",
+      "notice_members_sha256": {
+        "httpx2-2.13.1.dist-info/licenses/LICENSE.md": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30"
+      }
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "target": "312-win_amd64",
+      "filename": "idna-3.20-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+      "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+      "metadata_url": "https://pypi.org/pypi/idna/3.20/json",
+      "notice_members_sha256": {
+        "idna-3.20.dist-info/licenses/LICENSE.md": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04"
+      }
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "target": "311-win_amd64",
+      "filename": "idna-3.20-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+      "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+      "metadata_url": "https://pypi.org/pypi/idna/3.20/json",
+      "notice_members_sha256": {
+        "idna-3.20.dist-info/licenses/LICENSE.md": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04"
+      }
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "target": "312-linux-glibc228",
+      "filename": "idna-3.20-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+      "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+      "metadata_url": "https://pypi.org/pypi/idna/3.20/json",
+      "notice_members_sha256": {
+        "idna-3.20.dist-info/licenses/LICENSE.md": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04"
+      }
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "target": "311-linux-glibc228",
+      "filename": "idna-3.20-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+      "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+      "metadata_url": "https://pypi.org/pypi/idna/3.20/json",
+      "notice_members_sha256": {
+        "idna-3.20.dist-info/licenses/LICENSE.md": "1a9a4f0e3d479a27240ddd59a9137a66ab4a0f9dfdc8ca6188cc0bfd85187f04"
+      }
+    },
+    {
+      "name": "jiter",
+      "version": "0.17.0",
+      "target": "312-win_amd64",
+      "filename": "jiter-0.17.0-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/6c/d9/98265a005b2473ec2be5a84e2b64c2f65382c673879f1574845cd4bcd77c/jiter-0.17.0-cp312-cp312-win_amd64.whl",
+      "sha256": "9bd3caac219df476dd0cc3fe01d2f1581ed588906feac767abd9614c1c12f8b3",
+      "metadata_url": "https://pypi.org/pypi/jiter/0.17.0/json",
+      "notice_members_sha256": {
+        "jiter-0.17.0.dist-info/licenses/LICENSE": "e65c152aa65deaaa52019855bf1bbce4a0d592a048cb523b6ca691965741241e"
+      }
+    },
+    {
+      "name": "jiter",
+      "version": "0.17.0",
+      "target": "311-win_amd64",
+      "filename": "jiter-0.17.0-cp311-cp311-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/3e/8c/59693f348488f01ed12d862e99ab8da14961152d3e9c39b9b1ef363f3572/jiter-0.17.0-cp311-cp311-win_amd64.whl",
+      "sha256": "e654b6b04e39c9cb19cb8b04c6ddf1f2db07751fa14156413969fd78bad0e5cb",
+      "metadata_url": "https://pypi.org/pypi/jiter/0.17.0/json",
+      "notice_members_sha256": {
+        "jiter-0.17.0.dist-info/licenses/LICENSE": "e65c152aa65deaaa52019855bf1bbce4a0d592a048cb523b6ca691965741241e"
+      }
+    },
+    {
+      "name": "jiter",
+      "version": "0.17.0",
+      "target": "312-linux-glibc228",
+      "filename": "jiter-0.17.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/52/f8/b6e513ecbdf3b3cebe587c2279281ecf775b729a58cf4cc7bdf898ded029/jiter-0.17.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "8c21265b251d99bbb40080d178a8953e35601d3a1564e05c4de4c0d2ca616797",
+      "metadata_url": "https://pypi.org/pypi/jiter/0.17.0/json",
+      "notice_members_sha256": {
+        "jiter-0.17.0.dist-info/licenses/LICENSE": "7c7134b9f7b978c03fca875517cf398db91f19bbb8109b6685e742aa3f57468e"
+      }
+    },
+    {
+      "name": "jiter",
+      "version": "0.17.0",
+      "target": "311-linux-glibc228",
+      "filename": "jiter-0.17.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/4a/8f/5c74e5e142a6736833d7a991ab04d5c0738038dc44db05af0bb3cd2559e8/jiter-0.17.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "5888fe5abc1ca2fa834a3e1b4c7ef0dcece286a7d7e95a609ef0934b777b9fc9",
+      "metadata_url": "https://pypi.org/pypi/jiter/0.17.0/json",
+      "notice_members_sha256": {
+        "jiter-0.17.0.dist-info/licenses/LICENSE": "7c7134b9f7b978c03fca875517cf398db91f19bbb8109b6685e742aa3f57468e"
+      }
+    },
+    {
+      "name": "logfire-api",
+      "version": "5.1.1",
+      "target": "312-win_amd64",
+      "filename": "logfire_api-5.1.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/fb/a9/676a73b666708e9d1e25a985152a56989996007e2739e9d64e8976e47927/logfire_api-5.1.1-py3-none-any.whl",
+      "sha256": "8fd4f452c4b9267bf184a645208e71430ea3d202c412b2fc573f091842215659",
+      "metadata_url": "https://pypi.org/pypi/logfire-api/5.1.1/json",
+      "notice_members_sha256": {}
+    },
+    {
+      "name": "logfire-api",
+      "version": "5.1.1",
+      "target": "311-win_amd64",
+      "filename": "logfire_api-5.1.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/fb/a9/676a73b666708e9d1e25a985152a56989996007e2739e9d64e8976e47927/logfire_api-5.1.1-py3-none-any.whl",
+      "sha256": "8fd4f452c4b9267bf184a645208e71430ea3d202c412b2fc573f091842215659",
+      "metadata_url": "https://pypi.org/pypi/logfire-api/5.1.1/json",
+      "notice_members_sha256": {}
+    },
+    {
+      "name": "logfire-api",
+      "version": "5.1.1",
+      "target": "312-linux-glibc228",
+      "filename": "logfire_api-5.1.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/fb/a9/676a73b666708e9d1e25a985152a56989996007e2739e9d64e8976e47927/logfire_api-5.1.1-py3-none-any.whl",
+      "sha256": "8fd4f452c4b9267bf184a645208e71430ea3d202c412b2fc573f091842215659",
+      "metadata_url": "https://pypi.org/pypi/logfire-api/5.1.1/json",
+      "notice_members_sha256": {}
+    },
+    {
+      "name": "logfire-api",
+      "version": "5.1.1",
+      "target": "311-linux-glibc228",
+      "filename": "logfire_api-5.1.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/fb/a9/676a73b666708e9d1e25a985152a56989996007e2739e9d64e8976e47927/logfire_api-5.1.1-py3-none-any.whl",
+      "sha256": "8fd4f452c4b9267bf184a645208e71430ea3d202c412b2fc573f091842215659",
+      "metadata_url": "https://pypi.org/pypi/logfire-api/5.1.1/json",
+      "notice_members_sha256": {}
+    },
+    {
+      "name": "openai",
+      "version": "3.29.0",
+      "target": "312-win_amd64",
+      "filename": "openai-3.29.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl",
+      "sha256": "860d3bad424c5d38cd9ba0a0a2050d558b58ce027596a39f9ccbc0f51a2090b7",
+      "metadata_url": "https://pypi.org/pypi/openai/3.29.0/json",
+      "notice_members_sha256": {
+        "openai/_vendor/httpx_aiohttp/LICENSE": "154759c1e9eb58e42643ee43ec59d556def4d1d702d911a484c469e02f85dd5d",
+        "openai-3.29.0.dist-info/licenses/LICENSE": "636eb7d79da9bb6d515a4b3fd417aa26679eb3cf16396ddab4bc55fa74e616e4"
+      }
+    },
+    {
+      "name": "openai",
+      "version": "3.29.0",
+      "target": "311-win_amd64",
+      "filename": "openai-3.29.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl",
+      "sha256": "860d3bad424c5d38cd9ba0a0a2050d558b58ce027596a39f9ccbc0f51a2090b7",
+      "metadata_url": "https://pypi.org/pypi/openai/3.29.0/json",
+      "notice_members_sha256": {
+        "openai/_vendor/httpx_aiohttp/LICENSE": "154759c1e9eb58e42643ee43ec59d556def4d1d702d911a484c469e02f85dd5d",
+        "openai-3.29.0.dist-info/licenses/LICENSE": "636eb7d79da9bb6d515a4b3fd417aa26679eb3cf16396ddab4bc55fa74e616e4"
+      }
+    },
+    {
+      "name": "openai",
+      "version": "3.29.0",
+      "target": "312-linux-glibc228",
+      "filename": "openai-3.29.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl",
+      "sha256": "860d3bad424c5d38cd9ba0a0a2050d558b58ce027596a39f9ccbc0f51a2090b7",
+      "metadata_url": "https://pypi.org/pypi/openai/3.29.0/json",
+      "notice_members_sha256": {
+        "openai/_vendor/httpx_aiohttp/LICENSE": "154759c1e9eb58e42643ee43ec59d556def4d1d702d911a484c469e02f85dd5d",
+        "openai-3.29.0.dist-info/licenses/LICENSE": "636eb7d79da9bb6d515a4b3fd417aa26679eb3cf16396ddab4bc55fa74e616e4"
+      }
+    },
+    {
+      "name": "openai",
+      "version": "3.29.0",
+      "target": "311-linux-glibc228",
+      "filename": "openai-3.29.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl",
+      "sha256": "860d3bad424c5d38cd9ba0a0a2050d558b58ce027596a39f9ccbc0f51a2090b7",
+      "metadata_url": "https://pypi.org/pypi/openai/3.29.0/json",
+      "notice_members_sha256": {
+        "openai/_vendor/httpx_aiohttp/LICENSE": "154759c1e9eb58e42643ee43ec59d556def4d1d702d911a484c469e02f85dd5d",
+        "openai-3.29.0.dist-info/licenses/LICENSE": "636eb7d79da9bb6d515a4b3fd417aa26679eb3cf16396ddab4bc55fa74e616e4"
+      }
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "target": "312-win_amd64",
+      "filename": "opentelemetry_api-1.45.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/1e/41/f7dcf80b81ee8e71c1a2b59f14208bc723edbd89ed027a73b175abf6348e/opentelemetry_api-1.45.1-py3-none-any.whl",
+      "sha256": "b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb",
+      "metadata_url": "https://pypi.org/pypi/opentelemetry-api/1.45.1/json",
+      "notice_members_sha256": {
+        "opentelemetry_api-1.45.1.dist-info/licenses/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      }
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "target": "311-win_amd64",
+      "filename": "opentelemetry_api-1.45.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/1e/41/f7dcf80b81ee8e71c1a2b59f14208bc723edbd89ed027a73b175abf6348e/opentelemetry_api-1.45.1-py3-none-any.whl",
+      "sha256": "b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb",
+      "metadata_url": "https://pypi.org/pypi/opentelemetry-api/1.45.1/json",
+      "notice_members_sha256": {
+        "opentelemetry_api-1.45.1.dist-info/licenses/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      }
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "target": "312-linux-glibc228",
+      "filename": "opentelemetry_api-1.45.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/1e/41/f7dcf80b81ee8e71c1a2b59f14208bc723edbd89ed027a73b175abf6348e/opentelemetry_api-1.45.1-py3-none-any.whl",
+      "sha256": "b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb",
+      "metadata_url": "https://pypi.org/pypi/opentelemetry-api/1.45.1/json",
+      "notice_members_sha256": {
+        "opentelemetry_api-1.45.1.dist-info/licenses/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      }
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "target": "311-linux-glibc228",
+      "filename": "opentelemetry_api-1.45.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/1e/41/f7dcf80b81ee8e71c1a2b59f14208bc723edbd89ed027a73b175abf6348e/opentelemetry_api-1.45.1-py3-none-any.whl",
+      "sha256": "b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb",
+      "metadata_url": "https://pypi.org/pypi/opentelemetry-api/1.45.1/json",
+      "notice_members_sha256": {
+        "opentelemetry_api-1.45.1.dist-info/licenses/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      }
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "target": "312-win_amd64",
+      "filename": "pydantic-2.14.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl",
+      "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+      "metadata_url": "https://pypi.org/pypi/pydantic/2.14.1/json",
+      "notice_members_sha256": {
+        "pydantic-2.14.1.dist-info/licenses/LICENSE": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+      }
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "target": "311-win_amd64",
+      "filename": "pydantic-2.14.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl",
+      "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+      "metadata_url": "https://pypi.org/pypi/pydantic/2.14.1/json",
+      "notice_members_sha256": {
+        "pydantic-2.14.1.dist-info/licenses/LICENSE": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+      }
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "target": "312-linux-glibc228",
+      "filename": "pydantic-2.14.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl",
+      "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+      "metadata_url": "https://pypi.org/pypi/pydantic/2.14.1/json",
+      "notice_members_sha256": {
+        "pydantic-2.14.1.dist-info/licenses/LICENSE": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+      }
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "target": "311-linux-glibc228",
+      "filename": "pydantic-2.14.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl",
+      "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+      "metadata_url": "https://pypi.org/pypi/pydantic/2.14.1/json",
+      "notice_members_sha256": {
+        "pydantic-2.14.1.dist-info/licenses/LICENSE": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+      }
+    },
+    {
+      "name": "pydantic-ai-slim",
+      "version": "2.55.0",
+      "target": "312-win_amd64",
+      "filename": "pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/93/cc/16c6bc21748e3705a4c1f8e7d71dfc54228dbf142f8506a36689acb1e9c9/pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "sha256": "7fcea628e78c2f247af94504534f0577151496166998d74ec145505040b19c68",
+      "metadata_url": "https://pypi.org/pypi/pydantic-ai-slim/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_ai_slim-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-ai-slim",
+      "version": "2.55.0",
+      "target": "311-win_amd64",
+      "filename": "pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/93/cc/16c6bc21748e3705a4c1f8e7d71dfc54228dbf142f8506a36689acb1e9c9/pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "sha256": "7fcea628e78c2f247af94504534f0577151496166998d74ec145505040b19c68",
+      "metadata_url": "https://pypi.org/pypi/pydantic-ai-slim/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_ai_slim-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-ai-slim",
+      "version": "2.55.0",
+      "target": "312-linux-glibc228",
+      "filename": "pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/93/cc/16c6bc21748e3705a4c1f8e7d71dfc54228dbf142f8506a36689acb1e9c9/pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "sha256": "7fcea628e78c2f247af94504534f0577151496166998d74ec145505040b19c68",
+      "metadata_url": "https://pypi.org/pypi/pydantic-ai-slim/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_ai_slim-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-ai-slim",
+      "version": "2.55.0",
+      "target": "311-linux-glibc228",
+      "filename": "pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/93/cc/16c6bc21748e3705a4c1f8e7d71dfc54228dbf142f8506a36689acb1e9c9/pydantic_ai_slim-2.55.0-py3-none-any.whl",
+      "sha256": "7fcea628e78c2f247af94504534f0577151496166998d74ec145505040b19c68",
+      "metadata_url": "https://pypi.org/pypi/pydantic-ai-slim/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_ai_slim-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.1",
+      "target": "312-win_amd64",
+      "filename": "pydantic_core-2.50.1-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/c5/17/8bbd530b8659e9d963f5b16f6cb8e159f4cd174b4d6304e48969ab12dba8/pydantic_core-2.50.1-cp312-cp312-win_amd64.whl",
+      "sha256": "132529c83901437ff642f585216831bf5fd7a91df66829907e155192ead62498",
+      "metadata_url": "https://pypi.org/pypi/pydantic-core/2.50.1/json",
+      "notice_members_sha256": {
+        "pydantic_core-2.50.1.dist-info/licenses/LICENSE": "fbe7f615f18d135c07000e5a86325db27f42c7729699ef166ac1f7a3f4586bf4"
+      }
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.1",
+      "target": "311-win_amd64",
+      "filename": "pydantic_core-2.50.1-cp311-cp311-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/24/65/3e875e7991eaecd4d70686293ff0d8a99aa8f93dc295e6a21c3d702912fb/pydantic_core-2.50.1-cp311-cp311-win_amd64.whl",
+      "sha256": "0048b6dddc8ef4b64fccaad878bd143b0c3882ea9936279dc11d613f6b7dd1bc",
+      "metadata_url": "https://pypi.org/pypi/pydantic-core/2.50.1/json",
+      "notice_members_sha256": {
+        "pydantic_core-2.50.1.dist-info/licenses/LICENSE": "fbe7f615f18d135c07000e5a86325db27f42c7729699ef166ac1f7a3f4586bf4"
+      }
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.1",
+      "target": "312-linux-glibc228",
+      "filename": "pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/90/24/48cd98388e4ac2c08d0800af36d15413db15e20387f1038123a2c86cb2f6/pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "93ba4e9d8210d941c200431a56b2c0400b131865947903937ed3ec5404307d2e",
+      "metadata_url": "https://pypi.org/pypi/pydantic-core/2.50.1/json",
+      "notice_members_sha256": {
+        "pydantic_core-2.50.1.dist-info/licenses/LICENSE": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a"
+      }
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.1",
+      "target": "311-linux-glibc228",
+      "filename": "pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/ed/60/7f2ae89c37e69a3dc0da9ff57b0388c285542c688d05f36767770429de85/pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "8812592c85d0edf423f10eadcef42716d71e8219085ad9e85b775057b7306133",
+      "metadata_url": "https://pypi.org/pypi/pydantic-core/2.50.1/json",
+      "notice_members_sha256": {
+        "pydantic_core-2.50.1.dist-info/licenses/LICENSE": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a"
+      }
+    },
+    {
+      "name": "pydantic-graph",
+      "version": "2.55.0",
+      "target": "312-win_amd64",
+      "filename": "pydantic_graph-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/59/b5/630fc830897cfb0e458dea8ffcac5dd58791784220255637e99817b04cdd/pydantic_graph-2.55.0-py3-none-any.whl",
+      "sha256": "774a64db707e759e22a4b2d6f8849986331fac009bb3f36ba3ed0cb8eee7a150",
+      "metadata_url": "https://pypi.org/pypi/pydantic-graph/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_graph-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-graph",
+      "version": "2.55.0",
+      "target": "311-win_amd64",
+      "filename": "pydantic_graph-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/59/b5/630fc830897cfb0e458dea8ffcac5dd58791784220255637e99817b04cdd/pydantic_graph-2.55.0-py3-none-any.whl",
+      "sha256": "774a64db707e759e22a4b2d6f8849986331fac009bb3f36ba3ed0cb8eee7a150",
+      "metadata_url": "https://pypi.org/pypi/pydantic-graph/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_graph-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-graph",
+      "version": "2.55.0",
+      "target": "312-linux-glibc228",
+      "filename": "pydantic_graph-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/59/b5/630fc830897cfb0e458dea8ffcac5dd58791784220255637e99817b04cdd/pydantic_graph-2.55.0-py3-none-any.whl",
+      "sha256": "774a64db707e759e22a4b2d6f8849986331fac009bb3f36ba3ed0cb8eee7a150",
+      "metadata_url": "https://pypi.org/pypi/pydantic-graph/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_graph-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "pydantic-graph",
+      "version": "2.55.0",
+      "target": "311-linux-glibc228",
+      "filename": "pydantic_graph-2.55.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/59/b5/630fc830897cfb0e458dea8ffcac5dd58791784220255637e99817b04cdd/pydantic_graph-2.55.0-py3-none-any.whl",
+      "sha256": "774a64db707e759e22a4b2d6f8849986331fac009bb3f36ba3ed0cb8eee7a150",
+      "metadata_url": "https://pypi.org/pypi/pydantic-graph/2.55.0/json",
+      "notice_members_sha256": {
+        "pydantic_graph-2.55.0.dist-info/licenses/LICENSE": "bc0e89738f36944c8106e1947c3d69631f9c33b8f1bcb60ec4f89d677d2dfcf4"
+      }
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "target": "312-win_amd64",
+      "filename": "regex-2026.9.29-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/93/19/489bc8db91196381c935752df01ba3f607140daece33b78d88573f028e64/regex-2026.9.29-cp312-cp312-win_amd64.whl",
+      "sha256": "fdd88ed5e20b1bcdd234421e454962c971aa44b653bdb7f1ea9ef683e90fb649",
+      "metadata_url": "https://pypi.org/pypi/regex/2026.9.29/json",
+      "notice_members_sha256": {
+        "regex-2026.9.29.dist-info/licenses/LICENSE.txt": "3d220c06594b826bbabf110312f60f385f99e57e529fa4b9e536f79091f8b4c7"
+      }
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "target": "311-win_amd64",
+      "filename": "regex-2026.9.29-cp311-cp311-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/4d/4a/aab232183c70fdcf77bcf0c51819da02ec522e393e6a0bf00bcf2142e21f/regex-2026.9.29-cp311-cp311-win_amd64.whl",
+      "sha256": "1043aedf5917caa861bcb25a9c11460049656bdf0017a90a309fa8f255467725",
+      "metadata_url": "https://pypi.org/pypi/regex/2026.9.29/json",
+      "notice_members_sha256": {
+        "regex-2026.9.29.dist-info/licenses/LICENSE.txt": "3d220c06594b826bbabf110312f60f385f99e57e529fa4b9e536f79091f8b4c7"
+      }
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "target": "312-linux-glibc228",
+      "filename": "regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "39ab5894d971f9ac68baa6eca5c50387db579cfcacf36ae8df3feceb1815e6d0",
+      "metadata_url": "https://pypi.org/pypi/regex/2026.9.29/json",
+      "notice_members_sha256": {
+        "regex-2026.9.29.dist-info/licenses/LICENSE.txt": "bff55ef4cdcc8c14ce259f8e8ab60e264418440d6335f4dc138273fbd506144d"
+      }
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "target": "311-linux-glibc228",
+      "filename": "regex-2026.9.29-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/8a/70/aa08d1d2b294894b365e5f8ba5380fe3f8546acdb81f10639dfd74209c37/regex-2026.9.29-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "612b709381c0355b70d89cdb51b7f670591ed5cbbc0e3b5337488019dc667b65",
+      "metadata_url": "https://pypi.org/pypi/regex/2026.9.29/json",
+      "notice_members_sha256": {
+        "regex-2026.9.29.dist-info/licenses/LICENSE.txt": "bff55ef4cdcc8c14ce259f8e8ab60e264418440d6335f4dc138273fbd506144d"
+      }
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "target": "312-win_amd64",
+      "filename": "requests-2.34.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "metadata_url": "https://pypi.org/pypi/requests/2.34.2/json",
+      "notice_members_sha256": {
+        "requests-2.34.2.dist-info/licenses/LICENSE": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+        "requests-2.34.2.dist-info/licenses/NOTICE": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc"
+      }
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "target": "311-win_amd64",
+      "filename": "requests-2.34.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "metadata_url": "https://pypi.org/pypi/requests/2.34.2/json",
+      "notice_members_sha256": {
+        "requests-2.34.2.dist-info/licenses/LICENSE": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+        "requests-2.34.2.dist-info/licenses/NOTICE": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc"
+      }
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "target": "312-linux-glibc228",
+      "filename": "requests-2.34.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "metadata_url": "https://pypi.org/pypi/requests/2.34.2/json",
+      "notice_members_sha256": {
+        "requests-2.34.2.dist-info/licenses/LICENSE": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+        "requests-2.34.2.dist-info/licenses/NOTICE": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc"
+      }
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "target": "311-linux-glibc228",
+      "filename": "requests-2.34.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "metadata_url": "https://pypi.org/pypi/requests/2.34.2/json",
+      "notice_members_sha256": {
+        "requests-2.34.2.dist-info/licenses/LICENSE": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b",
+        "requests-2.34.2.dist-info/licenses/NOTICE": "f5110972dedad2b4e9d314518daf3b7d72d6e02e499acd802181de6f74571dcc"
+      }
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "target": "312-win_amd64",
+      "filename": "sniffio-1.3.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+      "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+      "metadata_url": "https://pypi.org/pypi/sniffio/1.3.1/json",
+      "notice_members_sha256": {
+        "sniffio-1.3.1.dist-info/LICENSE": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+        "sniffio-1.3.1.dist-info/LICENSE.APACHE2": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "sniffio-1.3.1.dist-info/LICENSE.MIT": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b"
+      }
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "target": "311-win_amd64",
+      "filename": "sniffio-1.3.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+      "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+      "metadata_url": "https://pypi.org/pypi/sniffio/1.3.1/json",
+      "notice_members_sha256": {
+        "sniffio-1.3.1.dist-info/LICENSE": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+        "sniffio-1.3.1.dist-info/LICENSE.APACHE2": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "sniffio-1.3.1.dist-info/LICENSE.MIT": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b"
+      }
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "target": "312-linux-glibc228",
+      "filename": "sniffio-1.3.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+      "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+      "metadata_url": "https://pypi.org/pypi/sniffio/1.3.1/json",
+      "notice_members_sha256": {
+        "sniffio-1.3.1.dist-info/LICENSE": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+        "sniffio-1.3.1.dist-info/LICENSE.APACHE2": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "sniffio-1.3.1.dist-info/LICENSE.MIT": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b"
+      }
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "target": "311-linux-glibc228",
+      "filename": "sniffio-1.3.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+      "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+      "metadata_url": "https://pypi.org/pypi/sniffio/1.3.1/json",
+      "notice_members_sha256": {
+        "sniffio-1.3.1.dist-info/LICENSE": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+        "sniffio-1.3.1.dist-info/LICENSE.APACHE2": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "sniffio-1.3.1.dist-info/LICENSE.MIT": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b"
+      }
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.14.0",
+      "target": "312-win_amd64",
+      "filename": "tiktoken-0.14.0-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/bd/bd/a2e884fb1402cba5be08836590320012b2d8ada0e2eef9911a64df4bcd2d/tiktoken-0.14.0-cp312-cp312-win_amd64.whl",
+      "sha256": "087538c080e5ff421abd3a0785ed63c5111d06af98e6cd0d374dbe5969147ca3",
+      "metadata_url": "https://pypi.org/pypi/tiktoken/0.14.0/json",
+      "notice_members_sha256": {
+        "tiktoken-0.14.0.dist-info/licenses/LICENSE": "258463fc3788f1f9b6a3f1820d8a87481ac24018d53167597e25d3e9031851ca"
+      }
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.14.0",
+      "target": "311-win_amd64",
+      "filename": "tiktoken-0.14.0-cp311-cp311-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/24/7f/fff1217240343c0c11b5938b98aeae0e3a266cacfac25f86f91cdcd748f0/tiktoken-0.14.0-cp311-cp311-win_amd64.whl",
+      "sha256": "c77d4a3e1deb2707819df92046b89aad1ac81d27e07616b797cbff3f62c037da",
+      "metadata_url": "https://pypi.org/pypi/tiktoken/0.14.0/json",
+      "notice_members_sha256": {
+        "tiktoken-0.14.0.dist-info/licenses/LICENSE": "258463fc3788f1f9b6a3f1820d8a87481ac24018d53167597e25d3e9031851ca"
+      }
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.14.0",
+      "target": "312-linux-glibc228",
+      "filename": "tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+      "sha256": "7896eea257fe497a2b7134474d909156c6744ce8da35bce88011a960e008aa0d",
+      "metadata_url": "https://pypi.org/pypi/tiktoken/0.14.0/json",
+      "notice_members_sha256": {
+        "tiktoken-0.14.0.dist-info/licenses/LICENSE": "418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86"
+      }
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.14.0",
+      "target": "311-linux-glibc228",
+      "filename": "tiktoken-0.14.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/24/65/8c5dddd7cb67f6571d154a58d7c6e2f07da54bf84c49b6a1839965b7c35e/tiktoken-0.14.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "sha256": "f5e7665f6624e052e5e7f6a36919ab69279decdc976d7b16b4fa15e1897d0513",
+      "metadata_url": "https://pypi.org/pypi/tiktoken/0.14.0/json",
+      "notice_members_sha256": {
+        "tiktoken-0.14.0.dist-info/licenses/LICENSE": "418cb499b436128d653d79941333a5437b7be2ea9213dcc2f04d15d5d2c51d86"
+      }
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.4",
+      "target": "312-win_amd64",
+      "filename": "truststore-0.10.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl",
+      "sha256": "adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981",
+      "metadata_url": "https://pypi.org/pypi/truststore/0.10.4/json",
+      "notice_members_sha256": {
+        "truststore-0.10.4.dist-info/licenses/LICENSE": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca"
+      }
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.4",
+      "target": "311-win_amd64",
+      "filename": "truststore-0.10.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl",
+      "sha256": "adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981",
+      "metadata_url": "https://pypi.org/pypi/truststore/0.10.4/json",
+      "notice_members_sha256": {
+        "truststore-0.10.4.dist-info/licenses/LICENSE": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca"
+      }
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.4",
+      "target": "312-linux-glibc228",
+      "filename": "truststore-0.10.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl",
+      "sha256": "adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981",
+      "metadata_url": "https://pypi.org/pypi/truststore/0.10.4/json",
+      "notice_members_sha256": {
+        "truststore-0.10.4.dist-info/licenses/LICENSE": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca"
+      }
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.4",
+      "target": "311-linux-glibc228",
+      "filename": "truststore-0.10.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/19/97/56608b2249fe206a67cd573bc93cd9896e1efb9e98bce9c163bcdc704b88/truststore-0.10.4-py3-none-any.whl",
+      "sha256": "adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981",
+      "metadata_url": "https://pypi.org/pypi/truststore/0.10.4/json",
+      "notice_members_sha256": {
+        "truststore-0.10.4.dist-info/licenses/LICENSE": "33be7b7e8fa4fd19b1760e1a8ed8a668bdab852c91b692dd41424bcb725a9fca"
+      }
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "target": "312-win_amd64",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "metadata_url": "https://pypi.org/pypi/typing-extensions/4.16.0/json",
+      "notice_members_sha256": {
+        "typing_extensions-4.16.0.dist-info/licenses/LICENSE": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+      }
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "target": "311-win_amd64",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "metadata_url": "https://pypi.org/pypi/typing-extensions/4.16.0/json",
+      "notice_members_sha256": {
+        "typing_extensions-4.16.0.dist-info/licenses/LICENSE": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+      }
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "target": "312-linux-glibc228",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "metadata_url": "https://pypi.org/pypi/typing-extensions/4.16.0/json",
+      "notice_members_sha256": {
+        "typing_extensions-4.16.0.dist-info/licenses/LICENSE": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+      }
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "target": "311-linux-glibc228",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "metadata_url": "https://pypi.org/pypi/typing-extensions/4.16.0/json",
+      "notice_members_sha256": {
+        "typing_extensions-4.16.0.dist-info/licenses/LICENSE": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+      }
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "target": "312-win_amd64",
+      "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "metadata_url": "https://pypi.org/pypi/typing-inspection/0.4.4/json",
+      "notice_members_sha256": {
+        "typing_inspection-0.4.4.dist-info/licenses/LICENSE": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3"
+      }
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "target": "311-win_amd64",
+      "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "metadata_url": "https://pypi.org/pypi/typing-inspection/0.4.4/json",
+      "notice_members_sha256": {
+        "typing_inspection-0.4.4.dist-info/licenses/LICENSE": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3"
+      }
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "target": "312-linux-glibc228",
+      "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "metadata_url": "https://pypi.org/pypi/typing-inspection/0.4.4/json",
+      "notice_members_sha256": {
+        "typing_inspection-0.4.4.dist-info/licenses/LICENSE": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3"
+      }
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "target": "311-linux-glibc228",
+      "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "metadata_url": "https://pypi.org/pypi/typing-inspection/0.4.4/json",
+      "notice_members_sha256": {
+        "typing_inspection-0.4.4.dist-info/licenses/LICENSE": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3"
+      }
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "target": "312-win_amd64",
+      "filename": "urllib3-2.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl",
+      "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+      "metadata_url": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "notice_members_sha256": {
+        "urllib3-2.8.0.dist-info/licenses/LICENSE.txt": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686"
+      }
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "target": "311-win_amd64",
+      "filename": "urllib3-2.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl",
+      "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+      "metadata_url": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "notice_members_sha256": {
+        "urllib3-2.8.0.dist-info/licenses/LICENSE.txt": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686"
+      }
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "target": "312-linux-glibc228",
+      "filename": "urllib3-2.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl",
+      "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+      "metadata_url": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "notice_members_sha256": {
+        "urllib3-2.8.0.dist-info/licenses/LICENSE.txt": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686"
+      }
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "target": "311-linux-glibc228",
+      "filename": "urllib3-2.8.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl",
+      "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+      "metadata_url": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "notice_members_sha256": {
+        "urllib3-2.8.0.dist-info/licenses/LICENSE.txt": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686"
+      }
+    }
+  ],
+  "license_source_archives": [
+    {
+      "name": "logfire-api",
+      "version": "5.1.1",
+      "url": "https://files.pythonhosted.org/packages/ec/57/cad073851d8ed046314bc99161f94cd495f41c0a96e9960ece81f09b381b/logfire_api-5.1.1.tar.gz",
+      "sha256": "3b0b6130ff43fe3570aaaa86ca4db9527c697f11c30157a644a41e702987eb8b",
+      "purpose": "license-only inspection; no extraction, setup execution or install"
+    },
+    {
+      "name": "proxy-tools",
+      "version": "0.1.0",
+      "url": "https://files.pythonhosted.org/packages/f2/cf/77d3e19b7fabd03895caca7857ef51e4c409e0ca6b37ee6e9f7daa50b642/proxy_tools-0.1.0.tar.gz",
+      "sha256": "ccb3751f529c047e2d8a58440d86b205303cf0fe8146f784d1cbcd94f0a28010",
+      "purpose": "license-only inspection; no extraction, setup execution or install"
+    }
+  ],
+  "probe_interface": {
+    "proxy_tools": {
+      "file": "docs/third-party-notices/assistant-dependencies/interface/proxy-tools-0.1.0/LICENSE.txt",
+      "source_sha256": "a428fb8a2e762af3eb0a6edbbb88e9b42ccfee80fd9b423958bcacf9b9abbfe4",
+      "copied_sha256": "f96cf2b17c9b0cede77438165fdc6ea2f91bedb248d1779538727a2b93d71e12",
+      "source_url": "https://api.github.com/repos/jtushman/proxy_tools/git/blobs/078411c7399fbc0454f36cbe8c8cdbaaba7ebc95",
+      "retrieval_url": "https://raw.githubusercontent.com/jtushman/proxy_tools/master/LICENSE.txt",
+      "status": "FAIL: distribution MIT conflicts with source BSD; review required",
+      "sdist_source_member": "proxy_tools-0.1.0/proxy_tools/__init__.py",
+      "sdist_source_sha256": "d1539d95e1a713c068ca81d42e047b2c76568964cf277596d4e19efb22f476be",
+      "source_header": "Copyright (c) 2013 Armin Ronacher, adapted by Jonathan Tushman 2014; BSD"
+    }
+  }
+}

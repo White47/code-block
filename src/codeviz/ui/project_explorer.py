@@ -13,6 +13,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+from typing import Callable
 from uuid import uuid4
 
 from codeviz.source_handles import opened_file_path
@@ -139,9 +140,19 @@ class ProjectExplorerService:
         self._tokens: OrderedDict[str, _Operation] = OrderedDict()
 
     def bind_project(self, root: Path, epoch: str | None = None) -> None:
+        identity = _identity(root.lstat())
         self._root = root
-        self._root_identity = _identity(root.lstat())
+        self._root_identity = identity
         self._epoch = epoch if epoch is not None else uuid4().hex
+        self._revisions.clear()
+        self._revision_keys.clear()
+        self._cursors.clear()
+        self._tokens.clear()
+
+    def unbind_project(self) -> None:
+        self._root = None
+        self._root_identity = None
+        self._epoch = ""
         self._revisions.clear()
         self._revision_keys.clear()
         self._cursors.clear()
@@ -392,7 +403,8 @@ class ProjectExplorerService:
             raise ProjectFileError("FILE_READ_FAILED", "The directory could not be read safely. Refresh the tree.") from None
 
     def create_entry(self, project_path: str, epoch: str, parent: str, parent_revision: str,
-                     name: str, kind: str) -> JsonObject:
+                     name: str, kind: str, *,
+                     before_mutation: Callable[[], None] | None = None) -> JsonObject:
         root = self._project(project_path, epoch)
         parent = relative_path(parent, allow_root=True)
         validate_name(name)
@@ -415,6 +427,8 @@ class ProjectExplorerService:
             if self._directory(directory) != stamp:
                 raise _conflict()
             target = root / relative
+            if before_mutation is not None:
+                before_mutation()
             attempted = True
             if kind == "file":
                 handle = target.open("xb")
@@ -535,7 +549,8 @@ class ProjectExplorerService:
         except OSError:
             raise ProjectFileError("FILE_READ_FAILED", "The operation could not be prepared safely. Refresh the tree.") from None
 
-    def apply_operation(self, project_path: str, epoch: str, token: str) -> JsonObject:
+    def apply_operation(self, project_path: str, epoch: str, token: str, *,
+                        before_mutation: Callable[[], None] | None = None) -> JsonObject:
         root = self._project(project_path, epoch)
         self._prune()
         prepared = self._tokens.pop(token, None)
@@ -561,6 +576,11 @@ class ProjectExplorerService:
                         raise _conflict()
         except OSError:
             raise _conflict() from None
+        if (prepared.operation not in {"rename", "move", "delete"}
+                or (prepared.operation in {"rename", "move"} and prepared.new_path is None)):
+            raise ValueError("unsupported prepared operation")
+        if before_mutation is not None:
+            before_mutation()
         try:
             if prepared.operation == "rename" and prepared.new_path is not None:
                 _rename_no_replace(root / prepared.path, root / prepared.new_path)

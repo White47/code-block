@@ -2,18 +2,239 @@
 
 import json
 import unittest
+from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from codeviz.analysis.project import analyze_project
 from codeviz.core import ViewKind
-from codeviz.persistence.fingerprint import fingerprint_project, outdated_reasons
+from codeviz.persistence.codec import decode_analysis, encode_analysis
+from codeviz.persistence.fingerprint import (
+    ProjectFingerprint,
+    fingerprint_project,
+    outdated_reasons,
+)
 from codeviz.persistence.store import CacheError, CacheStore
 from codeviz.views import DetailIslandState, ViewportState, ViewState
 
 
 class CacheStoreTests(unittest.TestCase):
+    @contextmanager
+    def provenance_fixture(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_bytes(b"value = 1\n# PRIVATE_SOURCE_MARKER\n")
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            store.save_analysis(project, analysis, fingerprint)
+            node_id = next(iter(analysis.symbol_index.entries))
+            store.save_view_state(project, ViewState(
+                active_view=ViewKind.SYMBOL,
+                positions_by_view={"Symbol": {node_id: (12., 18.)}}))
+            store.save_annotations(project, {node_id: "keep review"})
+            yield project, store, analysis, fingerprint
+
+    def assert_source_rejected(self, project, store, analysis, fingerprint, message):
+        path = store.analysis_path(project)
+        before = {item: item.read_bytes() for item in path.parent.glob("*.json")}
+        with patch("codeviz.persistence.store.encode_analysis", wraps=encode_analysis) as encode:
+            with self.assertRaises(CacheError) as caught:
+                store.save_analysis(project, analysis, fingerprint)
+            self.assertEqual(str(caught.exception), message)
+            encode.assert_not_called()
+        self.assertEqual({item: item.read_bytes() for item in before}, before)
+        # Exercise the real decoder and then the load boundary using a tampered cache.
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["analysis"] = encode_analysis(analysis)
+        payload["fingerprint"] = fingerprint.to_payload()
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        tampered = path.read_bytes()
+        with patch("codeviz.persistence.store.decode_analysis", wraps=decode_analysis) as decode:
+            with self.assertRaises(CacheError) as caught:
+                store.load_analysis(project)
+            self.assertEqual(str(caught.exception), message)
+            decode.assert_called_once()
+        self.assertEqual(path.read_bytes(), tampered)
+        for item, content in before.items():
+            if item != path:
+                self.assertEqual(item.read_bytes(), content)
+        path.write_bytes(before[path])
+
+    def test_matching_inventory_accepts_reordered_analysis_and_casefold_py_suffix(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            (project / "other.py").write_bytes(b"other = 2\n")
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            reversed_analysis = replace(analysis, files=tuple(reversed(analysis.files)))
+            store.save_analysis(project, reversed_analysis, fingerprint)
+            saved = store.load_analysis(project)
+            self.assertIsNotNone(saved)
+            self.assertEqual([file.content_hash for file in saved.analysis.files],
+                             [file.content_hash for file in reversed_analysis.files])
+            renamed = replace(analysis.files[0], relative_path="other.PY")
+            upper = replace(analysis, files=(renamed, analysis.files[1]))
+            upper_fingerprint = replace(fingerprint, files=tuple(sorted(
+                ("other.PY" if path == "other.py" else path, digest)
+                for path, digest in fingerprint.files)))
+            store.save_analysis(project, upper, upper_fingerprint)
+            self.assertEqual(store.load_analysis(project).analysis.files[0].relative_path,
+                             "other.PY")
+
+    def test_empty_analysis_and_fingerprint_inventories_are_accepted(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            store = CacheStore(Path(data_dir))
+            store.save_analysis(project, analysis, fingerprint)
+            saved = store.load_analysis(project)
+            self.assertEqual(saved.analysis.files, ())
+            self.assertEqual(saved.fingerprint.files, ())
+
+    def test_store_rejects_duplicate_missing_and_extra_inventory_on_save_and_load(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            file = analysis.files[0]
+            cases = (
+                (replace(analysis, files=(file, file)), fingerprint),
+                (replace(analysis, files=()), fingerprint),
+                (replace(analysis, files=(file, replace(file, relative_path="extra.py"))), fingerprint),
+                (analysis, replace(fingerprint, files=())),
+                (analysis, replace(fingerprint, files=tuple(sorted(
+                    (*fingerprint.files, ("extra.py", file.content_hash)))))),
+            )
+            for index, (candidate, manifest) in enumerate(cases):
+                with self.subTest(risk=index):
+                    self.assert_source_rejected(project, store, candidate, manifest,
+                                                "analysis cache source inventory mismatch")
+
+    def test_store_rejects_noncanonical_or_non_python_paths_on_both_boundaries(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            cases = (("", "analysis"), ("./run.py", "both"),
+                     ("pkg/../run.py", "analysis"), ("pkg//run.py", "fingerprint"),
+                     ("pkg\\run.py", "both"), ("/run.py", "analysis"),
+                     ("C:/run.py", "fingerprint"), ("../run.py", "both"),
+                     ("run.txt", "both"))
+            for path, side in cases:
+                with self.subTest(path=path, side=side):
+                    candidate = (replace(analysis, files=(replace(
+                        analysis.files[0], relative_path=path),))
+                        if side != "fingerprint" else analysis)
+                    manifest = (replace(fingerprint, files=((path, analysis.files[0].content_hash),))
+                                if side != "analysis" else fingerprint)
+                    self.assert_source_rejected(project, store, candidate, manifest,
+                                                "analysis cache source inventory mismatch")
+
+    def test_store_rejects_success_null_and_any_nonnull_hash_mismatch(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            (project / "bad.py").write_bytes(b"def broken(:\n")
+            failed = analyze_project(project).files[0]
+            self.assertFalse(failed.was_parsed)
+            for parsed in (replace(analysis.files[0], content_hash=None),
+                           replace(analysis.files[0], content_hash="0" * 64),
+                           replace(failed, relative_path="run.py")):
+                with self.subTest(success=parsed.was_parsed, digest=parsed.content_hash):
+                    self.assert_source_rejected(project, store,
+                                                replace(analysis, files=(parsed,)), fingerprint,
+                                                "analysis cache source hash mismatch")
+
+    def test_failed_parse_allows_null_or_matching_hash_without_backfill(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            (project / "run.py").write_bytes(b"def broken(:\n")
+            failed = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            self.assertFalse(failed.files[0].was_parsed)
+            for digest in (None, failed.files[0].content_hash):
+                with self.subTest(digest=digest):
+                    candidate = replace(failed, files=(replace(failed.files[0], content_hash=digest),))
+                    store.save_analysis(project, candidate, fingerprint)
+                    saved = store.load_analysis(project)
+                    self.assertFalse(saved.analysis.files[0].was_parsed)
+                    self.assertIsNone(saved.analysis.files[0].tree)
+                    self.assertEqual(saved.analysis.files[0].content_hash, digest)
+
+    def test_manual_fingerprint_validation_precedes_encoding_and_preserves_old_bytes(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            file = fingerprint.files[0]
+            cases = (
+                replace(fingerprint, files=(file, file)),
+                replace(fingerprint, files=((file[0], "PRIVATE_HASH_MARKER"),)),
+                replace(fingerprint, files=((file[0], "A" * 64),)),
+                replace(fingerprint, files=(("z.py", file[1]), file)),
+                replace(fingerprint, ignore_paths=("../PRIVATE_PATH_MARKER",)),
+                replace(fingerprint, parser_version="old-parser"),
+                replace(fingerprint, semantic_version="2"),
+                replace(fingerprint, analysis_version="3"),
+                replace(fingerprint, analysis_version=4),
+            )
+            path = store.analysis_path(project)
+            before = {item: item.read_bytes() for item in path.parent.glob("*.json")}
+            for index, manifest in enumerate(cases):
+                with self.subTest(risk=index):
+                    with patch("codeviz.persistence.store.encode_analysis", wraps=encode_analysis) as encode:
+                        with self.assertRaises(CacheError) as caught:
+                            store.save_analysis(project, analysis, manifest)
+                        encode.assert_not_called()
+                    message = str(caught.exception)
+                    self.assertNotIn(str(project), message)
+                    for secret in (file[0], file[1], "PRIVATE_HASH_MARKER", "PRIVATE_PATH_MARKER",
+                                   "PRIVATE_SOURCE_MARKER", "old-parser"):
+                        self.assertNotIn(secret, message)
+                    self.assertEqual({item: item.read_bytes() for item in before}, before)
+            with patch.object(ProjectFingerprint, "from_payload", wraps=ProjectFingerprint.from_payload) as validate:
+                store.save_analysis(project, analysis, fingerprint)
+                validate.assert_called_once_with(fingerprint.to_payload())
+
+    def test_load_validates_saved_sources_without_reading_changed_disk_source(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            (project / "run.py").write_bytes(b"value = 999\n")
+            with patch("codeviz.source_handles.read_source_bytes", side_effect=AssertionError("source reread")), \
+                    patch("codeviz.persistence.fingerprint.read_source_bytes", side_effect=AssertionError("source reread")), \
+                    patch("codeviz.analysis.python.read_source_bytes", side_effect=AssertionError("source reread")):
+                saved = store.load_analysis(project)
+            self.assertEqual(saved.fingerprint, fingerprint)
+            self.assertEqual(saved.analysis.files[0].content_hash, analysis.files[0].content_hash)
+            payload = json.loads(store.analysis_path(project).read_text(encoding="utf-8"))
+            payload["fingerprint"]["files"][0][1] = "0" * 64
+            store.analysis_path(project).write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(CacheError, "^analysis cache source hash mismatch$"):
+                store.load_analysis(project)
+
+    def test_load_rejects_decoded_inventory_and_hash_risk_classes(self):
+        with self.provenance_fixture() as (project, store, analysis, fingerprint):
+            path = store.analysis_path(project)
+            original = json.loads(path.read_text(encoding="utf-8"))
+            file = analysis.files[0]
+            cases = (
+                (replace(analysis, files=(file, file)), fingerprint,
+                 "analysis cache source inventory mismatch"),
+                (replace(analysis, files=()), fingerprint,
+                 "analysis cache source inventory mismatch"),
+                (analysis, replace(fingerprint, files=()),
+                 "analysis cache source inventory mismatch"),
+                (replace(analysis, files=(replace(file, relative_path="./run.py"),)),
+                 replace(fingerprint, files=(("./run.py", file.content_hash),)),
+                 "analysis cache source inventory mismatch"),
+                (analysis, replace(fingerprint, files=(("run.py", "0" * 64),)),
+                 "analysis cache source hash mismatch"),
+                (replace(analysis, files=(replace(file, content_hash=None),)), fingerprint,
+                 "analysis cache source hash mismatch"),
+            )
+            for index, (candidate, manifest, message) in enumerate(cases):
+                with self.subTest(risk=index):
+                    payload = {**original, "analysis": encode_analysis(candidate),
+                               "fingerprint": manifest.to_payload()}
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    before = {item: item.read_bytes() for item in path.parent.glob("*.json")}
+                    with patch("codeviz.persistence.store.decode_analysis", wraps=decode_analysis) as decode:
+                        with self.assertRaises(CacheError) as caught:
+                            store.load_analysis(project)
+                        self.assertEqual(str(caught.exception), message)
+                        decode.assert_called_once()
+                    self.assertEqual({item: item.read_bytes() for item in before}, before)
+
     def test_save_load_and_source_change_do_not_write_into_project(self):
         with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
             project, data = Path(project_dir), Path(data_dir)

@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 from typing import cast
 
 from codeviz.analysis.project import ProjectAnalysis
+from codeviz.core import SourceAnchor
 from codeviz.persistence.codec import decode_analysis, encode_analysis
 from codeviz.persistence.fingerprint import (
     ANALYSIS_VERSION,
@@ -30,6 +31,42 @@ class CacheError(ValueError):
 
 class CacheVersionMismatch(CacheError):
     """Old analysis requires reanalysis, not corruption recovery."""
+
+
+def _validate_source_path(path: str) -> None:
+    try:
+        if (type(path) is not str or SourceAnchor(path, 1).file_path != path
+                or not path.casefold().endswith(".py")):
+            raise ValueError("invalid source path")
+    except (TypeError, ValueError):
+        raise CacheError("analysis cache source inventory mismatch") from None
+
+
+def _validate_analysis_sources(analysis: ProjectAnalysis,
+                               fingerprint: ProjectFingerprint) -> None:
+    """Verify persisted provenance without reading current project sources."""
+    expected: dict[str, str] = {}
+    for path, digest in fingerprint.files:
+        _validate_source_path(path)
+        if path in expected:
+            raise CacheError("analysis cache source inventory mismatch")
+        expected[path] = digest
+    seen: set[str] = set()
+    for parsed in analysis.files:
+        path = parsed.relative_path
+        _validate_source_path(path)
+        if path in seen:
+            raise CacheError("analysis cache source inventory mismatch")
+        seen.add(path)
+        if path not in expected:
+            raise CacheError("analysis cache source inventory mismatch")
+        if parsed.content_hash is None:
+            if parsed.was_parsed:
+                raise CacheError("analysis cache source hash mismatch")
+        elif parsed.content_hash != expected[path]:
+            raise CacheError("analysis cache source hash mismatch")
+    if seen != expected.keys():
+        raise CacheError("analysis cache source inventory mismatch")
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,12 +169,24 @@ class CacheStore:
     def save_analysis(self, project_root: Path, analysis: ProjectAnalysis,
                       fingerprint: ProjectFingerprint) -> None:
         root, directory = self._project_dir(project_root)
-        document = {
-            "schema_version": _SCHEMA_VERSION,
-            "project_root": str(root),
-            "fingerprint": fingerprint.to_payload(),
-            "analysis": encode_analysis(analysis),
-        }
+        try:
+            fingerprint_payload = fingerprint.to_payload()
+            validated = ProjectFingerprint.from_payload(fingerprint_payload)
+            if (validated.analysis_version != ANALYSIS_VERSION or
+                    validated.semantic_version != SEMANTIC_VERSION or
+                    validated.parser_version != PARSER_VERSION):
+                raise CacheVersionMismatch("analysis versions changed; reanalysis required")
+            _validate_analysis_sources(analysis, validated)
+            document = {
+                "schema_version": _SCHEMA_VERSION,
+                "project_root": str(root),
+                "fingerprint": fingerprint_payload,
+                "analysis": encode_analysis(analysis),
+            }
+        except (TypeError, ValueError, RecursionError) as error:
+            if isinstance(error, CacheError):
+                raise
+            raise CacheError("cannot save analysis cache") from None
         self._write_json(directory / "analysis.json", document, _MAX_CACHE_BYTES)
 
     def load_analysis(self, project_root: Path) -> CachedAnalysis | None:
@@ -160,11 +209,12 @@ class CacheStore:
                     fingerprint.parser_version != PARSER_VERSION):
                 raise CacheVersionMismatch("analysis versions changed; reanalysis required")
             analysis = decode_analysis(payload["analysis"])
+            _validate_analysis_sources(analysis, fingerprint)
             return CachedAnalysis(analysis, fingerprint)
         except (OSError, UnicodeError, TypeError, ValueError, RecursionError) as error:
             if isinstance(error, CacheError):
                 raise
-            raise CacheError(f"cannot load analysis cache: {error}") from error
+            raise CacheError("cannot load analysis cache") from None
 
     def save_view_state(self, project_root: Path, state: ViewState) -> None:
         root, directory = self._project_dir(project_root)

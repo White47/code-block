@@ -2,6 +2,7 @@ import ast
 import json
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from codeviz.core import (
     Confidence,
@@ -16,7 +17,9 @@ from codeviz.core import (
     VisibleNode,
 )
 from codeviz.navigation import RevealTarget
+from codeviz.persistence.store import CacheStore
 from codeviz.search import SearchResponse, SearchResult
+from codeviz.ui import web_contract
 from codeviz.ui.controller import AnalysisStatus, SourceDocument
 from codeviz.ui.presenter import (
     HealthData,
@@ -26,6 +29,7 @@ from codeviz.ui.presenter import (
     ProblemData,
     RelationData,
 )
+from codeviz.ui.web_bridge import DesktopBridge
 from codeviz.ui.web_contract import (
     SCHEMA_VERSION,
     error_payload,
@@ -45,6 +49,21 @@ from codeviz.views.state import DetailIslandState, ViewportState, ViewState
 
 
 class WebContractTests(unittest.TestCase):
+    def test_assistant_failure_envelope_never_formats_raw_diagnostics(self) -> None:
+        builder = getattr(web_contract, "assistant_error_payload", None)
+        self.assertTrue(callable(builder), "Missing assistant error envelope")
+        self.assertEqual(builder("AI_EVIDENCE_INVALID"), {
+            "ok": False, "schemaVersion": SCHEMA_VERSION,
+            "error": {"code": "AI_EVIDENCE_INVALID",
+                      "message": "Assistant evidence validation failed."},
+        })
+
+        class Diagnostic:
+            def __str__(self):
+                raise AssertionError("Raw assistant diagnostics must not be formatted")
+
+        self.assertEqual(builder(Diagnostic()), builder("AI_PROTOCOL_INCOMPATIBLE"))
+
     def test_graph_payload_is_json_safe_and_preserves_visible_contract(self) -> None:
         anchor = SourceAnchor("model.py", 3, 4, 5, 8)
         node = VisibleNode(
@@ -393,6 +412,18 @@ class WebContractTests(unittest.TestCase):
             "Architecture": {"model": [9.0, 10.0]},
         })
         json.dumps([session, preferences, view_state], allow_nan=False)
+
+    def test_bridge_adds_nullable_identity_without_changing_session_payload(self) -> None:
+        base = session_payload(None, AnalysisStatus.NOT_ANALYZED, (), None, ())
+        with TemporaryDirectory() as temporary:
+            response = DesktopBridge(cache_store=CacheStore(Path(temporary))).get_session()
+        self.assertTrue(response["ok"], response)
+        session = response["data"]
+        self.assertEqual(set(session) - set(base), {
+            "fileSystemCaseSensitive", "projectEpoch", "analysisGeneration"})
+        self.assertIsNone(session["projectEpoch"])
+        self.assertIsNone(session["analysisGeneration"])
+        json.dumps(response, allow_nan=False)
 
     def test_search_payload_includes_python_planned_reveal_target(self) -> None:
         result = SearchResult(

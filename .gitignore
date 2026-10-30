@@ -12,3 +12,12 @@ build/
 dist/
 work/
 .worktrees/
+
+# Windows 变量未展开导致误建的目录
+%SystemDrive%/
+
+# Local agent configuration and private environment settings
+/.codex/
+/.env
+/.env.*
+!/.env.example

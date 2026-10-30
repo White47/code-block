@@ -152,6 +152,8 @@ def build_inspector(view: VisibleGraph, selected_id: str,
     ))
     evidence = (*evidence, *(line for entry in analysis.generic_entries
                              if entry.root_symbol_id == selected_id for line in entry.evidence))
+    if view.view_kind == ViewKind.CALLS:
+        evidence = (*evidence, "Static call sites and static targets; not a runtime execution trace")
     if view.view_kind == ViewKind.FUNCTION_FLOW:
         evidence = (*evidence, "Static scope CFG and callpoints; not a runtime execution trace")
     if node.metadata.get("definition_projection"):

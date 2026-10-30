@@ -1,6 +1,8 @@
 # Project Explorer Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Architect reviews the contract before core implementation; unit writers use TDD. Stay in the user-selected current workspace. No automatic Git commit/push.
+>
+> **Process amendment (2026-10-15):** process is governed by the repository `AGENTS.md`. Do not load `subagent-driven-development` or `executing-plans`; do not run a per-task spec/quality review pair. Technical requirements below are unchanged.
 
 **Goal:** Add a real project tree and safe file management to the existing native PC application, then add internal drag/drop only after base acceptance.
 

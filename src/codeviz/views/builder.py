@@ -16,6 +16,7 @@ from codeviz.core import (
 )
 
 from .architecture_structure import build_architecture_structure
+from .calls import build_calls_view
 from .code_context import build_code_context
 from .data import critical_data_slice
 from .function_flow import build_function_flow
@@ -83,6 +84,8 @@ def _visible_node(query: GraphQuery, node_id: str) -> VisibleNode:
 def build_visible_graph(analysis: ProjectAnalysis, request: ViewRequest,
                         state: ViewState | None = None) -> VisibleGraph:
     """Return only the source-backed local graph permitted by this request's budgets."""
+    if request.view_kind == ViewKind.CALLS:
+        return build_calls_view(analysis, request, state or ViewState())
     if request.view_kind == ViewKind.ARCHITECTURE:
         return build_architecture_structure(analysis, request, state or ViewState())
     if request.view_kind == ViewKind.PROJECT_STRUCTURE:

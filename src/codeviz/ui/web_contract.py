@@ -5,6 +5,7 @@ from math import isfinite
 from pathlib import Path
 from typing import TypeAlias, cast
 
+from codeviz.assistant.issues import issue_for_code
 from codeviz.core import (
     SourceAnchor,
     VisibleEdge,
@@ -478,6 +479,13 @@ def success_payload(data: JsonValue,
         payload["requestId"] = request_id
     payload["data"] = _json_clone(data)
     return _json_object(payload)
+
+
+def assistant_error_payload(code: object) -> JsonObject:
+    """Build an assistant failure envelope from fixed codes, never diagnostics."""
+    issue = issue_for_code(code)
+    return {"ok": False, "schemaVersion": SCHEMA_VERSION,
+            "error": {"code": issue.code, "message": issue.message}}
 
 
 def error_payload(error: Exception,

@@ -3,6 +3,7 @@
 import importlib
 import json
 import mimetypes
+import os
 import re
 import sys
 from collections.abc import Callable, Iterable
@@ -26,6 +27,10 @@ _API_METHODS = (
     "open_source_document", "save_source_document", "approve_close", "cancel_close",
     "list_project_directory", "create_project_entry", "prepare_project_entry_operation",
     "apply_project_entry_operation",
+    "assistant_get_settings", "assistant_configure", "assistant_test_connection", "assistant_get_state",
+    "assistant_grant_consent", "assistant_revoke_consent", "assistant_new_conversation", "assistant_clear_conversation",
+    "assistant_start", "assistant_poll", "assistant_cancel", "assistant_resolve_evidence",
+    "assistant_get_consent_candidates",
 )
 _API_ARITIES = {
     "get_session": (0, 0), "open_project": (1, 1), "choose_project": (0, 0),
@@ -42,6 +47,11 @@ _API_ARITIES = {
     "approve_close": (1, 1), "cancel_close": (1, 1),
     "list_project_directory": (1, 1), "create_project_entry": (1, 1),
     "prepare_project_entry_operation": (1, 1), "apply_project_entry_operation": (1, 1),
+    "assistant_get_settings": (0, 0), "assistant_configure": (1, 1), "assistant_test_connection": (1, 1),
+    "assistant_get_state": (1, 1), "assistant_grant_consent": (1, 1), "assistant_revoke_consent": (1, 1),
+    "assistant_new_conversation": (1, 1), "assistant_clear_conversation": (1, 1), "assistant_start": (1, 1),
+    "assistant_poll": (1, 1), "assistant_cancel": (1, 1), "assistant_resolve_evidence": (1, 1),
+    "assistant_get_consent_candidates": (1, 1),
 }
 _CALLBACK_TOKEN = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _CSP = (
@@ -55,8 +65,11 @@ _CSP = (
 class _NativeCloseGuard:
     """Veto synchronously; all renderer and destroy work runs off the UI thread."""
 
-    def __init__(self, window: Any) -> None:
+    def __init__(self, window: Any, before_destroy: Callable[[], None] | None = None,
+                 after_closed: Callable[[], None] | None = None) -> None:
         self._window = window
+        self._before_destroy = before_destroy
+        self._after_closed = after_closed
         self._lock = RLock()
         self._nonce = uuid4().hex
         self._epoch = uuid4().hex
@@ -88,8 +101,22 @@ class _NativeCloseGuard:
 
     def closed(self) -> None:
         with self._lock:
+            was_alive = self._alive
             self._alive = self._ready = False
             self._reset()
+        if was_alive and self._after_closed is not None:
+            try:
+                Thread(target=self._finish_cleanup, daemon=True).start()
+            except Exception:
+                pass  # The launcher also retries final cleanup after its loop exits.
+
+    def _finish_cleanup(self) -> None:
+        try:
+            if self._after_closed is not None:
+                self._after_closed()
+        except Exception:
+            # No renderer remains to notify. Never log credentials/provider state.
+            pass
 
     def _expire(self, request: str) -> None:
         with self._lock:
@@ -156,9 +183,16 @@ class _NativeCloseGuard:
             if (self._epoch != epoch or not self._alive or not self._ready
                     or self._approved_request != request):
                 return
-            self._permit = request
         failed = False
         try:
+            if self._before_destroy is not None:
+                self._before_destroy()
+            # Cleanup may block; never grant a native close permit during it.
+            with self._lock:
+                if (self._epoch != epoch or not self._alive or not self._ready
+                        or self._approved_request != request):
+                    return
+                self._permit = request
             self._window.destroy()
         except Exception:
             failed = True
@@ -184,7 +218,10 @@ class _NativeCloseGuard:
 
 
 def _install_close_guard(window: Any, api: Any) -> None:
-    guard = _NativeCloseGuard(window)
+    cleanup = getattr(api, "_prepare_assistant_close", None)
+    final_cleanup = getattr(api, "_finish_assistant_close", None)
+    guard = _NativeCloseGuard(window, cleanup if callable(cleanup) else None,
+                              final_cleanup if callable(final_cleanup) else None)
     api._bind_close_handler(guard.respond)
     # Old launcher doubles omit lifecycle events; the real 6.2.1 window has all.
     for name in ("closing", "before_load", "loaded", "closed"):
@@ -404,13 +441,49 @@ def create_window(webview: Any = None, *, bridge: DesktopBridge | Any = None,
     return window
 
 
+def _create_desktop_bridge() -> DesktopBridge:
+    """Pair the native launcher with memory-only AI state, never a provider.
+
+    Optional SDK admission still belongs to the runtime gate. Configuration,
+    offline state and source navigation do not require importing that SDK.
+    """
+    from codeviz.assistant._deepseek_admission import _create_application_runtime
+
+    from .controller import AppController
+
+    cache = None
+    diagnostics = None
+    if os.environ.get("CODEVIZ_CLOSED_VALIDATION_DIAGNOSTICS") == "1":
+        from codeviz.assistant._validation_diagnostics import startup
+        from codeviz.persistence.store import CacheStore
+
+        cache = CacheStore()
+        diagnostics = startup(cache.data_dir, "1")
+    runtime = (_create_application_runtime() if diagnostics is None else
+               _create_application_runtime(_validation_diagnostics=diagnostics))
+    try:
+        controller = (AppController(assistant_publication_mirror=runtime) if cache is None else
+                      AppController(cache_store=cache, assistant_publication_mirror=runtime))
+        bridge = DesktopBridge(controller=controller)
+        bridge._bind_assistant_runtime(runtime)
+        return bridge
+    except Exception:
+        runtime.shutdown()
+        raise
+
+
 def main() -> None:
     """Launch the GUI only when explicitly invoked."""
     webview = _load_webview()
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
     webview.settings["ALLOW_DOWNLOADS"] = False
-    create_window(webview, index_path=resolve_frontend_index())
-    webview.start(gui="edgechromium")
+    index = resolve_frontend_index()
+    bridge = _create_desktop_bridge()
+    try:
+        create_window(webview, bridge=bridge, index_path=index)
+        webview.start(gui="edgechromium")
+    finally:
+        bridge._finish_assistant_close()
 
 
 if __name__ == "__main__":

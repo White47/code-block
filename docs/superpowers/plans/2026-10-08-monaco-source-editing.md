@@ -1,6 +1,8 @@
 # Monaco Source Editing Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Do not implement source writes before architecture review approves the concrete contract.
+>
+> **Process amendment (2026-10-15):** process is governed by the repository `AGENTS.md`. Do not load `subagent-driven-development` or `executing-plans`; do not run a per-task spec/quality review pair. Technical requirements below are unchanged.
 
 **Goal:** Add offline, VSCode-style Python editing with explicit safe save and unsaved-change protection to the existing PC application.
 

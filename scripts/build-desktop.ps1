@@ -52,16 +52,25 @@ foreach ($relative in @('frontend/package.json', 'frontend/package-lock.json',
 }
 $dependencyCheck = @'
 from importlib.metadata import version
-import webview
-import PyInstaller
-expected = {"pywebview": "6.2.1", "pyinstaller": "6.22.3", "setuptools": "84.0.0"}
+from importlib.util import find_spec
+from pathlib import Path
+import sys
+environment = Path(sys.prefix).resolve()
+for module in ("webview", "PyInstaller", "setuptools", "pythonnet", "clr_loader",
+               "pydantic_ai", "pydantic", "httpx2", "httpcore2", "openai"):
+    spec = find_spec(module)
+    if spec is None or not spec.origin or not Path(spec.origin).resolve().is_relative_to(environment):
+        raise RuntimeError(f"{module} is missing or outside the selected build environment")
+expected = {"pywebview": "6.2.1", "pyinstaller": "6.22.3", "setuptools": "84.0.0",
+            "pythonnet": "3.2.0", "clr-loader": "0.3.1", "pydantic-ai-slim": "2.55.0",
+            "pydantic": "2.14.1", "httpx2": "2.13.1", "httpcore2": "2.13.1", "openai": "3.29.0"}
 for package, required in expected.items():
     installed = version(package)
     print(package, installed)
     if installed != required:
         raise RuntimeError(f"{package} must be {required}; found {installed}")
 '@
-Invoke-Checked $Python @('-c', $dependencyCheck)
+Invoke-Checked $Python @('-I', '-c', $dependencyCheck)
 
 Push-Location $repoRoot
 try {
@@ -82,7 +91,7 @@ try {
     if (-not (Test-Path -LiteralPath 'frontend/dist/index.html' -PathType Leaf)) {
         throw 'Frontend build did not produce frontend/dist/index.html.'
     }
-    Invoke-Checked $Python @('-m', 'PyInstaller', '--noconfirm', '--clean',
+    Invoke-Checked $Python @('-I', '-m', 'PyInstaller', '--noconfirm', '--clean',
                             '--distpath', 'dist', '--workpath', 'build/desktop',
                             'scripts/codeviz.spec')
     foreach ($relative in @('dist/CodeViz/CodeViz.exe',

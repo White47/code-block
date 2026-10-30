@@ -1,6 +1,8 @@
 # 通用 Python 分析实施计划
 
 > **For agentic workers:** 使用 subagent-driven-development 分任务执行；测试先行，每阶段进行需求与代码质量独立审查。用户已授权实施至验收，非调研待确认稿。
+>
+> **流程修订（2026-10-15）：** 流程以根目录 `AGENTS.md` 为准。不加载 subagent-driven-development 或 executing-plans，不做每任务双阶段评审；独立审查下沉到阶段末尾一次。下方技术内容不变。
 
 **Goal:** 让普通脚本、函数库、面向对象和异步代码能被保守分析、逐层浏览并准确追溯源码，同时保留 ML 功能。
 

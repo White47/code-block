@@ -3,9 +3,21 @@
 from pathlib import Path
 
 if __name__ == "__main__":
-    from codeviz.ui.desktop import main
+    import sys
 
-    main()
+    if getattr(sys, "frozen", False) and sys.argv[1:2] == ["--_codeviz-assistant-offline-probe"]:
+        from assistant_offline_probe import main as offline_probe_main
+
+        raise SystemExit(offline_probe_main(sys.argv[2:]))
+    elif getattr(sys, "frozen", False) and sys.argv[1:2] == ["--_codeviz-assistant-native-smoke"]:
+        # Fixed, bundled fake only. No provider/module/project/endpoint inputs.
+        from assistant_smoke_host import main as smoke_main
+
+        smoke_main(sys.argv[2:])
+    else:
+        from codeviz.ui.desktop import main
+
+        main()
 else:
     from setuptools.command.build_py import build_py
 

@@ -1,6 +1,8 @@
 # Phase 8 Desktop UI Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **流程修订（2026-10-15）：** 流程以根目录 `AGENTS.md` 为准。不加载 subagent-driven-development 或 executing-plans，不做每任务双阶段评审。下方技术内容不变。
 
 **Goal:** 在现有静态分析与局部可见图之上交付只读、可交互的本地桌面 UI，打通 Overview→Architecture / Execution→Source。
 

@@ -59,6 +59,13 @@ _ENUMS = {item.__name__: item for item in (
 _MAX_DEPTH = 80
 
 
+def _valid_content_hash(value: object) -> bool:
+    return value is None or (
+        type(value) is str and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value)
+    )
+
+
 @lru_cache(maxsize=None)
 def _field_hints(cls: type[object]) -> dict[str, Any]:
     """Type annotations are schema facts, not per-node work."""
@@ -81,9 +88,12 @@ def _encode(value: object, depth: int = 0) -> object:
             raise ValueError("non-finite number in analysis cache")
         return value
     if isinstance(value, ParsedFile):
+        if not _valid_content_hash(value.content_hash):
+            raise ValueError("invalid parsed-file content hash")
         return {"@": "parsed-file", "relative_path": value.relative_path,
                 "module_name": value.module_name, "line_count": value.line_count,
-                "issues": _encode(value.issues, child), "was_parsed": value.was_parsed}
+                "issues": _encode(value.issues, child), "was_parsed": value.was_parsed,
+                "content_hash": value.content_hash}
     if isinstance(value, CodeGraph):
         return {"@": "code-graph", "nodes": _encode(tuple(value.nodes.values()), child),
                 "edges": _encode(tuple(value.edges), child)}
@@ -171,16 +181,18 @@ def _decode(value: object, depth: int = 0) -> object:
         except ValueError as error:
             raise ValueError("invalid analysis enum value") from error
     if kind == "parsed-file" and set(value) == {
-        "@", "relative_path", "module_name", "line_count", "issues", "was_parsed"
+        "@", "relative_path", "module_name", "line_count", "issues", "was_parsed",
+        "content_hash"
     }:
         issues = _decode(value["issues"], child)
         if (type(value["relative_path"]) is not str or type(value["module_name"]) is not str
                 or type(value["line_count"]) is not int or type(value["was_parsed"]) is not bool
+                or not _valid_content_hash(value["content_hash"])
                 or not _matches(issues, tuple[AnalysisIssue, ...])):
             raise ValueError("invalid parsed-file cache record")
         return ParsedFile(value["relative_path"], value["module_name"], None,
                           value["line_count"], cast(tuple[AnalysisIssue, ...], issues),
-                          value["was_parsed"])
+                          value["was_parsed"], value["content_hash"])
     if kind == "code-graph" and set(value) == {"@", "nodes", "edges"}:
         nodes, edges = _decode(value["nodes"], child), _decode(value["edges"], child)
         if not _matches(nodes, tuple[CodeNode, ...]) or not _matches(edges, tuple[CodeEdge, ...]):

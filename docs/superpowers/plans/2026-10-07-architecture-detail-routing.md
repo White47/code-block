@@ -1,6 +1,8 @@
 # Architecture Detail and Routing Implementation Plan
 
 > **For agentic workers:** Use subagent-driven-development, TDD and repository role routing. Keep existing uncommitted changes; do not commit, push, migrate or clear user caches.
+>
+> **Process amendment (2026-10-15):** process is governed by the repository `AGENTS.md`. Do not load `subagent-driven-development` or `executing-plans`; do not run a per-task spec/quality review pair. Technical requirements below are unchanged.
 
 **Goal:** Make nanoGPT's architecture informative, details genuinely local, and the canvas readable with dimension-aware placement and obstacle-aware edges.
 

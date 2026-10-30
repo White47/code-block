@@ -477,8 +477,10 @@ class VisibleBuilderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_visible_graph(result, ViewRequest(ViewKind.ARCHITECTURE,
                                                     root_id="not-a-model"))
+        self.assertEqual(build_visible_graph(result, ViewRequest(ViewKind.CALLS)).view_kind,
+                         ViewKind.CALLS)
         with self.assertRaises(ValueError):
-            build_visible_graph(result, ViewRequest(ViewKind.CALLS))
+            build_visible_graph(result, ViewRequest(ViewKind.GRADIENT))
         with self.assertRaises(ValueError):
             ViewRequest(ViewKind.EXECUTION, max_nodes=0)
         with self.assertRaises(ValueError):

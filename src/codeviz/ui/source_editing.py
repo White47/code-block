@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from threading import RLock
+from typing import Callable
 from uuid import uuid4
 
 from codeviz.source_handles import opened_file_path
@@ -169,9 +170,17 @@ class SourceEditingService:
 
     def bind_project(self, root: Path, epoch: str | None = None) -> None:
         with self._lock:
+            identity = _identity(root.stat())
             self._root = root
-            self._root_identity = _identity(root.stat())
+            self._root_identity = identity
             self._epoch = epoch if epoch is not None else uuid4().hex
+            self._documents.clear()
+
+    def unbind_project(self) -> None:
+        with self._lock:
+            self._root = None
+            self._root_identity = None
+            self._epoch = uuid4().hex
             self._documents.clear()
 
     def invalidate_paths(self, affected_paths: tuple[str, ...]) -> None:
@@ -292,7 +301,7 @@ class SourceEditingService:
             raise SourceConflictError()
 
     def save(self, project_path: str, file_path: str, text: str,
-             revision: str) -> EditableSource:
+             revision: str, *, before_write: Callable[[], None] | None = None) -> EditableSource:
         with self._lock:
             root = self._project(project_path)
             relative = self._relative(file_path)
@@ -326,6 +335,8 @@ class SourceEditingService:
                     if (_identity(os.fstat(target.fileno())) != baseline.snapshot.identity
                             or opened_file_path(target) != path):
                         raise SourceConflictError()
+                if before_write is not None:
+                    before_write()
                 descriptor, name = tempfile.mkstemp(prefix=".codeviz-source-", suffix=".tmp", dir=path.parent)
                 temporary = Path(name)
                 with os.fdopen(descriptor, "wb") as output:

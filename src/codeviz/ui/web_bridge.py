@@ -11,16 +11,18 @@ from math import isfinite
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from threading import RLock
-from typing import Protocol, TypeVar
-from uuid import uuid4
+from typing import TYPE_CHECKING, Protocol, TypeVar, cast
 
 from codeviz import navigation
 from codeviz.analysis.discovery import _normalize_ignore
 from codeviz.analysis.project import ProjectAnalysis
+from codeviz.assistant import bridge_requests
+from codeviz.assistant.issues import issue_for_code
 from codeviz.core import SourceAnchor, ViewKind
 from codeviz.persistence.store import CacheStore
 from codeviz.search import search_project
 
+from .assistant_context import PublicationError
 from .controller import AnalysisStatus, AppController
 from .preferences import PreferencesStore
 from .presenter import build_inspector, build_overview, build_problems
@@ -29,6 +31,7 @@ from .source_editing import MAX_SOURCE_BYTES, SourceEditingError
 from .web_contract import (
     JsonObject,
     JsonValue,
+    assistant_error_payload,
     editable_source_payload,
     graph_payload,
     inspector_payload,
@@ -41,6 +44,9 @@ from .web_contract import (
     success_payload,
     view_state_payload,
 )
+
+if TYPE_CHECKING:
+    from codeviz.assistant.service import _AssistantRuntime
 from .web_contract import error_payload as contract_error_payload
 
 _MAX_PATH_LENGTH = 32_768
@@ -159,6 +165,8 @@ class DesktopBridge:
         self._window: ProjectWindow | None = None
         self._folder_dialog_type = 20
         self._close_handler: Callable[[str, bool], None] | None = None
+        self._assistant_cleanup: Callable[[], None] | None = None
+        self._assistant_runtime: _AssistantRuntime | None = None
         self._settings_path = self._cache_store.data_dir / "analysis-settings.json"
         self._settings_issue: str | None = None
         self._settings_by_project: dict[str, tuple[str, ...]] = {}
@@ -169,16 +177,18 @@ class DesktopBridge:
         else:
             self._open_project(self._controller.project_root)
         self._snapshot: tuple[Path | None, AnalysisStatus, tuple[str, ...],
-                              str | None, tuple[Path, ...], bool]
+                              str | None, tuple[Path, ...], bool, str | None, int | None]
         self._publish_session()
 
     def _publish_session(self, status: AnalysisStatus | None = None) -> None:
-        self._snapshot = (self._controller.project_root,
-                          status or self._controller.status,
-                          self._controller.outdated_reasons,
-                          self._controller.cache_issue,
-                          self._recent_projects_snapshot,
-                          self._controller.analysis is not None)
+        identity = self._controller.capture_assistant_context()
+        display = (self._controller.project_root,
+                   status or self._controller.status,
+                   self._controller.outdated_reasons,
+                   self._controller.cache_issue,
+                   self._recent_projects_snapshot,
+                   self._controller.analysis is not None)
+        self._snapshot = (*display, identity.project_epoch, identity.analysis_generation)
 
     def _bind_window(self, window: ProjectWindow, folder_dialog_type: int) -> None:
         # Private: pywebview exposes public methods of js_api automatically.
@@ -187,6 +197,170 @@ class DesktopBridge:
 
     def _bind_close_handler(self, handler: Callable[[str, bool], None]) -> None:
         self._close_handler = handler
+
+    def _bind_assistant_cleanup(self, cleanup: Callable[[], None]) -> None:
+        if not callable(cleanup):
+            raise ValueError("Invalid assistant cleanup handler.")
+        self._assistant_cleanup = cleanup
+
+    def _bind_assistant_runtime(self, runtime: "_AssistantRuntime") -> None:
+        # Construction must pair the controller mirror and runtime. Never swap a
+        # live controller's mirror after publication/admission has begun.
+        if (self._controller._assistant_publication_mirror is not runtime
+                or self._assistant_runtime is not None and self._assistant_runtime is not runtime):
+            raise ValueError("Assistant runtime and controller must be paired.")
+        context = self._controller.capture_assistant_context()
+        from .assistant_context import PublicationIdentity
+        runtime._replace_publication(PublicationIdentity(
+            context.publication_revision, context.project_epoch, context.analysis_generation,
+            context.project_key, context.root, context.ignore_paths, context.status, context.eligible),
+            context.snapshot)
+        self._assistant_runtime = runtime
+        self._bind_assistant_cleanup(runtime.prepare_close)
+
+    def _finish_assistant_close(self) -> None:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            runtime.shutdown()
+
+    @staticmethod
+    def _assistant_execute(operation: Callable[[], object]) -> JsonObject:
+        try:
+            # success_payload validates/clones JSON-native values at runtime.
+            return success_payload(cast(JsonValue, operation()))
+        except Exception as error:
+            # Only a closed code/message survives. Do not route assistant
+            # exceptions through the ordinary diagnostic logger.
+            return assistant_error_payload(issue_for_code(getattr(error, "code", None)).code)
+
+    def _prepare_assistant_close(self) -> None:
+        cleanup = self._assistant_cleanup
+        if cleanup is not None:
+            cleanup()
+
+    def _assistant_unavailable(self, parser: Callable[[object], object], request: object) -> JsonObject:
+        """Base-only boundary: no optional SDK, project queue or diagnostic logging.
+
+        The composed runtime remains gate-off until its integration acceptance;
+        the ordinary offline desktop must keep an honest, usable failure path.
+        """
+        try:
+            parser(request)
+        except bridge_requests.BridgeRequestError:
+            return assistant_error_payload("AI_INVALID_INPUT")
+        except Exception:
+            return assistant_error_payload("AI_PROTOCOL_INCOMPATIBLE")
+        return assistant_error_payload("AI_DEPENDENCY_MISSING")
+
+    def assistant_get_settings(self) -> JsonObject:
+        if self._assistant_runtime is not None:
+            return self._assistant_execute(self._assistant_runtime.get_settings)
+        issue = issue_for_code("AI_DEPENDENCY_MISSING")
+        return success_payload({"available": False, "enabled": False, "baseUrl": "", "model": "",
+                                "keySet": False, "configRevision": 0,
+                                "issue": {"code": issue.code, "message": issue.message}})
+
+    def assistant_configure(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            return self._assistant_execute(lambda: runtime.configure(bridge_requests.parse_configure(request)))
+        return self._assistant_unavailable(bridge_requests.parse_configure, request)
+
+    def assistant_test_connection(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            return self._assistant_execute(lambda: runtime.test_connection(
+                bridge_requests.parse_connection(request)))
+        return self._assistant_unavailable(bridge_requests.parse_connection, request)
+
+    def assistant_get_state(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_project(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.get_state(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_project, request)
+
+    def assistant_get_consent_candidates(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_consent_candidates(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.get_consent_candidates(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_consent_candidates, request)
+
+    def assistant_grant_consent(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_consent(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.grant_consent(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_consent, request)
+
+    def assistant_revoke_consent(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            return self._assistant_execute(lambda: runtime.revoke_consent(
+                bridge_requests.parse_project(request).project_epoch))
+        return self._assistant_unavailable(bridge_requests.parse_project, request)
+
+    def assistant_new_conversation(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_project(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.new_conversation(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_project, request)
+
+    def assistant_clear_conversation(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_clear(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.clear_conversation(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_clear, request)
+
+    def assistant_start(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_start(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.start(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_start, request)
+
+    def assistant_poll(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            return self._assistant_execute(lambda: runtime.poll(bridge_requests.parse_poll(request)))
+        return self._assistant_unavailable(bridge_requests.parse_poll, request)
+
+    def assistant_cancel(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            return self._assistant_execute(lambda: runtime.cancel(bridge_requests.parse_cancel(request)))
+        return self._assistant_unavailable(bridge_requests.parse_cancel, request)
+
+    def assistant_resolve_evidence(self, request: object) -> JsonObject:
+        runtime = self._assistant_runtime
+        if runtime is not None:
+            def operation() -> object:
+                parsed = bridge_requests.parse_resolve(request)
+                context = self._controller.capture_assistant_context()
+                return runtime.resolve_evidence(parsed, context)
+            return self._assistant_execute(operation)
+        return self._assistant_unavailable(bridge_requests.parse_resolve, request)
 
     def approve_close(self, request_id: object) -> JsonObject:
         return self._close_response(request_id, True)
@@ -253,17 +427,42 @@ class DesktopBridge:
         if not root.is_dir():
             raise ValueError("project path must be a directory")
         ignored = self._settings_by_project.get(self._project_settings_key(root), ())
-        previous = self._controller.ignore_paths
-        self._controller.ignore_paths = ignored
+        before = self._controller.capture_assistant_context()
         try:
-            self._controller.open_project(root)
+            self._controller.open_project(
+                root, ignore_paths=ignored, _defer_assistant_commit=True)
         except Exception:
-            self._controller.ignore_paths = previous
+            # The controller has not admitted the switch if publication is unchanged.
+            if self._controller._assistant_context is before:
+                raise
+            if self._controller.project_root == root:
+                try:
+                    identity = self._controller.capture_assistant_context()
+                    if identity.project_epoch is None:
+                        raise RuntimeError("project identity unavailable")
+                    self._project_explorer.bind_project(root, identity.project_epoch)
+                except Exception:
+                    try:
+                        self._controller._abandon_project_switch()
+                    finally:
+                        self._project_explorer.unbind_project()
+                    raise ValueError("project path cannot be opened") from None
+            elif self._controller.project_root is None:
+                self._project_explorer.unbind_project()
             raise
-        epoch = uuid4().hex
-        self._controller._source_editing.bind_project(root, epoch)
-        self._project_explorer.bind_project(root, epoch)
+        try:
+            identity = self._controller.capture_assistant_context()
+            if identity.project_epoch is None:
+                raise RuntimeError("project identity unavailable")
+            self._project_explorer.bind_project(root, identity.project_epoch)
+        except Exception:
+            try:
+                self._controller._abandon_project_switch()
+            finally:
+                self._project_explorer.unbind_project()
+            raise ValueError("project path cannot be opened") from None
         self._sanitize_view_state()
+        self._controller._assistant_finalize_project_open(identity)
 
     def _settings(self) -> JsonObject:
         return {"ignorePaths": list(self._controller.ignore_paths),
@@ -298,9 +497,16 @@ class DesktopBridge:
                 raise ValueError("analysis settings exceed size limit")
             if self._cache_store.data_dir.resolve().is_relative_to(root):
                 raise ValueError("application data must be outside the analyzed project")
-            self._cache_store.data_dir.mkdir(parents=True, exist_ok=True)
+            changed = ignored != self._controller.ignore_paths
+            pending = None
+            if changed:
+                pending = self._controller._assistant_invalidate(
+                    status=(AnalysisStatus.OUTDATED if self._controller.analysis is not None
+                            else AnalysisStatus.NOT_ANALYZED),
+                    root=root, ignore_paths=self._controller.ignore_paths)
             temporary: Path | None = None
             try:
+                self._cache_store.data_dir.mkdir(parents=True, exist_ok=True)
                 with NamedTemporaryFile(mode="wb", dir=self._cache_store.data_dir,
                                         prefix=".analysis-settings-", delete=False) as output:
                     temporary = Path(output.name)
@@ -308,16 +514,20 @@ class DesktopBridge:
                     output.flush()
                     os.fsync(output.fileno())
                 os.replace(temporary, self._settings_path)
+                # Replacement owns the settings now; there is no temp file to clean up.
+                temporary = None
+            except Exception:
+                if pending is not None:
+                    self._controller._assistant_complete(pending)
+                raise
             finally:
                 if temporary is not None:
                     temporary.unlink(missing_ok=True)
-            changed = ignored != self._controller.ignore_paths
             self._settings_by_project = projects
-            self._controller.ignore_paths = ignored
             self._settings_issue = (_LEGACY_SETTINGS_ISSUE
                                     if self._legacy_ignore_paths is not None else None)
-            if changed:
-                self._open_project(root)
+            if pending is not None:
+                self._controller._activate_saved_analysis_settings(ignored, pending)
             return self._settings()
 
         return self._write_call(operation,
@@ -373,14 +583,19 @@ class DesktopBridge:
     def _call(self, operation: Callable[[], T], *,
               invalid_message: str) -> JsonObject:
         with self._lock:
+            response = self._invoke(operation, invalid_message=invalid_message)
             try:
-                return self._invoke(operation, invalid_message=invalid_message)
-            finally:
                 self._publish_session()
+            except PublicationError:
+                # A display refresh may race publication without changing the
+                # ordinary response or replacing the last coherent snapshot.
+                pass
+            return response
 
     def _write_call(self, operation: Callable[[], T], *,
                     invalid_message: str) -> JsonObject:
-        if self._snapshot[1] is AnalysisStatus.ANALYZING:
+        if (self._snapshot[1] is AnalysisStatus.ANALYZING and
+                self._controller.status is AnalysisStatus.ANALYZING):
             return contract_error_payload(
                 RuntimeError("state cannot change during analysis"))
 
@@ -398,7 +613,11 @@ class DesktopBridge:
         return self._session_snapshot()
 
     def _session_snapshot(self) -> JsonObject:
-        payload = session_payload(*self._snapshot)
+        (root, status, reasons, issue, recent, has_analysis,
+         epoch, generation) = self._snapshot
+        payload = session_payload(root, status, reasons, issue, recent, has_analysis)
+        payload["projectEpoch"] = epoch
+        payload["analysisGeneration"] = generation
         payload["fileSystemCaseSensitive"] = sys.platform != "win32"
         return payload
 
@@ -433,8 +652,7 @@ class DesktopBridge:
         def operation() -> JsonObject:
             if self._controller.project_root is None:
                 raise RuntimeError("open a project before analyzing")
-            self._publish_session(AnalysisStatus.ANALYZING)
-            self._controller.analyze()
+            self._controller.analyze(before_analysis=self._publish_session)
             self._sanitize_view_state()
             return self._session()
 
@@ -465,12 +683,25 @@ class DesktopBridge:
                 raise ValueError("hops must be an integer from 1 to 5")
             if type(direction) is not str or direction not in (*_DIRECTIONS, "upstream", "downstream"):
                 raise ValueError("direction must be in, out, or both")
+            try:
+                expected = self._controller.capture_assistant_context()
+            except PublicationError:
+                expected = None
+            except Exception:
+                logger.exception("Delivered graph context capture failed")
+                expected = None
             graph = self._controller.view(
                 parsed_kind, root, selected, hops=hops,
                 direction=_DIRECTIONS.get(direction, direction), structure_depth=structure_depth)
             if "direction" in graph.query_context:
                 graph = replace(graph, query_context={**graph.query_context, "direction": direction})
-            return graph_payload(graph)
+            payload = graph_payload(graph)
+            if expected is not None:
+                try:
+                    self._controller._assistant_publish_view(expected, graph, parsed_kind, root)
+                except Exception:
+                    logger.exception("Delivered graph context projection failed")
+            return payload
 
         return self._call(
             operation, invalid_message="The graph request is invalid.")
@@ -478,11 +709,25 @@ class DesktopBridge:
     def get_detail_view(self, kind: object, root_id: object,
                         source_node_id: object) -> JsonObject:
         def operation() -> JsonObject:
-            return graph_payload(self._controller.detail_view(
-                _view_kind(kind),
-                _optional_string(root_id, "root_id"),
-                _string(source_node_id, "source_node_id"),
-            ))
+            parsed_kind = _view_kind(kind)
+            root = _optional_string(root_id, "root_id")
+            source = _string(source_node_id, "source_node_id")
+            try:
+                expected = self._controller.capture_assistant_context()
+            except PublicationError:
+                expected = None
+            except Exception:
+                logger.exception("Delivered detail context capture failed")
+                expected = None
+            graph = self._controller.detail_view(parsed_kind, root, source)
+            payload = graph_payload(graph)
+            if expected is not None:
+                try:
+                    self._controller._assistant_publish_view(
+                        expected, graph, parsed_kind, root, source)
+                except Exception:
+                    logger.exception("Delivered detail context projection failed")
+            return payload
 
         return self._call(
             operation, invalid_message="The detail graph request is invalid.")
@@ -608,7 +853,8 @@ class DesktopBridge:
                 self._explorer_project(payload), _string(payload["projectEpoch"], "projectEpoch"),
                 _string(payload["parent"], "parent", allow_empty=True),
                 _string(payload["parentRevision"], "parentRevision", max_length=128),
-                _string(payload["name"], "name", allow_empty=True), _string(payload["kind"], "kind")))
+                _string(payload["name"], "name", allow_empty=True), _string(payload["kind"], "kind"),
+                before_mutation=self._controller._assistant_invalidate_for_file_mutation))
 
         return self._write_call(operation, invalid_message="The create request is invalid.")
 
@@ -642,7 +888,8 @@ class DesktopBridge:
             payload = self._explorer_request(request, {"projectPath", "projectEpoch", "operationToken"})
             return self._file_mutation(lambda: self._project_explorer.apply_operation(
                 self._explorer_project(payload), _string(payload["projectEpoch"], "projectEpoch"),
-                _string(payload["operationToken"], "operationToken", max_length=128)))
+                _string(payload["operationToken"], "operationToken", max_length=128),
+                before_mutation=self._controller._assistant_invalidate_for_file_mutation))
 
         return self._write_call(operation, invalid_message="The file operation token is invalid.")
 

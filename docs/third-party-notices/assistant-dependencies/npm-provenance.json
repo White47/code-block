@@ -1,0 +1,3125 @@
+{
+  "documentary_c1_task1": {
+    "task": "DOCUMENTARY C1 Task 1, 2026-10-12",
+    "fresh_local_verification": {
+      "installed_238_release_member_hash_checks": 27,
+      "source_common_member_hash_checks": 30,
+      "copied_npm_notice_hash_checks": 98,
+      "failures": 0,
+      "historical_fields_preserved": true
+    },
+    "method": "Public archives retrieved in memory over HTTPS; regular-file members read and hashed without extraction, installation or executing archive code. Inventory paths strip exactly one archive root component; directories omitted.",
+    "release_237": {
+      "metadata_url": "https://registry.npmjs.org/react-remove-scroll-bar/2.3.7",
+      "tarball_url": "https://registry.npmjs.org/react-remove-scroll-bar/-/react-remove-scroll-bar-2.3.7.tgz",
+      "sha256": "5ee31e784254a1a0c80b2a14a569c3dc254af4c75d709a04f79ff409e856df91",
+      "integrity": "sha512-UzA0npskGFA2bUqwWsSRJscuQEt7zyfVtMpCtBl/lk+k/ky6lzYImEks9jwgxTDe/B0tb5hyrYgbQv/JQaHjDw==",
+      "gitHead": "29e9fcd1eecf7d3b77a767941c4a57fe461fc1e4",
+      "file_count": 27,
+      "inventory": [
+        {
+          "path": "README.md",
+          "sha256": "486442209236ffa3893312e508694699a6b8834d30a2f9c083c1f3379983e4f9",
+          "bytes": 1716
+        },
+        {
+          "path": "constants/package.json",
+          "sha256": "9b557c166960d4a096abc83259b8787a4072516f666856f8cf51656e38ed904b",
+          "bytes": 234
+        },
+        {
+          "path": "dist/es2015/component.d.ts",
+          "sha256": "8b9441c9166045f81e5000001f95521319692124baea142b228efdc370883736",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2015/component.js",
+          "sha256": "3baec61523006aedf14321423427b0c50aa17bfe48faf344bebff9d883149f29",
+          "bytes": 3395
+        },
+        {
+          "path": "dist/es2015/constants.d.ts",
+          "sha256": "cd9dd3a7b0b95c3068f3b43b82da6dc6bee018f56d975b248d4bb6c484e61ed1",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2015/constants.js",
+          "sha256": "1c73582ef730bbca1d536a6995c7eea438dcd0632fee2856337627e44b5872e2",
+          "bytes": 375
+        },
+        {
+          "path": "dist/es2015/index.d.ts",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2015/index.js",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2015/utils.d.ts",
+          "sha256": "c4304c2114b48bb2778de565b4a0274ebbbbd71f6d7f5c57e116bd1656ea2c32",
+          "bytes": 328
+        },
+        {
+          "path": "dist/es2015/utils.js",
+          "sha256": "2c4105ab772a5cbf4b3d1e54f49e94d03fde867d20767b46bb3e5c27f4d82f00",
+          "bytes": 998
+        },
+        {
+          "path": "dist/es2019/component.d.ts",
+          "sha256": "8b9441c9166045f81e5000001f95521319692124baea142b228efdc370883736",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2019/component.js",
+          "sha256": "ac214bb2783fdf743a0c949fef47784741db109dcc6f4426f46e77386dee1c8f",
+          "bytes": 2811
+        },
+        {
+          "path": "dist/es2019/constants.d.ts",
+          "sha256": "cd9dd3a7b0b95c3068f3b43b82da6dc6bee018f56d975b248d4bb6c484e61ed1",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2019/constants.js",
+          "sha256": "f597b4036280caca4cc58d3476ffc02dc5c16564090229e6685e98b80a8e2a33",
+          "bytes": 383
+        },
+        {
+          "path": "dist/es2019/index.d.ts",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2019/index.js",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2019/utils.d.ts",
+          "sha256": "c4304c2114b48bb2778de565b4a0274ebbbbd71f6d7f5c57e116bd1656ea2c32",
+          "bytes": 328
+        },
+        {
+          "path": "dist/es2019/utils.js",
+          "sha256": "dafd773a756cca848d359153df92315235becb2ed8e10b1146458be4bfd38826",
+          "bytes": 949
+        },
+        {
+          "path": "dist/es5/component.d.ts",
+          "sha256": "8b9441c9166045f81e5000001f95521319692124baea142b228efdc370883736",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es5/component.js",
+          "sha256": "d95ae68cda75b262f01b7c3eba3d530c6a24579778cbb3e320b2449348dabb13",
+          "bytes": 3807
+        },
+        {
+          "path": "dist/es5/constants.d.ts",
+          "sha256": "cd9dd3a7b0b95c3068f3b43b82da6dc6bee018f56d975b248d4bb6c484e61ed1",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es5/constants.js",
+          "sha256": "20bf238e562be0830b10b1813d36fa321e81cd07fd99b27724833132304b73bc",
+          "bytes": 571
+        },
+        {
+          "path": "dist/es5/index.d.ts",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es5/index.js",
+          "sha256": "0e1ab245d6b12ef80409b988b0f29b498c562b6cff6e7365714cb0c351914a12",
+          "bytes": 1186
+        },
+        {
+          "path": "dist/es5/utils.d.ts",
+          "sha256": "c4304c2114b48bb2778de565b4a0274ebbbbd71f6d7f5c57e116bd1656ea2c32",
+          "bytes": 328
+        },
+        {
+          "path": "dist/es5/utils.js",
+          "sha256": "ee6c64e8690475db96ec1a1b2ede342ffdc45ccf739bd28dd6f86c8c9a5917c3",
+          "bytes": 1156
+        },
+        {
+          "path": "package.json",
+          "sha256": "484ad46c8cc261e168d7e2602bbb70b80f8d10307b7de91d99485da28c350a03",
+          "bytes": 2221
+        }
+      ]
+    },
+    "release_238": {
+      "metadata_url": "https://registry.npmjs.org/react-remove-scroll-bar/2.3.8",
+      "tarball_url": "https://registry.npmjs.org/react-remove-scroll-bar/-/react-remove-scroll-bar-2.3.8.tgz",
+      "sha256": "ccc872d7a2dc007cbf9d755f30d56b8d80eabdbe22c44c95a709129bfdc46f01",
+      "integrity": "sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==",
+      "gitHead": "b3b1287aad81def2e2ae707274b74531b61ddbaf",
+      "file_count": 27,
+      "inventory": [
+        {
+          "path": "README.md",
+          "sha256": "486442209236ffa3893312e508694699a6b8834d30a2f9c083c1f3379983e4f9",
+          "bytes": 1716
+        },
+        {
+          "path": "constants/package.json",
+          "sha256": "9b557c166960d4a096abc83259b8787a4072516f666856f8cf51656e38ed904b",
+          "bytes": 234
+        },
+        {
+          "path": "dist/es2015/component.d.ts",
+          "sha256": "8b9441c9166045f81e5000001f95521319692124baea142b228efdc370883736",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2015/component.js",
+          "sha256": "3baec61523006aedf14321423427b0c50aa17bfe48faf344bebff9d883149f29",
+          "bytes": 3395
+        },
+        {
+          "path": "dist/es2015/constants.d.ts",
+          "sha256": "cd9dd3a7b0b95c3068f3b43b82da6dc6bee018f56d975b248d4bb6c484e61ed1",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2015/constants.js",
+          "sha256": "1c73582ef730bbca1d536a6995c7eea438dcd0632fee2856337627e44b5872e2",
+          "bytes": 375
+        },
+        {
+          "path": "dist/es2015/index.d.ts",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2015/index.js",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2015/utils.d.ts",
+          "sha256": "c4304c2114b48bb2778de565b4a0274ebbbbd71f6d7f5c57e116bd1656ea2c32",
+          "bytes": 328
+        },
+        {
+          "path": "dist/es2015/utils.js",
+          "sha256": "2c4105ab772a5cbf4b3d1e54f49e94d03fde867d20767b46bb3e5c27f4d82f00",
+          "bytes": 998
+        },
+        {
+          "path": "dist/es2019/component.d.ts",
+          "sha256": "8b9441c9166045f81e5000001f95521319692124baea142b228efdc370883736",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2019/component.js",
+          "sha256": "ac214bb2783fdf743a0c949fef47784741db109dcc6f4426f46e77386dee1c8f",
+          "bytes": 2811
+        },
+        {
+          "path": "dist/es2019/constants.d.ts",
+          "sha256": "cd9dd3a7b0b95c3068f3b43b82da6dc6bee018f56d975b248d4bb6c484e61ed1",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es2019/constants.js",
+          "sha256": "f597b4036280caca4cc58d3476ffc02dc5c16564090229e6685e98b80a8e2a33",
+          "bytes": 383
+        },
+        {
+          "path": "dist/es2019/index.d.ts",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2019/index.js",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es2019/utils.d.ts",
+          "sha256": "c4304c2114b48bb2778de565b4a0274ebbbbd71f6d7f5c57e116bd1656ea2c32",
+          "bytes": 328
+        },
+        {
+          "path": "dist/es2019/utils.js",
+          "sha256": "dafd773a756cca848d359153df92315235becb2ed8e10b1146458be4bfd38826",
+          "bytes": 949
+        },
+        {
+          "path": "dist/es5/component.d.ts",
+          "sha256": "8b9441c9166045f81e5000001f95521319692124baea142b228efdc370883736",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es5/component.js",
+          "sha256": "d95ae68cda75b262f01b7c3eba3d530c6a24579778cbb3e320b2449348dabb13",
+          "bytes": 3807
+        },
+        {
+          "path": "dist/es5/constants.d.ts",
+          "sha256": "cd9dd3a7b0b95c3068f3b43b82da6dc6bee018f56d975b248d4bb6c484e61ed1",
+          "bytes": 415
+        },
+        {
+          "path": "dist/es5/constants.js",
+          "sha256": "20bf238e562be0830b10b1813d36fa321e81cd07fd99b27724833132304b73bc",
+          "bytes": 571
+        },
+        {
+          "path": "dist/es5/index.d.ts",
+          "sha256": "130bc4c810a84aeae180ba8fe1e7fd96f706d5d3a0cf6728419ff2c74708185f",
+          "bytes": 332
+        },
+        {
+          "path": "dist/es5/index.js",
+          "sha256": "0e1ab245d6b12ef80409b988b0f29b498c562b6cff6e7365714cb0c351914a12",
+          "bytes": 1186
+        },
+        {
+          "path": "dist/es5/utils.d.ts",
+          "sha256": "c4304c2114b48bb2778de565b4a0274ebbbbd71f6d7f5c57e116bd1656ea2c32",
+          "bytes": 328
+        },
+        {
+          "path": "dist/es5/utils.js",
+          "sha256": "ee6c64e8690475db96ec1a1b2ede342ffdc45ccf739bd28dd6f86c8c9a5917c3",
+          "bytes": 1156
+        },
+        {
+          "path": "package.json",
+          "sha256": "e372f857ce05f266137c65293436b5380fec42ac311e6acb9378ed78b98d75d0",
+          "bytes": 2221
+        }
+      ]
+    },
+    "release_comparison": {
+      "only_237": [],
+      "only_238": [],
+      "different": [
+        "package.json"
+      ],
+      "compiled_identical_count": 24
+    },
+    "source_before": {
+      "source_url": "https://codeload.github.com/theKashey/react-remove-scroll-bar/tar.gz/29e9fcd1eecf7d3b77a767941c4a57fe461fc1e4",
+      "archive_sha256": "54ccf3547c99da41a58b862bdb279d93483014ca9184bf6d35efa2ba0aa57caf",
+      "file_count": 30,
+      "inventory": [
+        {
+          "path": ".eslintrc.js",
+          "sha256": "ddfb56a963d00886b4d8a091e8d2e13a896ce307154295a13ff1c3250501a837",
+          "bytes": 1857
+        },
+        {
+          "path": ".github/stale.yml",
+          "sha256": "19f501c512809014ceaef8c4041a06e74bc2b35597dfc3fd79788d7e9efe8641",
+          "bytes": 700
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "a8c8aff63df09fe9d1e380f782fb77a3644537d90b5c47855ecf8ab0184874fd",
+          "bytes": 55
+        },
+        {
+          "path": ".npmignore",
+          "sha256": "4af8e7d69a2f4f55d87e1f0a7eeb38085019654f4fd0fc17f1ccdb73fc7f3cad",
+          "bytes": 45
+        },
+        {
+          "path": ".npmrc",
+          "sha256": "c2df2465884206f81fd8d518a4a05b9bb69372bdf4a8297c150843433737fe72",
+          "bytes": 35
+        },
+        {
+          "path": ".nvmrc",
+          "sha256": "4ec9599fc203d176a301536c2e091a19bc852759b255bd6818810a42c5fed14a",
+          "bytes": 2
+        },
+        {
+          "path": ".size-limit",
+          "sha256": "67e9c98f84012dc5346aef8431fca063d2314f7f0987fff716213e35c3fa74e8",
+          "bytes": 108
+        },
+        {
+          "path": ".size.json",
+          "sha256": "4cc0689bf2f73fab73fef1e329e77b92d01f4f335ce9311a0c590fd4cccf6662",
+          "bytes": 108
+        },
+        {
+          "path": ".storybook/.babelrc",
+          "sha256": "85bb3a82bbb29940a8043eb31624689b06930f24002324b798da040e1bca8327",
+          "bytes": 223
+        },
+        {
+          "path": ".storybook/main.js",
+          "sha256": "b0bc87d36d5d7954f77170b38817d4ecbbec3659ff7571c6a5af7f1abbc25d20",
+          "bytes": 148
+        },
+        {
+          "path": ".storybook/preview.js",
+          "sha256": "f70f32331a61c7a191333a5e7a85bbbf471b1b536b11947cc63f8be8b0776352",
+          "bytes": 175
+        },
+        {
+          "path": ".travis.yml",
+          "sha256": "c5d3ec66f8aa2b3b21c2363c0a93cedf2f24a64af9a5d1858e53ebae96ed942a",
+          "bytes": 122
+        },
+        {
+          "path": "CHANGELOG.md",
+          "sha256": "1e910ba5049a5db641d102be92734ce52d477960fb1ff9834e44410931e211ad",
+          "bytes": 3541
+        },
+        {
+          "path": "README.md",
+          "sha256": "486442209236ffa3893312e508694699a6b8834d30a2f9c083c1f3379983e4f9",
+          "bytes": 1716
+        },
+        {
+          "path": "__tests__/index.tsx",
+          "sha256": "803581e2343cb5eab93903aa0e27a2501f6ff086cc257c406148df3b31f112ce",
+          "bytes": 1823
+        },
+        {
+          "path": "constants/package.json",
+          "sha256": "9b557c166960d4a096abc83259b8787a4072516f666856f8cf51656e38ed904b",
+          "bytes": 234
+        },
+        {
+          "path": "example/app.tsx",
+          "sha256": "35466a4739d6cea18c25145ed467cceb6c94db56b874525ae5ccba757e787679",
+          "bytes": 3118
+        },
+        {
+          "path": "example/assets/.gitkeep",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "example/index.html",
+          "sha256": "5a9a2fb4bfc25065f292e82bb9f8cc82bebf315f34dffc51c4ba9c78a6eadf68",
+          "bytes": 252
+        },
+        {
+          "path": "example/index.tsx",
+          "sha256": "ff4b710c6d09b14e6022c9e82247e68bc0bd0dd843d24469f3d8587434c6ccb5",
+          "bytes": 155
+        },
+        {
+          "path": "example/utils.ts",
+          "sha256": "e6aee786abe9e4efbca5119eac03c9a29e6f9485cf9de77e75c1ad620becb43c",
+          "bytes": 416
+        },
+        {
+          "path": "jest.config.js",
+          "sha256": "799c45a00f822b0a6242b5ad213c676803b03d2e33d329f70e94c857d8920eba",
+          "bytes": 43
+        },
+        {
+          "path": "package.json",
+          "sha256": "484ad46c8cc261e168d7e2602bbb70b80f8d10307b7de91d99485da28c350a03",
+          "bytes": 2221
+        },
+        {
+          "path": "src/component.tsx",
+          "sha256": "9cf7f1768847ee331747101493a5ed7860199f730fd814e85f37f05368e56b55",
+          "bytes": 2920
+        },
+        {
+          "path": "src/constants.ts",
+          "sha256": "f597b4036280caca4cc58d3476ffc02dc5c16564090229e6685e98b80a8e2a33",
+          "bytes": 383
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "46c5f7a742c3838959d33077733e634aad9c5cfc4041bcd38dba5f7cf3e05200",
+          "bytes": 345
+        },
+        {
+          "path": "src/utils.ts",
+          "sha256": "c7d2d318bca380ff6a13ed35d1264cdfac9d9bc9389802f7bcacae24611865d1",
+          "bytes": 1098
+        },
+        {
+          "path": "stories/cases.stories.tsx",
+          "sha256": "387cee0735bfeae06756f48bc3a4f6901e87daf0d4922d01b1e8a8d2310546ea",
+          "bytes": 1573
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "e51de516f983a3acd974f56239876b422cd77aa3b32b858075ac4363a99e6cfc",
+          "bytes": 716
+        },
+        {
+          "path": "yarn.lock",
+          "sha256": "dda7f6f624d46586862dfdd6b87065b82c3f6a373c775934a8a457a8a665bdb4",
+          "bytes": 623556
+        }
+      ]
+    },
+    "source_after": {
+      "source_url": "https://codeload.github.com/theKashey/react-remove-scroll-bar/tar.gz/8ca9ba5ea52de03308fe8ced94f7b159a44d28ff",
+      "archive_sha256": "51a4b368f1c71fc699716d157233f4d1d5537794a63e47511f287645909d8c37",
+      "file_count": 31,
+      "inventory": [
+        {
+          "path": ".eslintrc.js",
+          "sha256": "ddfb56a963d00886b4d8a091e8d2e13a896ce307154295a13ff1c3250501a837",
+          "bytes": 1857
+        },
+        {
+          "path": ".github/stale.yml",
+          "sha256": "19f501c512809014ceaef8c4041a06e74bc2b35597dfc3fd79788d7e9efe8641",
+          "bytes": 700
+        },
+        {
+          "path": ".gitignore",
+          "sha256": "a8c8aff63df09fe9d1e380f782fb77a3644537d90b5c47855ecf8ab0184874fd",
+          "bytes": 55
+        },
+        {
+          "path": ".npmignore",
+          "sha256": "4af8e7d69a2f4f55d87e1f0a7eeb38085019654f4fd0fc17f1ccdb73fc7f3cad",
+          "bytes": 45
+        },
+        {
+          "path": ".npmrc",
+          "sha256": "c2df2465884206f81fd8d518a4a05b9bb69372bdf4a8297c150843433737fe72",
+          "bytes": 35
+        },
+        {
+          "path": ".nvmrc",
+          "sha256": "4ec9599fc203d176a301536c2e091a19bc852759b255bd6818810a42c5fed14a",
+          "bytes": 2
+        },
+        {
+          "path": ".size-limit",
+          "sha256": "67e9c98f84012dc5346aef8431fca063d2314f7f0987fff716213e35c3fa74e8",
+          "bytes": 108
+        },
+        {
+          "path": ".size.json",
+          "sha256": "4cc0689bf2f73fab73fef1e329e77b92d01f4f335ce9311a0c590fd4cccf6662",
+          "bytes": 108
+        },
+        {
+          "path": ".storybook/.babelrc",
+          "sha256": "85bb3a82bbb29940a8043eb31624689b06930f24002324b798da040e1bca8327",
+          "bytes": 223
+        },
+        {
+          "path": ".storybook/main.js",
+          "sha256": "b0bc87d36d5d7954f77170b38817d4ecbbec3659ff7571c6a5af7f1abbc25d20",
+          "bytes": 148
+        },
+        {
+          "path": ".storybook/preview.js",
+          "sha256": "f70f32331a61c7a191333a5e7a85bbbf471b1b536b11947cc63f8be8b0776352",
+          "bytes": 175
+        },
+        {
+          "path": ".travis.yml",
+          "sha256": "c5d3ec66f8aa2b3b21c2363c0a93cedf2f24a64af9a5d1858e53ebae96ed942a",
+          "bytes": 122
+        },
+        {
+          "path": "CHANGELOG.md",
+          "sha256": "1e910ba5049a5db641d102be92734ce52d477960fb1ff9834e44410931e211ad",
+          "bytes": 3541
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+          "bytes": 1093
+        },
+        {
+          "path": "README.md",
+          "sha256": "486442209236ffa3893312e508694699a6b8834d30a2f9c083c1f3379983e4f9",
+          "bytes": 1716
+        },
+        {
+          "path": "__tests__/index.tsx",
+          "sha256": "803581e2343cb5eab93903aa0e27a2501f6ff086cc257c406148df3b31f112ce",
+          "bytes": 1823
+        },
+        {
+          "path": "constants/package.json",
+          "sha256": "9b557c166960d4a096abc83259b8787a4072516f666856f8cf51656e38ed904b",
+          "bytes": 234
+        },
+        {
+          "path": "example/app.tsx",
+          "sha256": "35466a4739d6cea18c25145ed467cceb6c94db56b874525ae5ccba757e787679",
+          "bytes": 3118
+        },
+        {
+          "path": "example/assets/.gitkeep",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "example/index.html",
+          "sha256": "5a9a2fb4bfc25065f292e82bb9f8cc82bebf315f34dffc51c4ba9c78a6eadf68",
+          "bytes": 252
+        },
+        {
+          "path": "example/index.tsx",
+          "sha256": "ff4b710c6d09b14e6022c9e82247e68bc0bd0dd843d24469f3d8587434c6ccb5",
+          "bytes": 155
+        },
+        {
+          "path": "example/utils.ts",
+          "sha256": "e6aee786abe9e4efbca5119eac03c9a29e6f9485cf9de77e75c1ad620becb43c",
+          "bytes": 416
+        },
+        {
+          "path": "jest.config.js",
+          "sha256": "799c45a00f822b0a6242b5ad213c676803b03d2e33d329f70e94c857d8920eba",
+          "bytes": 43
+        },
+        {
+          "path": "package.json",
+          "sha256": "484ad46c8cc261e168d7e2602bbb70b80f8d10307b7de91d99485da28c350a03",
+          "bytes": 2221
+        },
+        {
+          "path": "src/component.tsx",
+          "sha256": "9cf7f1768847ee331747101493a5ed7860199f730fd814e85f37f05368e56b55",
+          "bytes": 2920
+        },
+        {
+          "path": "src/constants.ts",
+          "sha256": "f597b4036280caca4cc58d3476ffc02dc5c16564090229e6685e98b80a8e2a33",
+          "bytes": 383
+        },
+        {
+          "path": "src/index.ts",
+          "sha256": "46c5f7a742c3838959d33077733e634aad9c5cfc4041bcd38dba5f7cf3e05200",
+          "bytes": 345
+        },
+        {
+          "path": "src/utils.ts",
+          "sha256": "c7d2d318bca380ff6a13ed35d1264cdfac9d9bc9389802f7bcacae24611865d1",
+          "bytes": 1098
+        },
+        {
+          "path": "stories/cases.stories.tsx",
+          "sha256": "387cee0735bfeae06756f48bc3a4f6901e87daf0d4922d01b1e8a8d2310546ea",
+          "bytes": 1573
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "e51de516f983a3acd974f56239876b422cd77aa3b32b858075ac4363a99e6cfc",
+          "bytes": 716
+        },
+        {
+          "path": "yarn.lock",
+          "sha256": "dda7f6f624d46586862dfdd6b87065b82c3f6a373c775934a8a457a8a665bdb4",
+          "bytes": 623556
+        }
+      ]
+    },
+    "source_comparison": {
+      "only_before": [],
+      "only_after": [
+        "LICENSE"
+      ],
+      "different": []
+    },
+    "later_license": {
+      "url": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/8ca9ba5ea52de03308fe8ced94f7b159a44d28ff/LICENSE",
+      "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+      "bytes": 1093,
+      "text": "MIT License\n\nCopyright (c) 2025 Anton Korzunov <thekashey@gmail.com>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    "facts": [
+      "Both npm tarballs have 27 regular files; identical file-name sets; 24 dist/ compiled members identical; package.json is the only differing member; README.md and constants/package.json also identical.",
+      "Both tarballs lack primary LICENSE/NOTICE text. Both npm SHA512 integrities reproduced against public release metadata.",
+      "Official 2.3.7 metadata gitHead is 29e9fcd1eecf7d3b77a767941c4a57fe461fc1e4. Immutable official source archives have 30 and 31 regular files; only new LICENSE differs; all 30 common files are byte-identical.",
+      "Later actual MIT text is copyright (c) 2025 Anton Korzunov <thekashey@gmail.com>; the existing UPSTREAM-LICENSE is retained, with original immutable bytes represented here."
+    ],
+    "inference": "Applying the later official permission to identical earlier compiled content is a bounded notice-retention inference requiring independent reviewer acceptance; neither a release-contained license nor retroactive legal certainty is established.",
+    "notice_acceptance": "Qualified independent PASS for later-license same-code inference; compared archives supplied evidence, not retained local reviewer artifacts; no version downgrade or legal certainty; use-composed-ref exclusion still pending",
+    "ui_blocker": "use-composed-ref@1.4.0 still lacks primary permission/copyright text; independently authored local replacement pending, NOT DONE",
+    "production_gate": "OFF",
+    "history": "Old package statuses, moving-head retrieval URL, 404 observations and license_gate below remain historical evidence."
+  },
+  "scope": "Installed component runtime dependencies plus installed declared peers, including type peers; no build-only Vite/jsdom graph or production acceptance",
+  "roots": [
+    "@assistant-ui/react@0.15.28",
+    "react@19.1.1",
+    "react-dom@19.1.1"
+  ],
+  "lock_file": "build/assistant-ui-probe-20261012/package-lock.json",
+  "lock_sha256": "1d5c3763423a5c3628024b1c9bbe64264ce068efc055b070f162cd41af8409d7",
+  "acquisition_verification": "Existing npm lock resolved/integrity retained; this task did not re-download or verify each npm tarball. Notice hashes refer to actual installed files.",
+  "package_count": 98,
+  "packages": [
+    {
+      "name": "@assistant-ui/core",
+      "version": "0.3.27",
+      "location": "node_modules/@assistant-ui/core",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/core"
+      },
+      "resolved": "https://registry.npmjs.org/@assistant-ui/core/-/core-0.3.27.tgz",
+      "integrity": "sha512-OIPO8yLXEhQF38qCRTWwrzkGKm0jun2gq/xXsfZH3m3rFiN0WlNShPCkh/GSjHMY8xW48tqZau/ZVdpP2Unjyg==",
+      "package_json_sha256": "8f0d91ae16e31054f066edec64ab86a30cc95534bee42bfcb6341da5c37dfec3",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/assistant-ui__core-0.3.27/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@assistant-ui/core/LICENSE",
+          "source_url": "https://registry.npmjs.org/@assistant-ui/core/-/core-0.3.27.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@assistant-ui/react",
+      "version": "0.15.28",
+      "location": "node_modules/@assistant-ui/react",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/react"
+      },
+      "resolved": "https://registry.npmjs.org/@assistant-ui/react/-/react-0.15.28.tgz",
+      "integrity": "sha512-HoUnPrk/ciCeBJPEB9YGOoHAe73Kf8xJRVSADLmInq6kb5Q6PK5doRargFiFFPZ4jw257r0qkySKFPI1rAMw2g==",
+      "package_json_sha256": "10c43198266a3347f249206c305e4e865a35bfd22ed8d809b18bdb5b7ec046cc",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/assistant-ui__react-0.15.28/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@assistant-ui/react/LICENSE",
+          "source_url": "https://registry.npmjs.org/@assistant-ui/react/-/react-0.15.28.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@assistant-ui/store",
+      "version": "0.3.19",
+      "location": "node_modules/@assistant-ui/store",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/store"
+      },
+      "resolved": "https://registry.npmjs.org/@assistant-ui/store/-/store-0.3.19.tgz",
+      "integrity": "sha512-lxmbfbQCBx7ijIQYmP2OQJMa1aUCvRkvb/Y09fmbkxIhYAcNhSIRcINALe940dGtia+cGn63m8HxYNVoJEcFqg==",
+      "package_json_sha256": "6c0dc71f2d1055689ca1c7062dd1735f4b37764199adca520593c7d3706f16e4",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/assistant-ui__store-0.3.19/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@assistant-ui/store/LICENSE",
+          "source_url": "https://registry.npmjs.org/@assistant-ui/store/-/store-0.3.19.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@assistant-ui/tap",
+      "version": "0.9.23",
+      "location": "node_modules/@assistant-ui/tap",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/tap"
+      },
+      "resolved": "https://registry.npmjs.org/@assistant-ui/tap/-/tap-0.9.23.tgz",
+      "integrity": "sha512-VnWoJLDv8/98YknvgB+Cjy+hwM4+BiW9nZMsKvaPdl3dUhuRdLDOZZs6gvE7x6x40NAeP4Wsq9WBDfmus5k31w==",
+      "package_json_sha256": "db33efc08a48931b6453d44a4e4441b079ca0543f96509f6ffd1ec4b754fccb4",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/assistant-ui__tap-0.9.23/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@assistant-ui/tap/LICENSE",
+          "source_url": "https://registry.npmjs.org/@assistant-ui/tap/-/tap-0.9.23.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@babel/runtime",
+      "version": "7.29.10",
+      "location": "node_modules/@babel/runtime",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/babel/babel.git",
+        "directory": "packages/babel-runtime"
+      },
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.29.10.tgz",
+      "integrity": "sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==",
+      "package_json_sha256": "c770ba825368b8421666fe5ffe841d55dc0ebc703415422c31ba7f048a32d14a",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/babel__runtime-7.29.10/LICENSE",
+          "source_sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+          "copied_sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@babel/runtime/LICENSE",
+          "source_url": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.29.10.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@floating-ui/core",
+      "version": "1.8.0",
+      "location": "node_modules/@floating-ui/core",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/floating-ui/floating-ui.git",
+        "directory": "packages/core"
+      },
+      "resolved": "https://registry.npmjs.org/@floating-ui/core/-/core-1.8.0.tgz",
+      "integrity": "sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==",
+      "package_json_sha256": "2f24216dd2a32b10e6c868173832a0667c3cdbee92886797b219aadac48d8b99",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/floating-ui__core-1.8.0/LICENSE",
+          "source_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "copied_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@floating-ui/core/LICENSE",
+          "source_url": "https://registry.npmjs.org/@floating-ui/core/-/core-1.8.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@floating-ui/dom",
+      "version": "1.8.0",
+      "location": "node_modules/@floating-ui/dom",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/floating-ui/floating-ui.git",
+        "directory": "packages/dom"
+      },
+      "resolved": "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.8.0.tgz",
+      "integrity": "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==",
+      "package_json_sha256": "59643af1b1bfc5a80b172c21ccbe21ea56eaa0115378f6077d9934458db25ac1",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/floating-ui__dom-1.8.0/LICENSE",
+          "source_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "copied_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@floating-ui/dom/LICENSE",
+          "source_url": "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.8.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@floating-ui/react-dom",
+      "version": "2.1.9",
+      "location": "node_modules/@floating-ui/react-dom",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/floating-ui/floating-ui.git",
+        "directory": "packages/react-dom"
+      },
+      "resolved": "https://registry.npmjs.org/@floating-ui/react-dom/-/react-dom-2.1.9.tgz",
+      "integrity": "sha512-JDjEFGCpImxDCA7JJKviA0M9+RtmJdj0m/NVU5IMgBK+AmZouAQQ7/+2GLH0GXXY0YMw9oXPB8hKdbPYg5QLYg==",
+      "package_json_sha256": "cec22283072350feca124ff36678d69127725048cdca2a4cf0deb75d69dba3a8",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/floating-ui__react-dom-2.1.9/LICENSE",
+          "source_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "copied_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@floating-ui/react-dom/LICENSE",
+          "source_url": "https://registry.npmjs.org/@floating-ui/react-dom/-/react-dom-2.1.9.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@floating-ui/utils",
+      "version": "0.2.12",
+      "location": "node_modules/@floating-ui/utils",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/floating-ui/floating-ui.git",
+        "directory": "packages/utils"
+      },
+      "resolved": "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.12.tgz",
+      "integrity": "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==",
+      "package_json_sha256": "b2138e8855520f4313f26ace0d93a9a9c9e6a862f0299a5aeaccb2370dd1bf40",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/floating-ui__utils-0.2.12/LICENSE",
+          "source_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "copied_sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@floating-ui/utils/LICENSE",
+          "source_url": "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.12.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/number",
+      "version": "1.1.3",
+      "location": "node_modules/@radix-ui/number",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/core/number"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/number/-/number-1.1.3.tgz",
+      "integrity": "sha512-Road2bidD0uu/1BGDOWNdPI06g0lIRy6IF9GZcIrDK2KGItfor8IQwQa+yM2ERgHM1MmHxaxpTzk0/Jp42lNfA==",
+      "package_json_sha256": "5c0b32b91660b0b6f241459265d62668c661888f5fa9278188d1b5fe92a3e54e",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__number-1.1.3/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/number/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/number/-/number-1.1.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/primitive",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/primitive",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/core/primitive"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/primitive/-/primitive-1.2.0.tgz",
+      "integrity": "sha512-KABY+VMIRPJL+Vyzv/335FEhXXD/xDv8BMb1kl48/aXJZMH0LtHCTx5ga5RnxaEP3nZHtmTLf1P9vanmFX46bw==",
+      "package_json_sha256": "26081a6fa5ec5b996d0f9f86d798a6df5b2583461f26b66d440de223de35f7be",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__primitive-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/primitive/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/primitive/-/primitive-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-accessible-icon",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-accessible-icon",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/accessible-icon"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-accessible-icon/-/react-accessible-icon-1.2.0.tgz",
+      "integrity": "sha512-BB4+HHkFl3HipEAhm/mLhrpXV+2kRX7MvY4AaImUcQVeWQt5KhV1JEByNs8NGfJOcr95RcQGijt9+OrCo68xGA==",
+      "package_json_sha256": "0b3c22e81d586c7e06707dd1345c3a0d6028270a2c2794ece0b278552c75bec5",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-accessible-icon-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-accessible-icon/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-accessible-icon/-/react-accessible-icon-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-accordion",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-accordion",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/accordion"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-accordion/-/react-accordion-1.3.0.tgz",
+      "integrity": "sha512-fXMUup+0dkQwonCCriE5ITI8uPxAJCrfWB/oBDtSF2zKMAEgbkmWi4LixKddsyfhH+x8TlJQxmu3Sf4HLJnHag==",
+      "package_json_sha256": "44c19cfddc366a283260533fe2f44980e661ff3ce8cb92380c487cd7537b9593",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-accordion-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-accordion/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-accordion/-/react-accordion-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-alert-dialog",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-alert-dialog",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/alert-dialog"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-alert-dialog/-/react-alert-dialog-1.2.0.tgz",
+      "integrity": "sha512-f6ozGN4sF5KEA/d/CAWnwLWyqS4ZsZ6GdhQN68U1BqbRnfQUzkjxjcU+Rq6vFq9FPpfkIKXE7LOyfEdxorirfw==",
+      "package_json_sha256": "9e65833c331e92dc3d7fda83a5d8982f571d7ac657ea9a4e0cbd67b22ca5e703",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-alert-dialog-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-alert-dialog/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-alert-dialog/-/react-alert-dialog-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-arrow",
+      "version": "1.1.17",
+      "location": "node_modules/@radix-ui/react-arrow",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/arrow"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-arrow/-/react-arrow-1.1.17.tgz",
+      "integrity": "sha512-67jjcVvxjXCCStnTW3Z+M7jmaFMuMR7M2JgpDzH4w7JSRrikmzhjfYgP/09ECb8n7whnsgh1ifJ+Ie96qEj+pQ==",
+      "package_json_sha256": "a732cb70525e0b030a52cbbb639e18fad54811d8b6dbb538870ef668856327cd",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-arrow-1.1.17/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-arrow/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-arrow/-/react-arrow-1.1.17.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-aspect-ratio",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-aspect-ratio",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/aspect-ratio"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-aspect-ratio/-/react-aspect-ratio-1.2.0.tgz",
+      "integrity": "sha512-gHEU+Lx8DlT/FYIjZQvvBJrFSwUngXTjh7FeL9QvJaNALDLez6pgDj2axCUihBjtPBy82LN0gNb25+sTcSXNmA==",
+      "package_json_sha256": "19adeff621d1d713fe6dbf8b5ba27ec5da675bdfccd40e5f3afd03a315771b4c",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-aspect-ratio-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-aspect-ratio/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-aspect-ratio/-/react-aspect-ratio-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-avatar",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-avatar",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/avatar"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-avatar/-/react-avatar-1.3.0.tgz",
+      "integrity": "sha512-+5qkmjyTW6z49NRiheyVGK8QVcGKBc0puL/B3+vW/LKy1UDESw2Dhw+pd33KA8KTinw9k1l3Oz8flNjBRa3CpQ==",
+      "package_json_sha256": "3ef03e4ce8b4690f3a9612d31686391e10fc10659ae92e1cf50dbc30fd541d42",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-avatar-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-avatar/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-avatar/-/react-avatar-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-checkbox",
+      "version": "1.4.0",
+      "location": "node_modules/@radix-ui/react-checkbox",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/checkbox"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-checkbox/-/react-checkbox-1.4.0.tgz",
+      "integrity": "sha512-SPKgf33lCk/ijvaat+S1ejZw+r9+s/BvhHLRMrKA0u/A3LNvTVFA+ftPNyNMdLEbxPp4k+wb6VZQLZmb8BXd1g==",
+      "package_json_sha256": "730470c4cc95f5c283caf6b48289f3356fbe78c6edd9739d224db2d48768ddf3",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-checkbox-1.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-checkbox/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-checkbox/-/react-checkbox-1.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-collapsible",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-collapsible",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/collapsible"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-collapsible/-/react-collapsible-1.2.0.tgz",
+      "integrity": "sha512-AHwGMRBV44I3z+5G/+uRNr/RedPKxzxvbynSfrjoE7xY/lK4Rk980MC/YAPiBJHO0+URFnfOvVZwtYPPRsH5tA==",
+      "package_json_sha256": "c7bd486e655d0ac9da4ed04b016cb2cba90e8af8fb7a5fc8c3a6c3004443ed8a",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-collapsible-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-collapsible/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-collapsible/-/react-collapsible-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-collection",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-collection",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/collection"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-collection/-/react-collection-1.2.0.tgz",
+      "integrity": "sha512-+yiQzqcc7Sy7/5s0jrMCjpPRFB3538VNrXPWdTLZhE/SCfgEws4aI6lHWN/vvcnyhHndROWBzqmqB4QBrITZ9Q==",
+      "package_json_sha256": "c95b9660dcf1ab8202a96340148afbe9f49e98afb2bcf4c7bb1a2f3945ee0fb4",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-collection-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-collection/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-collection/-/react-collection-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.1.5",
+      "location": "node_modules/@radix-ui/react-compose-refs",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/compose-refs"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.5.tgz",
+      "integrity": "sha512-+48PbAAbq3didjJxa+OaWY2ZwgAKsNiRGyeHKszblZMQ+kcpd9pAaT11cMkGEie0vsOi3QdeTE6d5Fe3Gn61kA==",
+      "package_json_sha256": "9422da6cb4b0004d394d5f9f521ebd5ede2018400c857abf222dfe2061cfed0e",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-compose-refs-1.1.5/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-compose-refs/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.5.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-context",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-context",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/context"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-context/-/react-context-1.3.0.tgz",
+      "integrity": "sha512-v5AYEocMISkbJ+1fTXzZpiFv7NRr3D2WiYbLIKf+FkmJ8VkP6d503eV2n34MFussHXY1pcoq3yfJiQH77dc4Mg==",
+      "package_json_sha256": "3759b2d1fd0fc66692d97a13c3b6473c2cb0179082ebc2f7c2e936e53f4d4800",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-context-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-context/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-context/-/react-context-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-context-menu",
+      "version": "2.4.0",
+      "location": "node_modules/@radix-ui/react-context-menu",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/context-menu"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-context-menu/-/react-context-menu-2.4.0.tgz",
+      "integrity": "sha512-sJ+Bjq0KPMJUDyu7NuCq7oKm6xRLxTiw1ZWfK7OS4Tj6924nx4XtDMAlN2R99DdgjU/T4rJk9KO9QLZmHVwQMQ==",
+      "package_json_sha256": "9429018d042a8cfb30c4ba6ea5e72eba8fda62f83a77ae3aacb14a4ce3c0eb4b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-context-menu-2.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-context-menu/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-context-menu/-/react-context-menu-2.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-dialog",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-dialog",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/dialog"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-dialog/-/react-dialog-1.3.0.tgz",
+      "integrity": "sha512-bQUKIf2+/vGpJFCmX2pkxnQVT2Od3gkGGURs+bWCIdQ5JbzyTsItcDL25Y5nlwn2T+m/6utZJL+sEs9g7NfR/Q==",
+      "package_json_sha256": "4388a6577d0ea02a7ab47fc80128b303a13827522443df29c696407911cd3154",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-dialog-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-dialog/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-dialog/-/react-dialog-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-direction",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-direction",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/direction"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-direction/-/react-direction-1.2.0.tgz",
+      "integrity": "sha512-FtRA52a/r+LKStFT+neLUm+8vSe7wbzkbQGGeU8ixFiwC8NU14Evoq9ATECqL3eGbcUzJR4fyfA4KkK/q6dfqg==",
+      "package_json_sha256": "3a0c5fe123b36f2f309574a8494781dd17d3d1663defa6c3711915095559ef8b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-direction-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-direction/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-direction/-/react-direction-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-dismissable-layer",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-dismissable-layer",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/dismissable-layer"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-dismissable-layer/-/react-dismissable-layer-1.2.0.tgz",
+      "integrity": "sha512-oO7RhkUS9cwOjK4DGOWU19g9mk1h9h0ErEcNlVg832rgpBq8PGtQn7xyUJnuIO6EEhw6AbXx6/CGfqNEG0LW0Q==",
+      "package_json_sha256": "e3df03070f4dd48bcfdaa14cf878d53b262f28d60062d9422b6e6ac528ff2715",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-dismissable-layer-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-dismissable-layer/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-dismissable-layer/-/react-dismissable-layer-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-dropdown-menu",
+      "version": "2.2.0",
+      "location": "node_modules/@radix-ui/react-dropdown-menu",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/dropdown-menu"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-dropdown-menu/-/react-dropdown-menu-2.2.0.tgz",
+      "integrity": "sha512-9xH3a5pEetuwmAWTRYlHfUmeDAD4MgBHm6JnD7cUqeGwnGi05CwTyfMCPi4VAtzz0IFxmpHGIg1/WVcjspLYiw==",
+      "package_json_sha256": "7c027022458c657e560e923b89ed5678d673acd136ebeb314c807ae2cabddc68",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-dropdown-menu-2.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-dropdown-menu/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-dropdown-menu/-/react-dropdown-menu-2.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-focus-guards",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-focus-guards",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/focus-guards"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-focus-guards/-/react-focus-guards-1.2.0.tgz",
+      "integrity": "sha512-MPm5R0iRGUDrDnPNxmLBkv+X7pN4XKzt+MbWJEuJQsH3NFH4omrbpXpucyYCCKTSt+na/ZxGhEWQrWTZ0285cA==",
+      "package_json_sha256": "de9e1907cc25a72e4c7ea5c341234a99a3b1071531bb3961733c857f4c846f83",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-focus-guards-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-focus-guards/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-focus-guards/-/react-focus-guards-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-focus-scope",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-focus-scope",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/focus-scope"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-focus-scope/-/react-focus-scope-1.3.0.tgz",
+      "integrity": "sha512-kWTz59QlCFoE5Q05juX/HljYia4IaKAj5Hdx+WWgEznSVUzw4qZrpRFmV6xvqd9xhqWAFVJ4zQI/Gr/QDblc7w==",
+      "package_json_sha256": "f317c7618d68351b27fb91df46bb051cb46d50aab647dc8c8572bd491622f65d",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-focus-scope-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-focus-scope/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-focus-scope/-/react-focus-scope-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-form",
+      "version": "0.3.0",
+      "location": "node_modules/@radix-ui/react-form",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/form"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-form/-/react-form-0.3.0.tgz",
+      "integrity": "sha512-KnmrCM27m7Jo1R8S6cFDPrEeq20Jfn5dqde0SZrJr2lVXlj6/QZSUCyFoYh1d8ti0uUrMNK5Lx6dUDuINT+f4Q==",
+      "package_json_sha256": "3025b67e4d2b278278765a218d8b0d0a89254e2952b247337fd9988e802c1d18",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-form-0.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-form/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-form/-/react-form-0.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-hover-card",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-hover-card",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/hover-card"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-hover-card/-/react-hover-card-1.2.0.tgz",
+      "integrity": "sha512-MBsj35v9BJsLLmK2NjkYygpgi+D3lzeL3Ab9LQVSfu2R37wzSGwar3liRnsewSv8Pm36BTCGjmcrpMWscRuO9Q==",
+      "package_json_sha256": "0337dbaff6f219e53ac2b87021b72f46ec000c3fffe21fbdaf79c2bb4acd70de",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-hover-card-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-hover-card/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-hover-card/-/react-hover-card-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-id",
+      "version": "1.1.4",
+      "location": "node_modules/@radix-ui/react-id",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/id"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-id/-/react-id-1.1.4.tgz",
+      "integrity": "sha512-TMQp2llA+RYn7JcjnrMnz7wN4pcVttPZnRZo52PLQsoLVKzNlVwUeHmfePgTgRluXFvlD3GD5g5MOVVTJCO0qA==",
+      "package_json_sha256": "e7e0ebe622944df861305093a71a63241b75d83f5512195d8d43d8dbbbf71d32",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-id-1.1.4/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-id/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-id/-/react-id-1.1.4.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-label",
+      "version": "2.1.17",
+      "location": "node_modules/@radix-ui/react-label",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/label"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-label/-/react-label-2.1.17.tgz",
+      "integrity": "sha512-xmj7MN/drx1oUAXkfiFIvyDmGNUIN/omGobvA5oAoNqu9zO2MkISYGZOkBcqSzs/UZXXwV+/3ACRE7q7mGcmkA==",
+      "package_json_sha256": "e2a94ad6d9939e56a1449a63abe039adec87725eb474b3e00ba9b72bfdac04a3",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-label-2.1.17/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-label/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-label/-/react-label-2.1.17.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-menu",
+      "version": "2.2.0",
+      "location": "node_modules/@radix-ui/react-menu",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/menu"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-menu/-/react-menu-2.2.0.tgz",
+      "integrity": "sha512-I+EEFgEiyUq7krju8Nr8vzSXV/2yAbqBX2Xhz6ypTklz8CzqkGiOUfnnAoslGOsc++nx3Ym6qYRCpgqj6O3SjQ==",
+      "package_json_sha256": "f5135917726f313637b9027645961c22c743cd8bf098c14e184f78404c1901e1",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-menu-2.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-menu/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-menu/-/react-menu-2.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-menubar",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-menubar",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/menubar"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-menubar/-/react-menubar-1.2.0.tgz",
+      "integrity": "sha512-LvIrB6oqt3hMPI/TS7y9uBsKZnF1YTlVIadSC96DeYpEpp86uX3CjjEe8UjtG2YgJEVRcr+YoH3VEjoqnQ+IyQ==",
+      "package_json_sha256": "5ff22108e56cdddf566e40b7d84495da0da1d612eac21edcd4ba8db9ce603544",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-menubar-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-menubar/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-menubar/-/react-menubar-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-navigation-menu",
+      "version": "1.4.0",
+      "location": "node_modules/@radix-ui/react-navigation-menu",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/navigation-menu"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-navigation-menu/-/react-navigation-menu-1.4.0.tgz",
+      "integrity": "sha512-V8Q+n6681BrtUVuaWY0hHSbW2welxbrcMK++9pGyqNSHAgQwgCK+nbpwOhrZal7yyIWcRZcnz/1YFc7ck3Ma4w==",
+      "package_json_sha256": "8c9990a578dd531b9e48143f999584a70f3a1a143a26392a97759a141699b6a2",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-navigation-menu-1.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-navigation-menu/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-navigation-menu/-/react-navigation-menu-1.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-one-time-password-field",
+      "version": "0.2.0",
+      "location": "node_modules/@radix-ui/react-one-time-password-field",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/one-time-password-field"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-one-time-password-field/-/react-one-time-password-field-0.2.0.tgz",
+      "integrity": "sha512-PLxGB1jAFqhNZuLM0WhisNpczRg8ybAGa25loUWGUZWJF6hpGwuOSGk1nLgwhUYIESqIq/rlKG7WdcIPatF44A==",
+      "package_json_sha256": "1876e79510bbe83c1b261cf0768c6e1f97f75e9bb03e75b697484405840a64d6",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-one-time-password-field-0.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-one-time-password-field/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-one-time-password-field/-/react-one-time-password-field-0.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-password-toggle-field",
+      "version": "0.2.0",
+      "location": "node_modules/@radix-ui/react-password-toggle-field",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/password-toggle-field"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-password-toggle-field/-/react-password-toggle-field-0.2.0.tgz",
+      "integrity": "sha512-+WoAic0sls1ErVU92aa9CF3nMon5Mt8h+Ulha19n/BHJTE4sG7ONFOmXaD2/8pT48uF7PbQGG5cI4X7BYYLCNA==",
+      "package_json_sha256": "644c46a773901a90d3c53638dbfd9a6a61ef638e18d4f2458e70bc0db038603d",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-password-toggle-field-0.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-password-toggle-field/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-password-toggle-field/-/react-password-toggle-field-0.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-popover",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-popover",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/popover"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-popover/-/react-popover-1.3.0.tgz",
+      "integrity": "sha512-rQ7ZgB0hhxHInjcvdnsXj4i9G+Cba+AZFztxDYdi5OXAK9qc5qBXnc3qsbVvnHmx/EP58mQ1QGZqmKvdUmBJOw==",
+      "package_json_sha256": "71e2fc77c51fa0bb1565029720891e7996efb1f235a91abc69409074fe993c2b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-popover-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-popover/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-popover/-/react-popover-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-popper",
+      "version": "1.4.0",
+      "location": "node_modules/@radix-ui/react-popper",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/popper"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-popper/-/react-popper-1.4.0.tgz",
+      "integrity": "sha512-yCWRvLeGv9Pz3+efwHqGPp70mZ56r3kfIgQVF56Oj2aAa4uP/Tb+IE59wNcc+758rctqbCKx4LbK8II/r7Bn0Q==",
+      "package_json_sha256": "431b20df8a3a5fa03fe3a84a97116902a620c1c65d99dfddb269ecc94756622a",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-popper-1.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-popper/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-popper/-/react-popper-1.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-portal",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-portal",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/portal"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-portal/-/react-portal-1.2.0.tgz",
+      "integrity": "sha512-StX7xXnaRU41VvFtMm9zlhVGz8XF6GmWWTXftkQaY+tqVkbs/R9UmAp5mLzHHapk5hM9RMZQvO/3usyIP/g42g==",
+      "package_json_sha256": "1b15381a6b085c9da6472ee1bb595b7563748cab54c18b463cb9b3ca2aa77831",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-portal-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-portal/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-portal/-/react-portal-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-presence",
+      "version": "1.1.11",
+      "location": "node_modules/@radix-ui/react-presence",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/presence"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-presence/-/react-presence-1.1.11.tgz",
+      "integrity": "sha512-Z7/atlkab36Z8hm+V8zYc79r0W+tiOB1o0tun1By94JyadkekLQmtEAnBSP9XKXBNQsStoStS4+gX10JpS5akA==",
+      "package_json_sha256": "f18c8e3a59aeb29796d9b55f8be683674b994b68e43c8f9adf97f218cae15af7",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-presence-1.1.11/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-presence/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-presence/-/react-presence-1.1.11.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-primitive",
+      "version": "2.2.0",
+      "location": "node_modules/@radix-ui/react-primitive",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/primitive"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-primitive/-/react-primitive-2.2.0.tgz",
+      "integrity": "sha512-HCTSPMNqv55Qk0IX4geJbpyXazmqulcimwuyjxTkKi29v+QZbG2Zho9BnbBq4YS2PF+KlNb2CXoLz66uUmblkg==",
+      "package_json_sha256": "ee3d3d2b637f6bae33fb5a9f455c9d42df836ace6f52258e0e06e9589814bfbb",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-primitive-2.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-primitive/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-primitive/-/react-primitive-2.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-progress",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-progress",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/progress"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-progress/-/react-progress-1.2.0.tgz",
+      "integrity": "sha512-HrBP6U3E7c+DgaeBOq/Qfgh1MZifKda5Evn0UXunSZvYTr0gf2nbTILLQ9ux7XZeoqKKh2YLm86cAhjVvHUbjw==",
+      "package_json_sha256": "9f4c9e366d10eb45879a161cdcdcb8527265b00213201b353091e2753f3badb6",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-progress-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-progress/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-progress/-/react-progress-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-radio-group",
+      "version": "1.5.0",
+      "location": "node_modules/@radix-ui/react-radio-group",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/radio-group"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-radio-group/-/react-radio-group-1.5.0.tgz",
+      "integrity": "sha512-/n8Z0nH/1IiJ3xYdeCKTloamVxzLS7XecvCqqPNDYfUWDuzoKcTOMHPT55GN1XLtfXKdps+eZfkp/1c1rceMCg==",
+      "package_json_sha256": "36b0c7b90e07d98f887457e9eb1509be15ae1073914fa895a8541dc170c5d1af",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-radio-group-1.5.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-radio-group/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-radio-group/-/react-radio-group-1.5.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-roving-focus",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-roving-focus",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/roving-focus"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-roving-focus/-/react-roving-focus-1.2.0.tgz",
+      "integrity": "sha512-gjVxnM4Y9U+8Lam0cybtPx27CwL4nkW2m1db7gJD3yvGOViKl/FAU3kiz8mfGsF5JPj036YOU3J3/PLUvTCEqw==",
+      "package_json_sha256": "d558b62b53ba9d5929dd3a793a4592da3900fd8abddce28e935b7339be714e04",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-roving-focus-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-roving-focus/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-roving-focus/-/react-roving-focus-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-scroll-area",
+      "version": "1.4.0",
+      "location": "node_modules/@radix-ui/react-scroll-area",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/scroll-area"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-scroll-area/-/react-scroll-area-1.4.0.tgz",
+      "integrity": "sha512-CFrLqHNejWq5FhKAcj9V/WPGRsol76HBQto81NdOBVFEOqIEkJkKIJt0Z824A/9hHLCtoiR/Kw3euRgzXP2pxg==",
+      "package_json_sha256": "30a79eda3ed24cd9133bd3cde67ba99b059e534ac37337a114c91c1ed8e98ba0",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-scroll-area-1.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-scroll-area/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-scroll-area/-/react-scroll-area-1.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-select",
+      "version": "2.4.0",
+      "location": "node_modules/@radix-ui/react-select",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/select"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-select/-/react-select-2.4.0.tgz",
+      "integrity": "sha512-MfylDcwPAdeD6lELhuv3s2kwgdQkEzXwvYGBIPifV/lMfUodW44a+KAgaG7LWR1X/rhYM5C/0za5llkMyLz0Yg==",
+      "package_json_sha256": "2b6cc82d20d4d29c64d1e0ed8f7785d3cae349de9c7667ede44b3cfa2cdb49e2",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-select-2.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-select/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-select/-/react-select-2.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-separator",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-separator",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/separator"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-separator/-/react-separator-1.2.0.tgz",
+      "integrity": "sha512-1jUAap0wZEqVP05Ou7kJgRxe/W+Qftng+rUNWGa0qkKbv9r5pWTG3E7a3ELKo2eJoHKMECnzuYrZpSyO1YgcYQ==",
+      "package_json_sha256": "cc21efde40ffc535ed7413b6681a962326d843051eea9933837d760f52216f35",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-separator-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-separator/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-separator/-/react-separator-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-slider",
+      "version": "1.6.0",
+      "location": "node_modules/@radix-ui/react-slider",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/slider"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-slider/-/react-slider-1.6.0.tgz",
+      "integrity": "sha512-0WkXQfNMp6uyg4TLSN8FaF+vypphoLnCZDTF57In0TORWRaWOyRNSJbSqyfcwLi0ktDiBWSHfKI8Dncaf7+9MQ==",
+      "package_json_sha256": "fd945a5fbab67569e64cb8abb16bd5c4425ac7aa2dec1ba6434d4b1c5b804736",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-slider-1.6.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-slider/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-slider/-/react-slider-1.6.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "version": "1.5.0",
+      "location": "node_modules/@radix-ui/react-slot",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/slot"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.5.0.tgz",
+      "integrity": "sha512-tyYd9ddPXAysAbdbD9eYxgwpCSv6f3PncqVSNKQFSR5lcJVLz3cb/pANDoYrLiHBpXv7skortyUgGUWsYuPPFQ==",
+      "package_json_sha256": "904847542040d15d407ef35e21e782c0082453b504ac25c209c18164042f5dc6",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-slot-1.5.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-slot/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.5.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-switch",
+      "version": "1.4.0",
+      "location": "node_modules/@radix-ui/react-switch",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/switch"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-switch/-/react-switch-1.4.0.tgz",
+      "integrity": "sha512-QuLr6GSEYKPlr4vkZ+vrTVDaJ7IeFlEpIpE9jWHUrQ6GNiNUxUwezLQ4NdcMkHE6KJ/YgKrR+nrCLps+JZH1mw==",
+      "package_json_sha256": "8865591821d0baa802b90c66721f02ac73ca6fde8e0b8560dd0e87c8f8dc299f",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-switch-1.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-switch/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-switch/-/react-switch-1.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-tabs",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-tabs",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/tabs"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-tabs/-/react-tabs-1.2.0.tgz",
+      "integrity": "sha512-Jusj5fsLHgEgzTnBy0YB/ZnE21bn8kjOr8v9ZgqxAR0buLIGcTu/U/Q19gp/UL7Jz5COX2qfEXENF6I6wWMRPg==",
+      "package_json_sha256": "e9d90f5dc8e085ea5541db3147cce9ca4f89ad6b60ff96ea49684c040e0b55aa",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-tabs-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-tabs/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-tabs/-/react-tabs-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-toast",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-toast",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/toast"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-toast/-/react-toast-1.3.0.tgz",
+      "integrity": "sha512-PFuYC+RK4cH22CD2xwNYmNdjE49SLmdYCHLNkCaelndLuAzldc0t7FYklElsLpigHUo5xjN+J4oSYN3JsRaS7w==",
+      "package_json_sha256": "feee95c7231583a5c6905ab157e7ef1e9fb8ae350b3063df852ed100e21b273b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-toast-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-toast/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-toast/-/react-toast-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-toggle",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-toggle",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/toggle"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-toggle/-/react-toggle-1.2.0.tgz",
+      "integrity": "sha512-/of2DdH8CyZBURA70jNEG5sEcliMX/hA8seXcUnqG7s7p3gNzrZJtJEQbiMmE8n+VAeuEW9DY5HyemqF8OfvOA==",
+      "package_json_sha256": "25a41d1a7d668e72571b5dd6c6f672eec66c9539a0de27794712671f3849bf83",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-toggle-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-toggle/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-toggle/-/react-toggle-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-toggle-group",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-toggle-group",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/toggle-group"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-toggle-group/-/react-toggle-group-1.2.0.tgz",
+      "integrity": "sha512-nbc90Rql9pu1L2UzS6MlvA7abUO3V9AOStKBzIqe5BzsEtP0amm++b+fNtZWSTXzUrAv/6oi0QhA+/UXDDdg4Q==",
+      "package_json_sha256": "6bf51080794a0b42b59f023708a0aad723f4a6e5f15268958944b8d223e54956",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-toggle-group-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-toggle-group/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-toggle-group/-/react-toggle-group-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-toolbar",
+      "version": "1.2.0",
+      "location": "node_modules/@radix-ui/react-toolbar",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/toolbar"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-toolbar/-/react-toolbar-1.2.0.tgz",
+      "integrity": "sha512-SpTvoC7VyGBo7ESinaugRCeT1LixwbyLWYPn1fzcPPS+em/Y2J/ISt9xqlGiab0lpgQThXbP38rrjYrH0qdi1g==",
+      "package_json_sha256": "0f11906254afae19fe7558d73d024e3544dd75a45ae8fd3d8c53eb70bcd7584b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-toolbar-1.2.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-toolbar/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-toolbar/-/react-toolbar-1.2.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-tooltip",
+      "version": "1.4.0",
+      "location": "node_modules/@radix-ui/react-tooltip",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/tooltip"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-tooltip/-/react-tooltip-1.4.0.tgz",
+      "integrity": "sha512-cyPkPCqiagEam0LgqH0I/oPKdYzs2DylMDpvPbNA/Am12QaIfn4kSnXanjjqDPCQw17xY90GatufMek8XJEH8g==",
+      "package_json_sha256": "11b8ca97279c5c06760a7284315fdabd903f561c3ebc128f82020efd05c7b886",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-tooltip-1.4.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-tooltip/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-tooltip/-/react-tooltip-1.4.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.5",
+      "location": "node_modules/@radix-ui/react-use-callback-ref",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-callback-ref"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-callback-ref/-/react-use-callback-ref-1.1.5.tgz",
+      "integrity": "sha512-Y5GBf4NKeADoXI1geiMlMuMoURT3k9MizzzKhGb/m55H94aGigZ01PIpkvsO6lML13BA6XYAXSJ6gza7vTn5nw==",
+      "package_json_sha256": "c3ca07813d08dc65774d711ed72e97cb80bdaf8adad95cedbcf61a70e027a7fd",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-callback-ref-1.1.5/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-callback-ref/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-callback-ref/-/react-use-callback-ref-1.1.5.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.3.0",
+      "location": "node_modules/@radix-ui/react-use-controllable-state",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-controllable-state"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-controllable-state/-/react-use-controllable-state-1.3.0.tgz",
+      "integrity": "sha512-TAcBI7bw2ljYCbv4+zuTSd6zICu8pRt6SDN2vJ/Z06K2MXh6I9WYFe/A9ovlFDtR5HVHGm5iDxDoABm/++dbKg==",
+      "package_json_sha256": "218e5d780291d242f54435dcfd93698dc0a4d8534218dd7e8cb02b6f1ae69d5c",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-controllable-state-1.3.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-controllable-state/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-controllable-state/-/react-use-controllable-state-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-effect-event",
+      "version": "0.0.5",
+      "location": "node_modules/@radix-ui/react-use-effect-event",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-effect-event"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-effect-event/-/react-use-effect-event-0.0.5.tgz",
+      "integrity": "sha512-7cshFL8HGS/7HEiHH+9kL9HBwp2sa9yX18Knwek6KYWmXwM7pegMgta2AXMQKI+rq3JnfSj9x8wYqFMTdG1Jgg==",
+      "package_json_sha256": "fa52035177fd41d2c4004239992c395f6eb493ea8b0cff0083153f9d07d311c2",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-effect-event-0.0.5/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-effect-event/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-effect-event/-/react-use-effect-event-0.0.5.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-escape-keydown",
+      "version": "1.1.6",
+      "location": "node_modules/@radix-ui/react-use-escape-keydown",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-escape-keydown"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-escape-keydown/-/react-use-escape-keydown-1.1.6.tgz",
+      "integrity": "sha512-9cRullnQRv+kqnRmFlmh0WC3kAPuGmHiQ9VwsXdrYk//sBhgCKEttcpPEPgIQbyx6TGUmooVEHYTyohwz/lSJg==",
+      "package_json_sha256": "a7447c06df2e4080a04eeff1e5edab53b2ac4d256e967034bbf4d6c7a93363fb",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-escape-keydown-1.1.6/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-escape-keydown/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-escape-keydown/-/react-use-escape-keydown-1.1.6.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-is-hydrated",
+      "version": "0.1.3",
+      "location": "node_modules/@radix-ui/react-use-is-hydrated",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-is-hydrated"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-is-hydrated/-/react-use-is-hydrated-0.1.3.tgz",
+      "integrity": "sha512-umO/aJ+82CpOnhDZUTbILCQf7kU/g0iv+oGs/Q8jw7IkhWBzaEP4sA268PhFAJTFetbwp3ICc6ktpI4TqtxcIw==",
+      "package_json_sha256": "b79053720733c0a5bbbcb42cb0147f771d181d5664380659efb292957f0827d6",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-is-hydrated-0.1.3/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-is-hydrated/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-is-hydrated/-/react-use-is-hydrated-0.1.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.4",
+      "location": "node_modules/@radix-ui/react-use-layout-effect",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-layout-effect"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-layout-effect/-/react-use-layout-effect-1.1.4.tgz",
+      "integrity": "sha512-K20DkRkUwDnxEYMBPcg3Y6voLkEy5p5QQmszZgLngKKiC7dzBR/aEuK3w1qlx2JWDUNH6FluahYdgR3BP+QbYw==",
+      "package_json_sha256": "5612665d1acb0647bce0e3ceee72bdcb407821d2cb2267a560f92b9b8d0ae549",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-layout-effect-1.1.4/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-layout-effect/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-layout-effect/-/react-use-layout-effect-1.1.4.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-previous",
+      "version": "1.1.4",
+      "location": "node_modules/@radix-ui/react-use-previous",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-previous"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-previous/-/react-use-previous-1.1.4.tgz",
+      "integrity": "sha512-XoSLhbRbqxFtgJoi2fNHA3C6pDlY34x508vUpUGoFZfvePfHXHbE1lC4FYFMnJWgiCRroSTw6fOsXQoVS9RwZg==",
+      "package_json_sha256": "7166b25c685e72fbbb58458061798d6dc4e0c64945f480d76f5e22470b061d78",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-previous-1.1.4/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-previous/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-previous/-/react-use-previous-1.1.4.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-rect",
+      "version": "1.1.4",
+      "location": "node_modules/@radix-ui/react-use-rect",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-rect"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-rect/-/react-use-rect-1.1.4.tgz",
+      "integrity": "sha512-cSOCh6JlkmfjLyNcLiu2nB4v+nm+dkZ+Q5KHWk/soo4U7ZLiEQFKHK9/YmtBHjfCEaU43IBKQOc4/uJmCaiCTQ==",
+      "package_json_sha256": "7e6c5703133201195433659a83c23361532b088ab7ef6056a1bfda5b4de35fd1",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-rect-1.1.4/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-rect/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-rect/-/react-use-rect-1.1.4.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-use-size",
+      "version": "1.1.5",
+      "location": "node_modules/@radix-ui/react-use-size",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/use-size"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-use-size/-/react-use-size-1.1.5.tgz",
+      "integrity": "sha512-V1McDQkMGzgivwqdu7u96APs7oi0Jvj9LTzgq3WWrDZqxWdAqU9yZnZQqk5OizGFR8badUQwZsrlao7MOlWYOA==",
+      "package_json_sha256": "750290297c8321002baefdbeaa7b168f1563a5c30baeadca4b12316eb65c712f",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-use-size-1.1.5/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-use-size/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-use-size/-/react-use-size-1.1.5.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/react-visually-hidden",
+      "version": "1.2.13",
+      "location": "node_modules/@radix-ui/react-visually-hidden",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/visually-hidden"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/react-visually-hidden/-/react-visually-hidden-1.2.13.tgz",
+      "integrity": "sha512-feijiN1oPk4rck4u9Dm9tsU4mT6Wp9oeEEhaz1WUEs1VuqLf8xzsFG+Qk+uWq6TnMH9O+WRECRg0NftyP9E4Fw==",
+      "package_json_sha256": "49f7181fe3edef2f19694daeb6778660e3f5a2944a4374c126350b3e42dda3fb",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__react-visually-hidden-1.2.13/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/react-visually-hidden/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/react-visually-hidden/-/react-visually-hidden-1.2.13.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@radix-ui/rect",
+      "version": "1.1.3",
+      "location": "node_modules/@radix-ui/rect",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/core/rect"
+      },
+      "resolved": "https://registry.npmjs.org/@radix-ui/rect/-/rect-1.1.3.tgz",
+      "integrity": "sha512-JtyZR+mqgBibTo8xea3B6ZRmzZiM/YeVBtUkas6zMuXjAlfIFIW2FgqeM9eLyvEaYX66vr6DJMK+4U6LV0KhNw==",
+      "package_json_sha256": "ca2683b89cb4d35c1e7f7b843cb252910426c7f2119cce21c9c87935577bd087",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui__rect-1.1.3/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@radix-ui/rect/LICENSE",
+          "source_url": "https://registry.npmjs.org/@radix-ui/rect/-/rect-1.1.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@standard-schema/spec",
+      "version": "1.1.0",
+      "location": "node_modules/@standard-schema/spec",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/standard-schema/standard-schema"
+      },
+      "resolved": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz",
+      "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==",
+      "package_json_sha256": "58e5bd75ddd0684c88b07cd799585cc72a37fd6efb8ab0c936d49e230d5164fb",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/standard-schema__spec-1.1.0/LICENSE",
+          "source_sha256": "653b779005a3a4d64a7288c940f7b9a0e8f0b1e0375f6aa6af9473caf131e564",
+          "copied_sha256": "6c19f173cf807e59ad48df621b2840bd2e2d7194d948d3cb1766f17b63335030",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@standard-schema/spec/LICENSE",
+          "source_url": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@types/json-schema",
+      "version": "7.0.15",
+      "location": "node_modules/@types/json-schema",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/json-schema"
+      },
+      "resolved": "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz",
+      "integrity": "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==",
+      "package_json_sha256": "6bf0cb0808cafc14023ae10d55d6a88228397dc54c16106d121f42ac88d64fc8",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/types__json-schema-7.0.15/LICENSE",
+          "source_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "copied_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@types/json-schema/LICENSE",
+          "source_url": "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@types/react",
+      "version": "19.1.16",
+      "location": "node_modules/@types/react",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/react"
+      },
+      "resolved": "https://registry.npmjs.org/@types/react/-/react-19.1.16.tgz",
+      "integrity": "sha512-WBM/nDbEZmDUORKnh5i1bTnAz6vTohUf9b8esSMu+b24+srbaxa04UbJgWx78CVfNXA20sNu0odEIluZDFdCog==",
+      "package_json_sha256": "21859f9179b7133e5eb94cc1e3ae42f39a2f4e4ae7af90aa2d3e7c9c6cd0082a",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/types__react-19.1.16/LICENSE",
+          "source_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "copied_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@types/react/LICENSE",
+          "source_url": "https://registry.npmjs.org/@types/react/-/react-19.1.16.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "19.1.9",
+      "location": "node_modules/@types/react-dom",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/react-dom"
+      },
+      "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.1.9.tgz",
+      "integrity": "sha512-qXRuZaOsAdXKFyOhRBg6Lqqc0yay13vN7KrIg4L7N4aaHN68ma9OK3NE1BoDFgFOTfM7zg+3/8+2n8rLUH3OKQ==",
+      "package_json_sha256": "c48bd8be0b57eb3e3f943c446e39a8d4f06a96317a893bc44744865dc13c3346",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/types__react-dom-19.1.9/LICENSE",
+          "source_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "copied_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/@types/react-dom/LICENSE",
+          "source_url": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.1.9.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "aria-hidden",
+      "version": "1.2.6",
+      "location": "node_modules/aria-hidden",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/theKashey/aria-hidden.git"
+      },
+      "resolved": "https://registry.npmjs.org/aria-hidden/-/aria-hidden-1.2.6.tgz",
+      "integrity": "sha512-ik3ZgC9dY/lYVVM++OISsaYDeg1tb0VtP5uL3ouh1koGOaUMDPpbFIei4JkFimWUFPn90sbMNMXQAIVOlnYKJA==",
+      "package_json_sha256": "46d066afef535db19d7ba05d8e38ac50662b17a515845deb3ca70613f9623933",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/aria-hidden-1.2.6/LICENSE",
+          "source_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "copied_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/aria-hidden/LICENSE",
+          "source_url": "https://registry.npmjs.org/aria-hidden/-/aria-hidden-1.2.6.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "assistant-cloud",
+      "version": "0.2.7",
+      "location": "node_modules/assistant-cloud",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/cloud"
+      },
+      "resolved": "https://registry.npmjs.org/assistant-cloud/-/assistant-cloud-0.2.7.tgz",
+      "integrity": "sha512-w9Nq03JwNVkQovlStrIQb22K/VIyuZ7ioTzjpQTLIggFdL1dUz++DEA1W3VYTFzSHIptseuHvaWSUM05hs5uVg==",
+      "package_json_sha256": "60b2571e08de76db8c51566d3972fc8277b32dab0d73dd2ffb9a11f13237c22d",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/assistant-cloud-0.2.7/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/assistant-cloud/LICENSE",
+          "source_url": "https://registry.npmjs.org/assistant-cloud/-/assistant-cloud-0.2.7.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "assistant-stream",
+      "version": "0.3.50",
+      "location": "node_modules/assistant-stream",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/assistant-stream"
+      },
+      "resolved": "https://registry.npmjs.org/assistant-stream/-/assistant-stream-0.3.50.tgz",
+      "integrity": "sha512-IaH+fesbKJE/2R1lH69DPRUfvv87lNE6j3hFf2RZaCCf79UCyF8dtaI1NK5k792p8eIQpxSLbgHs09fX5H8A6A==",
+      "package_json_sha256": "db6f16b1cac20e34d608ef4e6c667fe006872ea663d32b77146aed1544498b24",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/assistant-stream-0.3.50/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/assistant-stream/LICENSE",
+          "source_url": "https://registry.npmjs.org/assistant-stream/-/assistant-stream-0.3.50.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "csstype",
+      "version": "3.2.3",
+      "location": "node_modules/csstype",
+      "declared_license": "MIT",
+      "repository": "https://github.com/frenic/csstype",
+      "resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+      "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
+      "package_json_sha256": "c818b74a9bc1556488b7ec2a65399224738f6619228f9a6491c5c02ca91f849e",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/csstype-3.2.3/LICENSE",
+          "source_sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e",
+          "copied_sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/csstype/LICENSE",
+          "source_url": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "detect-node-es",
+      "version": "1.1.0",
+      "location": "node_modules/detect-node-es",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/thekashey/detect-node"
+      },
+      "resolved": "https://registry.npmjs.org/detect-node-es/-/detect-node-es-1.1.0.tgz",
+      "integrity": "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==",
+      "package_json_sha256": "06f9cfd73b6c401019dfa5cbdf4b4a5b346b1b15c4fca2d6f3ecc1a830528b06",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/detect-node-es-1.1.0/LICENSE",
+          "source_sha256": "54b32293ea560d22cd9b62af9b2cda1a030d910a48c6601d227c5ff2338d95f8",
+          "copied_sha256": "54b32293ea560d22cd9b62af9b2cda1a030d910a48c6601d227c5ff2338d95f8",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/detect-node-es/LICENSE",
+          "source_url": "https://registry.npmjs.org/detect-node-es/-/detect-node-es-1.1.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "get-nonce",
+      "version": "1.0.1",
+      "location": "node_modules/get-nonce",
+      "declared_license": "MIT",
+      "repository": "git@github.com:theKashey/get-nonce.git",
+      "resolved": "https://registry.npmjs.org/get-nonce/-/get-nonce-1.0.1.tgz",
+      "integrity": "sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==",
+      "package_json_sha256": "cd0262ed52e44beb166ba0ed31081587074d48602bd057d1d438103ec169ef8b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/get-nonce-1.0.1/LICENSE",
+          "source_sha256": "acf3b087b348d2f2e731b9d4131af185aad694c1204ce14a46909483fd42da05",
+          "copied_sha256": "acf3b087b348d2f2e731b9d4131af185aad694c1204ce14a46909483fd42da05",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/get-nonce/LICENSE",
+          "source_url": "https://registry.npmjs.org/get-nonce/-/get-nonce-1.0.1.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "nanoid",
+      "version": "6.0.2",
+      "location": "node_modules/nanoid",
+      "declared_license": "MIT",
+      "repository": "ai/nanoid",
+      "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-6.0.2.tgz",
+      "integrity": "sha512-hIvVOb9Qr1p/9CNNLOe0OlWvgx/ziTsVwKN/GDSsuArN2K0wDiafP3s0SWmsm7o2BdnyS8Z9Z64NFBUbn6ziBg==",
+      "package_json_sha256": "db4529bba6a049e176f5a43b131f903047b72c9b609f4cc12f9230c83e379682",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/nanoid-6.0.2/LICENSE",
+          "source_sha256": "4383cb2c3608397ce7a4159502614ed66890f8999c2a9c056dd3b1024d6721f0",
+          "copied_sha256": "4383cb2c3608397ce7a4159502614ed66890f8999c2a9c056dd3b1024d6721f0",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/nanoid/LICENSE",
+          "source_url": "https://registry.npmjs.org/nanoid/-/nanoid-6.0.2.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "radix-ui",
+      "version": "1.8.0",
+      "location": "node_modules/radix-ui",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/radix-ui/primitives.git",
+        "directory": "packages/react/radix-ui"
+      },
+      "resolved": "https://registry.npmjs.org/radix-ui/-/radix-ui-1.8.0.tgz",
+      "integrity": "sha512-d2p7l6XzZ9agJABImQYTFSbALCqaieTEXs2TmVNpT4cFam6RD91rsucu0VhMs45Oe35rQVWJk8PoDej0z/w3yg==",
+      "package_json_sha256": "b0e8cb8fd8d9b64704859af9aaa1a64b6e2ed45b55afc28a925a6870a07a076e",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/radix-ui-1.8.0/LICENSE",
+          "source_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "copied_sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/radix-ui/LICENSE",
+          "source_url": "https://registry.npmjs.org/radix-ui/-/radix-ui-1.8.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "react",
+      "version": "19.1.1",
+      "location": "node_modules/react",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/facebook/react.git",
+        "directory": "packages/react"
+      },
+      "resolved": "https://registry.npmjs.org/react/-/react-19.1.1.tgz",
+      "integrity": "sha512-w8nqGImo45dmMIfljjMwOGtbmC/mk4CMYhWIicdSflH91J9TyCyczcPFXJzrZ/ZXcgGRFeP6BU0BEJTw6tZdfQ==",
+      "package_json_sha256": "7e862b437058f8dde0fe1b538266b934d725f76fe5b981305d6e942714d49608",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/react-19.1.1/LICENSE",
+          "source_sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "copied_sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/react/LICENSE",
+          "source_url": "https://registry.npmjs.org/react/-/react-19.1.1.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "react-dom",
+      "version": "19.1.1",
+      "location": "node_modules/react-dom",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/facebook/react.git",
+        "directory": "packages/react-dom"
+      },
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.1.1.tgz",
+      "integrity": "sha512-Dlq/5LAZgF0Gaz6yiqZCf6VCcZs1ghAJyrsu84Q/GT0gV+mCxbfmKNoGRKBYMJ8IEdGPqu49YWXD02GCknEDkw==",
+      "package_json_sha256": "1a1856a02032d721c6adea1df2174505739f29bb7a093814688c4bdb1e0390e0",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/react-dom-19.1.1/LICENSE",
+          "source_sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "copied_sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/react-dom/LICENSE",
+          "source_url": "https://registry.npmjs.org/react-dom/-/react-dom-19.1.1.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "react-remove-scroll",
+      "version": "2.7.2",
+      "location": "node_modules/react-remove-scroll",
+      "declared_license": "MIT",
+      "repository": "https://github.com/theKashey/react-remove-scroll",
+      "resolved": "https://registry.npmjs.org/react-remove-scroll/-/react-remove-scroll-2.7.2.tgz",
+      "integrity": "sha512-Iqb9NjCCTt6Hf+vOdNIZGdTiH1QSqr27H/Ek9sv/a97gfueI/5h1s3yRi1nngzMUaOOToin5dI1dXKdXiF+u0Q==",
+      "package_json_sha256": "35db8a2ffa5161d98795cff1b1f56dc775c94fea5f80eda128f083db59b40ab2",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/react-remove-scroll-2.7.2/LICENSE",
+          "source_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "copied_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/react-remove-scroll/LICENSE",
+          "source_url": "https://registry.npmjs.org/react-remove-scroll/-/react-remove-scroll-2.7.2.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "react-remove-scroll-bar",
+      "version": "2.3.8",
+      "location": "node_modules/react-remove-scroll-bar",
+      "declared_license": "MIT",
+      "repository": "https://github.com/theKashey/react-remove-scroll-bar",
+      "resolved": "https://registry.npmjs.org/react-remove-scroll-bar/-/react-remove-scroll-bar-2.3.8.tgz",
+      "integrity": "sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==",
+      "package_json_sha256": "e372f857ce05f266137c65293436b5380fec42ac311e6acb9378ed78b98d75d0",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/react-remove-scroll-bar-2.3.8/UPSTREAM-LICENSE",
+          "source_sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+          "copied_sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+          "source_url": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/master/LICENSE",
+          "status": "SKIP: supplementary current upstream text; release commit b3b1287aad81def2e2ae707274b74531b61ddbaf archive returned 404; release ownership not verified"
+        }
+      ],
+      "status": "FAIL: release package lacks notice; supplementary upstream is not release verification"
+    },
+    {
+      "name": "react-style-singleton",
+      "version": "2.2.3",
+      "location": "node_modules/react-style-singleton",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/theKashey/react-style-singleton"
+      },
+      "resolved": "https://registry.npmjs.org/react-style-singleton/-/react-style-singleton-2.2.3.tgz",
+      "integrity": "sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ==",
+      "package_json_sha256": "c6d832faf8d9d54cd854d47f23b5b747928fe7554f548b093a7faaf239185d08",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/react-style-singleton-2.2.3/LICENSE",
+          "source_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "copied_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/react-style-singleton/LICENSE",
+          "source_url": "https://registry.npmjs.org/react-style-singleton/-/react-style-singleton-2.2.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "react-textarea-autosize",
+      "version": "8.5.9",
+      "location": "node_modules/react-textarea-autosize",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Andarist/react-textarea-autosize.git"
+      },
+      "resolved": "https://registry.npmjs.org/react-textarea-autosize/-/react-textarea-autosize-8.5.9.tgz",
+      "integrity": "sha512-U1DGlIQN5AwgjTyOEnI1oCcMuEr1pv1qOtklB2l4nyMGbHzWrI0eFsYK0zos2YWqAolJyG0IWJaqWmWj5ETh0A==",
+      "package_json_sha256": "196a091a631d8addf1573dcbe2f3c09d4603f9b27309ffc2f309503664a50ee4",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/react-textarea-autosize-8.5.9/LICENSE",
+          "source_sha256": "2c2a938456c54cab1c4ecd38ea08230c063d9f1a478fc30ec5b172682f9fb1b1",
+          "copied_sha256": "2c2a938456c54cab1c4ecd38ea08230c063d9f1a478fc30ec5b172682f9fb1b1",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/react-textarea-autosize/LICENSE",
+          "source_url": "https://registry.npmjs.org/react-textarea-autosize/-/react-textarea-autosize-8.5.9.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "safe-content-frame",
+      "version": "0.0.34",
+      "location": "node_modules/safe-content-frame",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/assistant-ui/assistant-ui.git",
+        "directory": "packages/safe-content-frame"
+      },
+      "resolved": "https://registry.npmjs.org/safe-content-frame/-/safe-content-frame-0.0.34.tgz",
+      "integrity": "sha512-js/Tt/SWUGdBi+pt8NuMlg5OkDLD+5Q8sTItzAFr4Xr+geHkTOc0Vl2LA+BUsPFZ3fdT4hbRjWaPb9DoPEvHDw==",
+      "package_json_sha256": "25cdd29f27d956cd53341f87b1520730c01e9ef5327366af4d3f0bb3a7e5417a",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/safe-content-frame-0.0.34/LICENSE",
+          "source_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "copied_sha256": "eafb05991a572efa34097474b31fef45b14a8879ed1d1a8fd77de62e6fa7d275",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/safe-content-frame/LICENSE",
+          "source_url": "https://registry.npmjs.org/safe-content-frame/-/safe-content-frame-0.0.34.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "scheduler",
+      "version": "0.26.0",
+      "location": "node_modules/scheduler",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/facebook/react.git",
+        "directory": "packages/scheduler"
+      },
+      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.26.0.tgz",
+      "integrity": "sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==",
+      "package_json_sha256": "c0d1b0e56374984658d63a933781c7d7a12a6fc7de8ec7b1e6e2e4d4203d6f5b",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/scheduler-0.26.0/LICENSE",
+          "source_sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "copied_sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/scheduler/LICENSE",
+          "source_url": "https://registry.npmjs.org/scheduler/-/scheduler-0.26.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "secure-json-parse",
+      "version": "4.1.1",
+      "location": "node_modules/secure-json-parse",
+      "declared_license": "BSD-3-Clause",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fastify/secure-json-parse.git"
+      },
+      "resolved": "https://registry.npmjs.org/secure-json-parse/-/secure-json-parse-4.1.1.tgz",
+      "integrity": "sha512-lnd81MQEZKjhW/Gd2TQqdd4XP6QYNdDW/EP+I7nTrFHP9y2LmaGPIHk9xsnzcOiEr1c39c/e84xFgGviQKBTRw==",
+      "package_json_sha256": "b8809570084bc71755124a8acdb7882b4a41649f408767b851c49d0556e91897",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/secure-json-parse-4.1.1/LICENSE",
+          "source_sha256": "354dacd69de5070d69b2e4c5598bd1f51d980775422c3ee663160f9da88ebf63",
+          "copied_sha256": "354dacd69de5070d69b2e4c5598bd1f51d980775422c3ee663160f9da88ebf63",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/secure-json-parse/LICENSE",
+          "source_url": "https://registry.npmjs.org/secure-json-parse/-/secure-json-parse-4.1.1.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "tslib",
+      "version": "2.8.1",
+      "location": "node_modules/tslib",
+      "declared_license": "0BSD",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Microsoft/tslib.git"
+      },
+      "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
+      "package_json_sha256": "f02b4851df316f29bdfcd404aa1eb41e4e216b5859015f81fcd3e91caf8be931",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/tslib-2.8.1/CopyrightNotice.txt",
+          "source_sha256": "da16ddb65f8ca390998fb99223d0112498b56b45784d00afd77ff8ce1ac4de8b",
+          "copied_sha256": "72ba857a2d06a6d440c28e690835119f6d70fe16f58b7538e3e3c1c133d944d7",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/tslib/CopyrightNotice.txt",
+          "source_url": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+          "archive_member": "package/CopyrightNotice.txt"
+        },
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/tslib-2.8.1/LICENSE.txt",
+          "source_sha256": "210b19e543130388c68654b7497e967119ce17145f66ab7d85688fbd70f08751",
+          "copied_sha256": "5989359645911c04a140c49d89496b13feca980bbf36d2250a12d3b9d06250d6",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/tslib/LICENSE.txt",
+          "source_url": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+          "archive_member": "package/LICENSE.txt"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "use-callback-ref",
+      "version": "1.3.3",
+      "location": "node_modules/use-callback-ref",
+      "declared_license": "MIT",
+      "repository": "https://github.com/theKashey/use-callback-ref/",
+      "resolved": "https://registry.npmjs.org/use-callback-ref/-/use-callback-ref-1.3.3.tgz",
+      "integrity": "sha512-jQL3lRnocaFtu3V00JToYz/4QkNWswxijDaCVNZRiRTO3HQDLsdu1ZtmIUvV4yPp+rvWm5j0y0TG/S61cuijTg==",
+      "package_json_sha256": "1fb8f0b34573d1d4057710e559488dbfdff0436cd01d318e20bf66e4cd165318",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/use-callback-ref-1.3.3/LICENSE",
+          "source_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "copied_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/use-callback-ref/LICENSE",
+          "source_url": "https://registry.npmjs.org/use-callback-ref/-/use-callback-ref-1.3.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "use-composed-ref",
+      "version": "1.4.0",
+      "location": "node_modules/use-composed-ref",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Andarist/use-composed-ref.git"
+      },
+      "resolved": "https://registry.npmjs.org/use-composed-ref/-/use-composed-ref-1.4.0.tgz",
+      "integrity": "sha512-djviaxuOOh7wkj0paeO1Q/4wMZ8Zrnag5H6yBvzN7AKKe8beOaED9SF5/ByLqsku8NP4zQqsvM2u3ew/tJK8/w==",
+      "package_json_sha256": "f1bb61c939b089aa90f631b513f14c7d2eaff3093395634365243127f2ba8547",
+      "notices": [],
+      "status": "FAIL: package and npm release-commit source archive lack standalone license; metadata MIT is insufficient notice/attribution"
+    },
+    {
+      "name": "use-isomorphic-layout-effect",
+      "version": "1.2.1",
+      "location": "node_modules/use-isomorphic-layout-effect",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Andarist/use-isomorphic-layout-effect.git"
+      },
+      "resolved": "https://registry.npmjs.org/use-isomorphic-layout-effect/-/use-isomorphic-layout-effect-1.2.1.tgz",
+      "integrity": "sha512-tpZZ+EX0gaghDAiFR37hj5MgY6ZN55kLiPkJsKxBMZ6GZdOSPJXiOzPM984oPYZ5AnehYx5WQp1+ME8I/P/pRA==",
+      "package_json_sha256": "27e20f1a6878cc9c7a248aba76eff50378a0f2b235b736b90b9565cc07242e3e",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/use-isomorphic-layout-effect-1.2.1/LICENSE",
+          "source_sha256": "82fb62378a03a80df2a21d491d70cc8928912e35a8e8378fb0fcbe6e5493aec5",
+          "copied_sha256": "82fb62378a03a80df2a21d491d70cc8928912e35a8e8378fb0fcbe6e5493aec5",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/use-isomorphic-layout-effect/LICENSE",
+          "source_url": "https://registry.npmjs.org/use-isomorphic-layout-effect/-/use-isomorphic-layout-effect-1.2.1.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "use-latest",
+      "version": "1.3.0",
+      "location": "node_modules/use-latest",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Andarist/use-latest.git"
+      },
+      "resolved": "https://registry.npmjs.org/use-latest/-/use-latest-1.3.0.tgz",
+      "integrity": "sha512-mhg3xdm9NaM8q+gLT8KryJPnRFOz1/5XPBhmDEVZK1webPzDjrPk7f/mbpeLqTgB9msytYWANxgALOCJKnLvcQ==",
+      "package_json_sha256": "f4cb3bc4a4dbb7630f90f15b69170c3e1090013ed4d9bba091e13061f50d0713",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/use-latest-1.3.0/LICENSE",
+          "source_sha256": "c2452d345744508572ba50731ccbe84faea80ba507bd6d52c2a34f831ce95574",
+          "copied_sha256": "c2452d345744508572ba50731ccbe84faea80ba507bd6d52c2a34f831ce95574",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/use-latest/LICENSE",
+          "source_url": "https://registry.npmjs.org/use-latest/-/use-latest-1.3.0.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "use-sidecar",
+      "version": "1.1.3",
+      "location": "node_modules/use-sidecar",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/theKashey/use-sidecar"
+      },
+      "resolved": "https://registry.npmjs.org/use-sidecar/-/use-sidecar-1.1.3.tgz",
+      "integrity": "sha512-Fedw0aZvkhynoPYlA5WXrMCAMm+nSWdZt6lzJQ7Ok8S6Q+VsHmHpRWndVRJ8Be0ZbkfPc5LRYH+5XrzXcEeLRQ==",
+      "package_json_sha256": "a8703897c0caeb8ddfa35ef4b622bd7ebd677ea3fc6c97a0264574552e9404e1",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/use-sidecar-1.1.3/LICENSE",
+          "source_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "copied_sha256": "30f0cfddf483d1128e3610205020f2041a6c5e837aa999e0aa82e5576187d4a9",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/use-sidecar/LICENSE",
+          "source_url": "https://registry.npmjs.org/use-sidecar/-/use-sidecar-1.1.3.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "zod",
+      "version": "4.6.6",
+      "location": "node_modules/zod",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/colinhacks/zod.git"
+      },
+      "resolved": "https://registry.npmjs.org/zod/-/zod-4.6.6.tgz",
+      "integrity": "sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==",
+      "package_json_sha256": "cff7e142055a9dd9bc2947a71ca3fb5e3aacdfda966d7728993ff3656245b94a",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/zod-4.6.6/LICENSE",
+          "source_sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8",
+          "copied_sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/zod/LICENSE",
+          "source_url": "https://registry.npmjs.org/zod/-/zod-4.6.6.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    },
+    {
+      "name": "zustand",
+      "version": "5.0.15",
+      "location": "node_modules/zustand",
+      "declared_license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/pmndrs/zustand.git"
+      },
+      "resolved": "https://registry.npmjs.org/zustand/-/zustand-5.0.15.tgz",
+      "integrity": "sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==",
+      "package_json_sha256": "b53b4d5e7f6baeb1e832792390354f8af54edaefbd6fe23b490a4d2d2e37dff1",
+      "notices": [
+        {
+          "file": "docs/third-party-notices/assistant-dependencies/npm/zustand-5.0.15/LICENSE",
+          "source_sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417",
+          "copied_sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417",
+          "installed_source": "build/assistant-ui-probe-20261012/node_modules/zustand/LICENSE",
+          "source_url": "https://registry.npmjs.org/zustand/-/zustand-5.0.15.tgz",
+          "archive_member": "package/LICENSE"
+        }
+      ],
+      "status": "PASS: installed distribution notices copied"
+    }
+  ],
+  "uninstalled_optional_peers": [
+    {
+      "package": "assistant-cloud",
+      "optional_peer": "@opentelemetry/api",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "assistant-cloud",
+      "optional_peer": "@opentelemetry/exporter-trace-otlp-http",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "assistant-cloud",
+      "optional_peer": "@opentelemetry/sdk-trace-base",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "assistant-cloud",
+      "optional_peer": "ai",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "assistant-stream",
+      "optional_peer": "ai",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "assistant-stream",
+      "optional_peer": "ioredis",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "assistant-stream",
+      "optional_peer": "redis",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "zustand",
+      "optional_peer": "immer",
+      "status": "SKIP: not installed, not required by probe"
+    },
+    {
+      "package": "zustand",
+      "optional_peer": "use-sync-external-store",
+      "status": "SKIP: not installed, not required by probe"
+    }
+  ],
+  "license_gate": "FAIL: use-composed-ref@1.4.0 missing primary text; react-remove-scroll-bar@2.3.8 primary release attribution unverified"
+}

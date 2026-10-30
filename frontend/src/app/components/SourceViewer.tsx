@@ -4,9 +4,9 @@ import type { Anchor, Source } from '../../types';
 import type { Translate } from '../i18n';
 import { SourceDocumentStore, sourceDocumentKey } from '../sourceDocuments';
 import SourceEditor from './SourceEditor';
-export default function SourceViewer({ anchor, t, projectPath, store: sharedStore, onSave, outdated = false, locked = false }: {
+export default function SourceViewer({ anchor, t, projectPath, store: sharedStore, onSave, onExplain, outdated = false, locked = false }: {
   anchor: Anchor; t: Translate; projectPath?: string; store?: SourceDocumentStore;
-  onSave?: (key: string) => Promise<unknown>; outdated?: boolean; locked?: boolean;
+  onExplain?: (mode: 'function' | 'file') => void; onSave?: (key: string) => Promise<unknown>; outdated?: boolean; locked?: boolean;
 }) {
   const [ownStore] = useState(() => new SourceDocumentStore((path, value) => call('open_source_document', path, value), request => call('save_source_document', request)));
   const store = sharedStore ?? ownStore;
@@ -26,7 +26,7 @@ export default function SourceViewer({ anchor, t, projectPath, store: sharedStor
   }, [projectPath, anchor, store]);
   const save = () => { if (!locked) void (onSave ? onSave(key) : store.save(key)).catch(() => {}); };
   if (legacy) return <LegacySourceViewer anchor={anchor} t={t}/>;
-  return <section className="source-view"><div className="source-heading"><IconDot/><span title={anchor.filePath}>{anchor.filePath}{document?.dirty ? ' ●' : ''}</span><small>L{anchor.startLine}–{anchor.endLine}</small><button title="Ctrl+S" disabled={locked || !document?.dirty || document.saving || Boolean(document.readOnlyReason)} onClick={save}>{document?.saving ? t('savingSource') : t('saveSource')}</button></div>
+  return <section className="source-view"><div className="source-heading"><IconDot/><span title={anchor.filePath}>{anchor.filePath}{document?.dirty ? ' ●' : ''}</span><small>L{anchor.startLine}–{anchor.endLine}</small><button title="Ctrl+S" disabled={locked || !document?.dirty || document.saving || Boolean(document.readOnlyReason)} onClick={save}>{document?.saving ? t('savingSource') : t('saveSource')}</button>{onExplain && <><button disabled={locked || !document} onClick={() => onExplain('function')}>{t('aiExplainFunction')}</button><button disabled={locked || !document} onClick={() => onExplain('file')}>{t('aiExplainFile')}</button></>}</div>
     {openError && <div className="inline-error" role="alert">{openError}</div>}
     {document?.error && <div className="inline-error" role="alert">{document.error.message}</div>}
     {document?.readOnlyReason && <div className="source-notice" role="status">{document.readOnlyReason}</div>}

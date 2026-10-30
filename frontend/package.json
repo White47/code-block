@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": ["packages/use-composed-ref-compat"],
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "lint": "eslint .",
@@ -11,10 +12,12 @@
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {
+    "@assistant-ui/react": "0.15.28",
     "@xyflow/react": "12.8.5",
     "monaco-editor": "0.57.0",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "use-composed-ref": "1.4.1"
   },
   "devDependencies": {
     "@eslint/js": "9.36.0",

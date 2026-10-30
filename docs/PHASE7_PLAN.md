@@ -1,6 +1,8 @@
 # Phase 7 Visible Graph Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **流程修订（2026-10-15）：** 流程以根目录 `AGENTS.md` 为准。不加载 subagent-driven-development 或 executing-plans，不做每任务双阶段评审。下方技术内容不变。
 
 **Goal:** 从现有 Code Graph 与 Semantic Graph 生成有预算、可展开、可回溯的局部 Architecture / Execution 图。
 

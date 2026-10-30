@@ -93,3 +93,13 @@ Phase 9 的 `SearchResult` 只代表索引中的定义或带源码锚点的语�
 ## 10. Desktop Session
 
 桌面会话 DTO 额外携带 backend 派生的 `hasAnalysis: boolean`；它不是持久化分析事实。`status=Outdated` 可以有 / 无可用 analysis，前端必须检查该位才能查询图或保存相关布局，不能仅依赖状态。具体生命周期见 [项目操作恢复](PROJECT_ACTION_RECOVERY.md)。
+
+## 11. ProjectUnderstanding 与私有衍生来源
+
+公开 ProjectUnderstanding 是可选的版本1引用：artifactId/revision、projectEpoch/analysisGeneration、conversationId/conversationRevision/jobId、configRevision/consentRevision、coverage。不复制Answer正文。coverage 分别记录 indexedFileCount、authorizedFileCount、metadataFileCount、sourceFileCount 和固定 gapCodes；实际发送的片段文件数不是完整理解率。
+
+条目使用 `project` 或 `section:canonical-index`，由原七段Answer生成；可用证据取该条目在原验证卡集合内的引用，不能借同会话的其他记录扩大权限。普通追问context只有 kind=understanding 与 artifactId/revision/itemId，原owner由服务查出，新问题会话可以不同。
+
+AnswerOriginManifest 是私有、不可变的披露来源：binding、原owner三元组及会话/配置/授权修订、服务商origin、normalized_scope、answer_digest、dependency_files（项目相对路径与内容指纹）。来源闭包保守包含原任务所有可能已发送的源码、元数据和衍生依赖；与“已完成发送”的界面覆盖统计不是同一概念。
+
+PriorInterpretationOrigin 绑定该manifest、artifact/revision/item及最多1000字符的原解释文本，kind固定prior_interpretation、version固定1。它只证明衍生披露的归属，不是SourceAnchor、EvidenceRecord、Exact静态事实或新provided receipt。BudgetReservation内部derived_characters/derived_files和PreparedRequest内部interpretation_occurrences默认空，沿用原公开usage及上限。无有效manifest的旧解释不能通过猜来源、改sourceFree或重放旧ID转为新上下文。
