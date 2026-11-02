@@ -52,12 +52,21 @@ it('updates the original Overview from the server project artifact through the s
     edges: [{ source: 'project-root', target: 'source-file', type: 'CONTAINS', confidence: 'Exact',
       sourceAnchors: [], codeEdgeIds: [], semanticComponentIds: [] }] };
   const getStaticGraph = vi.fn(async (kind: ViewKind) => ok(kind === 'ProjectStructure' ? structure : graph));
+  const taskSteps = ['Read saved input', 'Compute report'].map((title, index) => ({ id: `task:${index}`, kind: 'task' as const, title,
+    basis: 'source_author_statement' as const, confidence: 'Probable', ownerSymbolIds: [`owner:${index}`], codeNodeIds: [`owner:${index}`],
+    evidenceIds: [`static-fact:${index}`], sourceAnchors: [{ filePath: 'model.py', startLine: 1, endLine: 1, startColumn: null, endColumn: null }], sourceLocationCount: 1 }));
+  const readableOverview = { ...overview, understanding: { status: 'partial' as const, responsibilities: [], omittedResponsibilityCount: 0, omittedFactCount: 0, discardedFactCount: 0,
+    flows: [{ id: 'main-flow', title: 'Reporting', entrySymbolId: 'main', steps: taskSteps,
+      relations: [{ source: 'task:0', target: 'task:1', kind: 'control_next' as const, confidence: 'Probable', evidenceIds: [], codeNodeIds: [], sourceAnchors: [] }], incomplete: false, omittedCount: 0 }] } };
+  const summaryLayout = vi.fn(async () => ok({ context: { kind: 'task_flow' as const, id: 'main-flow' }, layoutToken: 'summary-token', positions: {}, viewport: { zoom: 1, pan: [0, 0] as [number, number] } }));
+  const saveSummaryLayout = vi.fn();
   const inspectStatic = vi.fn(async () => ok({ id: graph.nodes[0].id, displayName: 'Static node', codeName: 'static_node',
     role: 'Layer', confidence: 'Exact' as const, sourceAnchors: [], memberIds: [], data: [], children: [], evidence: [], relations: [], canOpenSource: false }));
   window.pywebview = { api: {
     get_session: vi.fn(async () => ok(session)), get_preferences: vi.fn(async () => ok({ language: 'en' as const, issue: null })),
     get_view_state: vi.fn(async () => ok(layout)), save_layout: vi.fn(async () => ok(layout)),
-    get_overview: vi.fn(async () => ok(overview)), get_problems: vi.fn(async () => ok([])), get_view: getStaticGraph,
+    get_overview: vi.fn(async () => ok(readableOverview)), get_problems: vi.fn(async () => ok([])), get_view: getStaticGraph,
+    get_summary_layout: summaryLayout, move_summary_node: saveSummaryLayout, save_summary_viewport: saveSummaryLayout,
     get_inspector: inspectStatic, open_detail_island: openDetail,
     list_project_directory: vi.fn(async () => ok({ projectPath: session.projectPath!, projectEpoch: 'epoch-1', directory: '', directoryRevision: 'r1', entries: [], nextCursor: null })),
     assistant_get_settings: vi.fn(async () => ok({ available: true, enabled: true, keySet: true, baseUrl: 'https://provider.invalid/v1', model: 'test', configRevision: 1, issue: null })),
@@ -105,7 +114,14 @@ it('updates the original Overview from the server project artifact through the s
   await waitFor(() => expect((screen.getByRole('button', { name: 'Analyze project with AI' }) as HTMLButtonElement).disabled).toBe(false));
   expect(screen.queryByRole('region', { name: 'Project understanding' })).toBeNull();
   expect(start).not.toHaveBeenCalled();
+  const originalCanvas = await screen.findByRole('region', { name: 'Overview static graph' });
+  expect(within(originalCanvas).getByText('Read saved input')).toBeTruthy();
+  expect(within(originalCanvas).getByText('summary-control-next')).toBeTruthy();
+  const initialLayoutReads = summaryLayout.mock.calls.length;
   fireEvent.click(screen.getByRole('button', { name: 'Analyze project with AI' }));
+  const explanation = await screen.findByText(/AI explanation and coverage/, { selector: 'summary' });
+  expect(explanation.parentElement?.hasAttribute('open')).toBe(false);
+  fireEvent.click(explanation);
   const model = await screen.findByRole('region', { name: 'Project understanding' });
   expect(within(model).getByText('Coordinates training and persistence across modules')).toBeTruthy();
   expect(within(model).getByText(/6 \/ 2 \/ 2 \/ 2/)).toBeTruthy();
@@ -113,11 +129,18 @@ it('updates the original Overview from the server project artifact through the s
   expect(start.mock.calls[0][0].context).toEqual({ kind: 'project' });
   expect(screen.queryByRole('region', { name: 'AI Assistant' })).toBeNull();
   expect(document.querySelector('.overview-page')).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Overview static graph' })).toBe(originalCanvas);
+  expect(document.querySelector('.ai-architecture')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Static analysis' }));
   expect(screen.queryByRole('region', { name: 'Project understanding' })).toBeNull();
   expect(document.querySelector('.overview-page')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'AI enhanced' }));
+  fireEvent.click(screen.getByText(/AI explanation and coverage/, { selector: 'summary' }));
   expect(within(screen.getByRole('region', { name: 'Project understanding' })).getByText('Coordinates training and persistence across modules')).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Overview static graph' })).toBe(originalCanvas);
+  expect(summaryLayout).toHaveBeenCalledTimes(initialLayoutReads);
+  expect(saveSummaryLayout).not.toHaveBeenCalled();
+  expect(getStaticGraph).not.toHaveBeenCalled();
   const currentModel = screen.getByRole('region', { name: 'Project understanding' });
   fireEvent.click(within(currentModel).getByText(/Related source and evidence/));
   fireEvent.click(within(currentModel).getByRole('button', { name: 'Open source' }));
@@ -130,32 +153,30 @@ it('updates the original Overview from the server project artifact through the s
   const structureCanvas = await screen.findByRole('region', { name: 'ProjectStructure static graph' });
   expect(within(structureCanvas).getByText('Source hierarchy')).toBeTruthy();
   expect(within(structureCanvas).getByText('CONTAINS')).toBeTruthy();
-  expect(screen.getByRole('region', { name: 'Project understanding' })).toBeTruthy();
-  const structureRequests = getStaticGraph.mock.calls.length;
-  fireEvent.click(screen.getByRole('button', { name: 'Static analysis' }));
   expect(screen.queryByRole('region', { name: 'Project understanding' })).toBeNull();
+  const structureRequests = getStaticGraph.mock.calls.length;
+  expect(screen.queryByRole('button', { name: 'Static analysis' })).toBeNull();
   expect(screen.getByRole('region', { name: 'ProjectStructure static graph' })).toBe(structureCanvas);
-  fireEvent.click(screen.getByRole('button', { name: 'AI enhanced' }));
-  expect(screen.getByRole('region', { name: 'Project understanding' })).toBeTruthy();
   expect(getStaticGraph).toHaveBeenCalledTimes(structureRequests);
   fireEvent.click(within(sidebar as HTMLElement).getByRole('button', { name: /Architecture/ }));
   const architectureCanvas = await screen.findByRole('region', { name: 'Architecture static graph' });
   expect(within(architectureCanvas).getByText('Encoder')).toBeTruthy();
   expect(within(architectureCanvas).queryByText('Source hierarchy')).toBeNull();
   const architectureRequests = getStaticGraph.mock.calls.length;
-  fireEvent.click(screen.getByRole('button', { name: 'Static analysis' }));
   expect(await screen.findByText('Static graph canvas')).toBeTruthy();
   expect(getStaticGraph).toHaveBeenCalledTimes(architectureRequests);
   fireEvent.click(screen.getByRole('button', { name: 'Select static node' }));
   await waitFor(() => expect(inspectStatic).toHaveBeenCalled());
   expect(screen.queryByRole('region', { name: 'AI Assistant' })).toBeNull();
   state.conversations.push({ conversationId: 'chat-2', conversationRevision: 0, messages: [] });
-  fireEvent.click(screen.getByRole('button', { name: 'AI enhanced' }));
-  const disclosure = document.querySelector('.project-understanding-panel > summary') as HTMLElement;
-  await act(async () => { fireEvent.keyDown(disclosure, { key: 'Enter' }); await Promise.resolve(); });
-  expect(openDetail).not.toHaveBeenCalled();
   await act(async () => { fireEvent.keyDown(document, { key: 'Enter' }); await Promise.resolve(); });
   await waitFor(() => expect(openDetail).toHaveBeenCalled());
+  fireEvent.click(within(sidebar as HTMLElement).getByRole('button', { name: /^Overview/ }));
+  const disclosure = await screen.findByText(/AI explanation and coverage/, { selector: 'summary' });
+  const detailsOpened = openDetail.mock.calls.length;
+  await act(async () => { fireEvent.keyDown(disclosure, { key: 'Enter' }); await Promise.resolve(); });
+  expect(openDetail).toHaveBeenCalledTimes(detailsOpened);
+  fireEvent.click(disclosure);
   const interpretation = screen.getByRole('region', { name: 'Project understanding' });
   fireEvent.click(within(interpretation).getByRole('button', { name: 'Ask about this node' }));
   let panel = await screen.findByRole('region', { name: 'AI Assistant' });
@@ -173,6 +194,17 @@ it('updates the original Overview from the server project artifact through the s
   expect(state.projectUnderstanding).toMatchObject({ artifactId: 'artifact-1', revision: 1, jobId: 'project-job' });
   fireEvent.click(screen.getByRole('button', { name: 'Close AI Assistant' }));
   expect(screen.queryByRole('region', { name: 'AI Assistant' })).toBeNull();
-  expect(screen.getByRole('region', { name: 'Architecture static graph' })).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Overview static graph' })).toBeTruthy();
   expect(screen.getByRole('region', { name: 'Project understanding' }).textContent).toContain('v1');
-});
+  const retainedCanvas = screen.getByRole('region', { name: 'Overview static graph' });
+  const ownerTurn = state.conversations[0].messages.filter(message => message.jobId === 'project-job');
+  expect(ownerTurn).toHaveLength(2);
+  ownerTurn.forEach(message => { message.stale = true; });
+  // The recovery contract forbids publishing a reference to a stale answer.
+  delete state.projectUnderstanding;
+  fireEvent.click(screen.getByRole('button', { name: 'AI Assistant' }));
+  await waitFor(() => expect(document.querySelector('.overview-page .summary-ai-explanation')).toBeNull());
+  expect(screen.getByRole('region', { name: 'Overview static graph' })).toBe(retainedCanvas);
+  expect(screen.queryByRole('button', { name: 'AI enhanced' })).toBeNull();
+  expect(resolveEvidence).toHaveBeenCalledTimes(1);
+}, 10_000);

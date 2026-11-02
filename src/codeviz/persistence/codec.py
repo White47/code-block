@@ -9,12 +9,28 @@ from typing import Any, Union, cast, get_args, get_origin, get_type_hints
 
 from codeviz.analysis.entries import GenericEntryCandidate
 from codeviz.analysis.flow import FlowAnalysis
+from codeviz.analysis.human_tasks import (
+    ArtifactAccessFact,
+    ArtifactAccessKind,
+    HumanEntryKind,
+    HumanTaskAnalysis,
+    HumanTaskEntryFact,
+    StaticTaskFact,
+    StaticTaskKind,
+)
+from codeviz.analysis.human_understanding import (
+    AuthorStatementFact,
+    HumanOperationKind,
+    HumanUnderstandingFacts,
+    OperationFact,
+)
 from codeviz.analysis.model import (
     ModelAnalysis,
     ModelDefinition,
     ModuleInstance,
     ModuleInvocation,
 )
+from codeviz.analysis.model_parameter_sharing import ParameterSharingFact
 from codeviz.analysis.project import ProjectAnalysis
 from codeviz.analysis.python import AnalysisIssue, ParsedFile
 from codeviz.analysis.resolution import ResolutionResult
@@ -51,10 +67,14 @@ _TYPES = {item.__name__: item for item in (
     ModuleInvocation, ModelAnalysis, TrainingEvent, TrainingControlJoin,
     TrainingAnalysis, SemanticAnalysis, CodeNode, CodeEdge, SemanticComponent,
     SemanticRelation, SemanticGraph, DataNode, EntryPoint, SourceAnchor,
+    AuthorStatementFact, OperationFact, HumanUnderstandingFacts,
+    StaticTaskFact, ArtifactAccessFact, HumanTaskEntryFact, HumanTaskAnalysis,
+    ParameterSharingFact,
 )}
 _ENUMS = {item.__name__: item for item in (
     Confidence, NodeKind, EntityRole, NodeOrigin, EdgeType, DataRole,
-    EntryPointKind, TrainingRole,
+    EntryPointKind, TrainingRole, HumanOperationKind,
+    StaticTaskKind, ArtifactAccessKind, HumanEntryKind,
 )}
 _MAX_DEPTH = 80
 

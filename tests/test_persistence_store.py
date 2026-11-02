@@ -8,19 +8,494 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from codeviz.analysis.human_tasks import human_task_fact_id
+from codeviz.analysis.human_understanding import HumanOperationKind, _fact_id
+from codeviz.analysis.model_parameter_sharing import parameter_sharing_fact_id
 from codeviz.analysis.project import analyze_project
 from codeviz.core import ViewKind
 from codeviz.persistence.codec import decode_analysis, encode_analysis
 from codeviz.persistence.fingerprint import (
+    ANALYSIS_VERSION,
     ProjectFingerprint,
     fingerprint_project,
     outdated_reasons,
 )
-from codeviz.persistence.store import CacheError, CacheStore
+from codeviz.persistence.store import CacheError, CacheStore, CacheVersionMismatch
 from codeviz.views import DetailIslandState, ViewportState, ViewState
 
 
 class CacheStoreTests(unittest.TestCase):
+    def test_store_rejects_human_task_with_unrelated_real_control_node(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "train.py").write_text(
+                "def step(loss, accumulation_steps):\n"
+                "    for _ in range(accumulation_steps):\n"
+                "        scaled = loss / accumulation_steps\n"
+                "        scaled.backward()\n"
+                "    done = True\n",
+                encoding="utf-8",
+            )
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            store = CacheStore(Path(data_dir))
+            store.save_analysis(project, analysis, fingerprint)
+            task = analysis.human_tasks.tasks[0]
+            unrelated = next(node for node in analysis.flow.graph.nodes.values()
+                             if node.metadata.get("statement_type") == "Assign"
+                             and node.source_anchors[0].start_line == 5)
+            forged = replace(
+                task,
+                id=human_task_fact_id(
+                    "task", task.owner_symbol_id, task.kind.value, task.source_anchor,
+                    unrelated.id, task.callsite_ids, task.target_symbol_ids,
+                ),
+                control_node_id=unrelated.id,
+            )
+            tampered = replace(
+                analysis,
+                human_tasks=replace(analysis.human_tasks, tasks=(forged,)),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_parameter_sharing_rebound_to_constructor_assignment(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "model.py").write_text(
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def __init__(self):\n"
+                "        self.embedding = nn.Embedding(8, 4)\n"
+                "        self.head = nn.Linear(4, 8, bias=False)\n"
+                "        self.embedding.weight = self.head.weight\n",
+                encoding="utf-8",
+            )
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            store = CacheStore(Path(data_dir))
+            store.save_analysis(project, analysis, fingerprint)
+            fact = analysis.model.parameter_sharings[0]
+            wrong_anchor = next(
+                node.source_anchors[0] for node in analysis.flow.graph.nodes.values()
+                if node.metadata.get("statement_type") == "Assign"
+                and node.source_anchors[0].start_line == 4
+            )
+            forged = replace(
+                fact,
+                id=parameter_sharing_fact_id(
+                    fact.model_definition_id, fact.owner_symbol_id,
+                    fact.assigned_instance_id, fact.assigned_attribute,
+                    fact.source_instance_id, fact.source_attribute, wrong_anchor,
+                ),
+                source_anchor=wrong_anchor,
+            )
+            tampered = replace(
+                analysis,
+                model=replace(analysis.model, parameter_sharings=(forged,)),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_forged_parameter_sharing_left_attribute(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "model.py").write_text(
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def __init__(self):\n"
+                "        self.left = nn.Linear(2, 2)\n"
+                "        self.right = nn.Linear(2, 2)\n"
+                "        self.left.weight = self.right.weight\n",
+                encoding="utf-8",
+            )
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            fact = analysis.model.parameter_sharings[0]
+            forged = replace(
+                fact,
+                id=parameter_sharing_fact_id(
+                    fact.model_definition_id, fact.owner_symbol_id,
+                    fact.assigned_instance_id, "bias",
+                    fact.source_instance_id, fact.source_attribute,
+                    fact.source_anchor,
+                ),
+                assigned_attribute="bias",
+            )
+            tampered = replace(
+                analysis,
+                model=replace(analysis.model, parameter_sharings=(forged,)),
+            )
+
+            with self.assertRaises(CacheError):
+                CacheStore(Path(data_dir)).save_analysis(
+                    project, tampered, fingerprint,
+                )
+
+    def test_v6_analysis_is_rejected_before_decode_without_changing_user_state(self):
+        self.assertEqual(ANALYSIS_VERSION, "7")
+        with self.provenance_fixture() as (project, store, _analysis, _fingerprint):
+            path = store.analysis_path(project)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["fingerprint"]["analysis_version"] = "6"
+            payload["analysis"] = {"v6": "must not decode"}
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            before = {item: item.read_bytes() for item in path.parent.glob("*.json")}
+
+            with patch("codeviz.persistence.store.decode_analysis") as decode:
+                with self.assertRaises(CacheVersionMismatch):
+                    store.load_analysis(project)
+                decode.assert_not_called()
+            self.assertEqual({item: item.read_bytes() for item in before}, before)
+
+    def test_store_rejects_human_fact_owner_outside_the_same_analysis(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task():\n    \"\"\"执行任务。\"\"\"\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            store.save_analysis(project, analysis, fingerprint)
+            statement = analysis.human_understanding.author_statements[0]
+            missing_owner = "node_missing"
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    author_statements=(replace(
+                        statement,
+                        id=_fact_id(missing_owner, "author_statement", statement.source_anchor),
+                        owner_symbol_id=missing_owner,
+                    ),),
+                ),
+            )
+
+            with patch("codeviz.persistence.store.encode_analysis", wraps=encode_analysis) as encode:
+                with self.assertRaises(CacheError):
+                    store.save_analysis(project, tampered, fingerprint)
+                encode.assert_not_called()
+
+            path = store.analysis_path(project)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["analysis"] = encode_analysis(tampered)
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with patch("codeviz.persistence.store.decode_analysis", wraps=decode_analysis) as decode:
+                with self.assertRaises(CacheError):
+                    store.load_analysis(project)
+                decode.assert_called_once()
+
+    def test_store_rejects_author_anchor_rebound_to_another_same_file_owner(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def first():\n    \"\"\"第一个。\"\"\"\n\n"
+                "def second():\n    \"\"\"第二个。\"\"\"\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            first, second = analysis.human_understanding.author_statements
+            forged = replace(
+                first,
+                id=_fact_id(second.owner_symbol_id, "author_statement", first.source_anchor),
+                owner_symbol_id=second.owner_symbol_id,
+            )
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    author_statements=(forged, second),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_return_fact_rebound_to_module_owner(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task():\n    return 1\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            operation = analysis.human_understanding.operations[0]
+            module_id = next(entry.id for entry in analysis.symbol_index.entries.values()
+                             if entry.qualified_name == "run")
+            forged = replace(
+                operation,
+                id=_fact_id(module_id, "operation", operation.source_anchor,
+                            operation.kind.value, None),
+                owner_symbol_id=module_id,
+            )
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    operations=(forged,),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_return_fact_anchored_to_non_return_statement(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task():\n    value = 1\n    return value\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            operation = analysis.human_understanding.operations[0]
+            assignment = next(
+                node for node in analysis.flow.graph.nodes.values()
+                if node.metadata.get("statement_type") == "Assign"
+            )
+            wrong_anchor = assignment.source_anchors[0]
+            forged = replace(
+                operation,
+                id=_fact_id(operation.owner_symbol_id, "operation", wrong_anchor,
+                            operation.kind.value, None),
+                source_anchor=wrong_anchor,
+            )
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    operations=(forged,),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_nested_return_rebound_to_enclosing_function(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def outer():\n    def inner():\n        return 1\n    return inner\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            entries = analysis.symbol_index.entries
+            outer_id = next(entry.id for entry in entries.values()
+                            if entry.qualified_name == "run.outer")
+            inner_id = next(entry.id for entry in entries.values()
+                            if entry.qualified_name == "run.outer.inner")
+            operation = next(fact for fact in analysis.human_understanding.operations
+                             if fact.owner_symbol_id == inner_id)
+            forged = replace(
+                operation,
+                id=_fact_id(outer_id, "operation", operation.source_anchor,
+                            operation.kind.value, None),
+                owner_symbol_id=outer_id,
+            )
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    operations=tuple(forged if fact is operation else fact
+                                     for fact in analysis.human_understanding.operations),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_return_kind_inconsistent_with_source_witness(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def empty():\n    return\n\ndef valued(value):\n    return value\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            for operation in analysis.human_understanding.operations:
+                wrong_kind = (
+                    HumanOperationKind.RETURN_VALUE
+                    if operation.kind is HumanOperationKind.RETURN_EMPTY
+                    else HumanOperationKind.RETURN_EMPTY
+                )
+                forged = replace(
+                    operation,
+                    id=_fact_id(operation.owner_symbol_id, "operation",
+                                operation.source_anchor, wrong_kind.value, None),
+                    kind=wrong_kind,
+                )
+                tampered = replace(
+                    analysis,
+                    human_understanding=replace(
+                        analysis.human_understanding,
+                        operations=tuple(forged if fact is operation else fact
+                                         for fact in analysis.human_understanding.operations),
+                    ),
+                )
+                with self.subTest(source_kind=operation.kind), self.assertRaises(CacheError):
+                    store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_author_statement_bound_to_lexical_scope(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task():\n    \"\"\"任务。\"\"\"\n    callback = lambda: 1\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            statement = analysis.human_understanding.author_statements[0]
+            lexical = next(entry for entry in analysis.symbol_index.entries.values()
+                           if entry.metadata.get("scope_type") == "Lambda")
+            forged = replace(
+                statement,
+                id=_fact_id(lexical.id, "author_statement", lexical.source_anchor),
+                owner_symbol_id=lexical.id,
+                source_anchor=lexical.source_anchor,
+            )
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    author_statements=(forged,),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_operation_with_another_real_callsite(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task(values):\n    print(len(values))\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            operations = analysis.human_understanding.operations
+            self.assertEqual(len(operations), 2)
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    operations=(
+                        replace(operations[0], callsite_id=operations[1].callsite_id),
+                        operations[1],
+                    ),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_operation_with_wrong_real_external_target(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task(values):\n    print(len(values))\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            operations = analysis.human_understanding.operations
+            stdout = next(fact for fact in operations if fact.kind.value == "standard_output")
+            count = next(fact for fact in operations if fact.kind.value == "count")
+            wrong_target = count.target_symbol_id
+            self.assertIsNotNone(wrong_target)
+            forged = replace(
+                stdout,
+                id=_fact_id(stdout.owner_symbol_id, "operation", stdout.source_anchor,
+                            stdout.kind.value, wrong_target),
+                target_symbol_id=wrong_target,
+            )
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    operations=tuple(forged if fact is stdout else fact for fact in operations),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_rejects_call_confidence_upgraded_above_resolution(self):
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "run.py").write_text(
+                "def task():\n    print('result')\n",
+                encoding="utf-8",
+            )
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            operation = analysis.human_understanding.operations[0]
+            forged = replace(operation, confidence=operation.confidence.EXACT)
+            tampered = replace(
+                analysis,
+                human_understanding=replace(
+                    analysis.human_understanding,
+                    operations=(forged,),
+                ),
+            )
+
+            with self.assertRaises(CacheError):
+                store.save_analysis(project, tampered, fingerprint)
+
+    def test_store_requires_exact_truncation_count_and_unique_diagnostic(self):
+        source = "\n".join(
+            f"def task_{index}():\n    \"\"\"任务 {index}。\"\"\"\n"
+            for index in range(513)
+        )
+        with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:
+            project = Path(project_dir)
+            (project / "many.py").write_text(source, encoding="utf-8")
+            store = CacheStore(Path(data_dir))
+            analysis = analyze_project(project)
+            fingerprint = fingerprint_project(project)
+            store.save_analysis(project, analysis, fingerprint)
+            diagnostic = next(issue for issue in analysis.issues
+                              if issue.code == "UNDERSTANDING_FACTS_TRUNCATED")
+            cases = {
+                "count_mismatch": replace(
+                    analysis,
+                    human_understanding=replace(
+                        analysis.human_understanding, omitted_fact_count=999,
+                    ),
+                ),
+                "zero_with_diagnostic": replace(
+                    analysis,
+                    human_understanding=replace(
+                        analysis.human_understanding, omitted_fact_count=0,
+                    ),
+                ),
+                "duplicate_diagnostic": replace(
+                    analysis,
+                    issues=(*analysis.issues, diagnostic),
+                ),
+            }
+
+            for risk, tampered in cases.items():
+                with self.subTest(risk=risk), self.assertRaises(CacheError):
+                    store.save_analysis(project, tampered, fingerprint)
+
     @contextmanager
     def provenance_fixture(self):
         with TemporaryDirectory() as project_dir, TemporaryDirectory() as data_dir:

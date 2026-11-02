@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from codeviz.analysis import discovery
 from codeviz.analysis.discovery import discover_python_files
+from codeviz.persistence.fingerprint import fingerprint_project, outdated_reasons
 
 
 def write_file(root: Path, relative_path: str, content: str = "pass\n") -> None:
@@ -17,6 +18,23 @@ def write_file(root: Path, relative_path: str, content: str = "pass\n") -> None:
 
 
 class DiscoveryTests(unittest.TestCase):
+    def test_data_directories_keep_python_sources_and_explicit_exclusions(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_file(root, "main.py")
+            before = fingerprint_project(root)
+            for path in ("data/shakespeare/prepare.py", "datasets/loader.py", "data/train.bin",
+                         "datasets/pixels.png", ".venv/hidden.py", "weights/hidden.py"):
+                write_file(root, path)
+            expected = ("data/shakespeare/prepare.py", "datasets/loader.py", "main.py")
+            for scan in (discover_python_files, discovery.discover_python_files_strict):
+                with self.subTest(scan=scan.__name__):
+                    self.assertEqual(scan(root), expected)
+                    self.assertEqual(scan(root, ignore_paths=("data", "datasets")), ("main.py",))
+            after = fingerprint_project(root)
+            self.assertEqual(tuple(path for path, _ in after.files), expected)
+            self.assertTrue(outdated_reasons(before, after))
+
     def test_scans_python_files_and_respects_default_and_custom_ignores(self):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)

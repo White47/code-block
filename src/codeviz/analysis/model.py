@@ -9,6 +9,7 @@ from codeviz.semantic import ModelRule, PyTorchModelRule
 
 from .flow import FlowAnalysis
 from .imports import ModuleCatalog
+from .model_parameter_sharing import MAX_PARAMETER_SHARING_FACTS, ParameterSharingFact
 from .python import AnalysisIssue, ParsedFile
 from .resolution import ResolutionResult
 from .symbols import SymbolIndexEntry
@@ -62,6 +63,16 @@ class ModelAnalysis:
     instances: tuple[ModuleInstance, ...] = ()
     invocations: tuple[ModuleInvocation, ...] = ()
     issues: tuple[AnalysisIssue, ...] = ()
+    parameter_sharings: tuple[ParameterSharingFact, ...] = ()
+
+    def __post_init__(self) -> None:
+        if (type(self.parameter_sharings) is not tuple
+                or len(self.parameter_sharings) > MAX_PARAMETER_SHARING_FACTS
+                or any(not isinstance(item, ParameterSharingFact)
+                       for item in self.parameter_sharings)
+                or len({item.id for item in self.parameter_sharings})
+                != len(self.parameter_sharings)):
+            raise ValueError("invalid model parameter-sharing facts")
 
 
 def _anchor(parsed: ParsedFile, node: ast.AST) -> SourceAnchor:
@@ -134,6 +145,7 @@ class _ModelBuilder:
     def __init__(self, files: tuple[ParsedFile, ...], resolution: ResolutionResult,
                  flow: FlowAnalysis, rule: ModelRule) -> None:
         self.files = files
+        self.resolution = resolution
         self.index = resolution.symbol_index
         self.flow = flow
         self.rule = rule
@@ -551,8 +563,16 @@ class _ModelBuilder:
         self._collect_definitions()
         self._collect_instances()
         self._collect_invocations()
-        return ModelAnalysis(tuple(self.definitions), tuple(self.instances),
+        base = ModelAnalysis(tuple(self.definitions), tuple(self.instances),
                              tuple(self.invocations), tuple(self.issues))
+        from .model_parameter_sharing import build_model_parameter_sharing_facts
+        sharings, sharing_issues = build_model_parameter_sharing_facts(
+            self.files, self.resolution, base,
+        )
+        return ModelAnalysis(
+            base.definitions, base.instances, base.invocations,
+            (*base.issues, *sharing_issues), sharings,
+        )
 
 
 def build_project_model(files: tuple[ParsedFile, ...], resolution: ResolutionResult,

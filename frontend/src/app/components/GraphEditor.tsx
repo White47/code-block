@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Background, BaseEdge, Controls, EdgeLabelRenderer, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, applyNodeChanges, getSmoothStepPath, getViewportForBounds, useNodesInitialized, useReactFlow, useStore, useStoreApi, type Edge, type EdgeProps, type Node, type NodeProps, type ReactFlowInstance, type Viewport } from '@xyflow/react';
-import type { Graph, Island, ViewKind, ViewState, VisibleNode } from '../../types';
+import type { EdgePresentation, Graph, Island, ViewKind, ViewState, VisibleNode } from '../../types';
 import type { Translate } from '../i18n';
 import { viewLabel } from './EditorTabs';
 import { definitionBreadcrumb, graphLabel } from '../graphLabels';
@@ -33,14 +33,29 @@ function SemanticEdge(props: EdgeProps) {
 }
 const nodeTypes = { code: CodeNode, island: DetailIsland };
 const edgeTypes = { semantic: SemanticEdge };
+const emptyPresentation: Record<string, EdgePresentation> = {};
 // Public deterministic layout entry point; measurements refine this in GraphCanvas.
 export function verticalPositions(graph: Graph): Record<string, [number, number]> {
   return layoutCards(graph);
 }
-function edgesFor(graph: Graph, t: Translate, prefix = ''): Edge[] { return graph.edges.map((edge, i) => ({ id: `${prefix}edge:${i}`, source: prefix + edge.source, target: prefix + edge.target, type: 'semantic', label: graphLabel(edge.type, t), style: { stroke: edgeColors[edge.type] ?? '#8192a8', strokeWidth: 1.7, strokeDasharray: edge.type === 'CONTAINS' ? '4 5' : edge.type === 'LOOP_BACK' ? '7 4' : edge.confidence === 'Probable' ? '3 4' : undefined }, markerEnd: { type: MarkerType.ArrowClosed, color: edgeColors[edge.type] ?? '#8192a8' }, labelStyle: { fill: '#a4b3c5', fontSize: 10 }, labelBgStyle: { fill: '#111820', fillOpacity: 0.92 } })); }
+function edgesFor(graph: Graph, t: Translate, prefix = '', presentation = emptyPresentation): Edge[] {
+  return graph.edges.map((edge, index) => {
+    const id = `${prefix}edge:${index}`; const style = presentation[id] ?? presentation[edge.type];
+    const color = style?.color ?? edgeColors[edge.type] ?? '#8192a8';
+    const dash = style?.dashed === undefined
+      ? edge.type === 'CONTAINS' ? '4 5' : edge.type === 'LOOP_BACK' ? '7 4' : edge.confidence === 'Probable' ? '3 4' : undefined
+      : style.dashed ? '5 5' : undefined;
+    return { id, source: prefix + edge.source, target: prefix + edge.target, type: 'semantic',
+      label: style?.label ?? graphLabel(edge.type, t),
+      style: { stroke: color, strokeWidth: 1.7, strokeDasharray: dash },
+      markerEnd: { type: MarkerType.ArrowClosed, color }, labelStyle: { fill: '#a4b3c5', fontSize: 10 },
+      labelBgStyle: { fill: '#111820', fillOpacity: 0.92 } };
+  });
+}
 type GraphEditorProps = {
   graph: Graph; viewState: ViewState | null; details: Record<string, Graph>; selectedId: string | null;
   cameraContext?: string; restoreViewport?: boolean;
+  title?: string; panOnScroll?: boolean; initialFit?: 'all' | 'width'; edgePresentation?: Record<string, EdgePresentation>;
   onSelect: (node: VisibleNode, detailSource: string | null) => void; onDetail: (node: VisibleNode) => void;
   onMove: (id: string, position: { x: number; y: number }, island: boolean) => void;
   onViewport: (view: ViewKind, viewport: Viewport) => void; onCloseIsland: (id: string) => void; t: Translate;
@@ -48,7 +63,7 @@ type GraphEditorProps = {
 export default function GraphEditor(props: GraphEditorProps) {
   return <ReactFlowProvider><GraphCanvas {...props}/></ReactFlowProvider>;
 }
-function GraphCanvas({ graph, viewState, details, selectedId, cameraContext = JSON.stringify([graph.viewKind, graph.rootIds]), restoreViewport, onSelect, onDetail, onMove, onViewport, onCloseIsland, t }: GraphEditorProps) {
+function GraphCanvas({ graph, viewState, details, selectedId, cameraContext = JSON.stringify([graph.viewKind, graph.rootIds]), restoreViewport, title, panOnScroll = false, initialFit = 'all', edgePresentation = emptyPresentation, onSelect, onDetail, onMove, onViewport, onCloseIsland, t }: GraphEditorProps) {
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [instance, setInstance] = useState<ReactFlowInstance<CanvasNode> | null>(null);
   const islands = useMemo(() => viewState?.detailIslands.filter(i => i.viewKind === graph.viewKind) ?? [], [viewState?.detailIslands, graph.viewKind]);
@@ -155,7 +170,7 @@ function GraphCanvas({ graph, viewState, details, selectedId, cameraContext = JS
     if (routeCache.current.geometry !== geometry) routeCache.current = { geometry, routes: new Map() };
     // A graph-wide cap also bounds dense relation sets; no edge is dropped.
     const routingBudget = { remaining: 120000 };
-    return [...edgesFor(graph, t), ...islands.flatMap(i => details[i.id] ? edgesFor(details[i.id], t, `island:${i.id}:`) : [])].map(e => {
+    return [...edgesFor(graph, t, '', edgePresentation), ...islands.flatMap(i => details[i.id] ? edgesFor(details[i.id], t, `island:${i.id}:`) : [])].map(e => {
       const key = JSON.stringify([e.source, e.target].sort()); const channel = channels.get(key) ?? 0; channels.set(key, channel + 1);
       const source = bounds.get(e.source); const target = bounds.get(e.target);
       const ownParent = byId.get(e.source)?.parentId === byId.get(e.target)?.parentId ? byId.get(e.source)?.parentId : undefined;
@@ -168,13 +183,13 @@ function GraphCanvas({ graph, viewState, details, selectedId, cameraContext = JS
       }
       return { ...e, data: { route, fallbackMessage: t('routingFallback') }, style: { ...e.style, opacity: selectedId && ![e.source, e.target].some(id => id === selectedId || id.endsWith(`:${selectedId}`)) ? .6 : 1 } };
     });
-  }, [graph, cameraContext, islands, details, nodes, selectedId, t]);
+  }, [graph, cameraContext, islands, details, nodes, selectedId, t, edgePresentation]);
   const loadedIslandKey = nodes.filter(n => n.type === 'island').map(n => n.id.slice(7)).join('|');
-  return <section className="graph-editor"><div className="graph-toolbar"><span><i className="signal"/> {viewLabel(graph.viewKind, t)}</span><small>{graph.nodes.length} {t('nodes')} · {graph.edges.length} {t('edges')} · {Object.values(graph.hiddenCounts).reduce((a, b) => a + b, 0)} {t('hidden')}</small><button onClick={() => { void instance?.fitView({ padding: .16, maxZoom: 1 }); }}>{t('fit')}</button></div><div className="flow-container"><ReactFlow<CanvasNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultViewport={initialViewport} minZoom={0.25} maxZoom={2.5} onNodesChange={changes => { if (currentContext.current !== cameraContext) return; const local = manualPositions(); for (const change of changes) { if (change.type !== 'position' || !change.position) continue; const node = nodes.find(n => n.id === change.id); const point: [number, number] = [change.position.x, change.position.y]; if (node?.type === 'island') local.islands[node.id.slice(7)] = point; else if (node?.type === 'code' && !node.parentId) local.main[node.id] = point; } setNodes(current => changes.some(change => change.type === 'dimensions') ? reflow(applyNodeChanges(changes, current)) : applyNodeChanges(changes, current)); }} onNodeClick={(_, node) => { if (node.type === 'code') onSelect(node.data.item, node.data.detailSource); }} onNodeDoubleClick={(_, node) => { if (node.type === 'code' && !node.data.detailSource) onDetail(node.data.item); }} onNodeDragStop={(_, node) => { if (currentContext.current !== cameraContext) return; const local = manualPositions(); const point: [number, number] = [node.position.x, node.position.y]; if (node.type === 'island') { local.islands[node.id.slice(7)] = point; onMove(node.id.slice(7), node.position, true); } else if (node.type === 'code' && !node.data.detailSource) { local.main[node.id] = point; onMove(node.id, node.position, false); } }} onMoveEnd={(_, viewport) => onViewport(graph.viewKind, viewport)} onInit={setInstance} proOptions={{ hideAttribution: true }}><Camera context={cameraContext} graph={graph} viewState={viewState} restoreViewport={restoreViewport} loadedIslandKey={loadedIslandKey}/><Background gap={24} size={1} color="#26323e"/><Controls showInteractive={false}/></ReactFlow><div className="graph-legend">{graph.legend.map(item => <span key={item.type} title={item.label}><i style={{ background: edgeColors[item.type] ?? '#8192a8' }} className={item.style.includes('dash') ? 'dashed' : ''}/>{graphLabel(item.type, t)}</span>)}<span><i className="node-legend"/> {t('nodes')}</span></div>{graph.issues.length > 0 && <div className="graph-issues">{graph.issues.map(i => <p key={`${i.code}:${i.message}`}>{i.code}: {i.message}</p>)}</div>}</div></section>;
+  return <section className="graph-editor"><div className="graph-toolbar"><span><i className="signal"/> {title ?? viewLabel(graph.viewKind, t)}</span><small>{graph.nodes.length} {t('nodes')} · {graph.edges.length} {t('edges')} · {Object.values(graph.hiddenCounts).reduce((a, b) => a + b, 0)} {t('hidden')}</small><button onClick={() => { void instance?.fitView({ padding: .16, maxZoom: 1 }); }}>{t('fit')}</button></div><div className="flow-container"><ReactFlow<CanvasNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultViewport={initialViewport} panOnScroll={panOnScroll} zoomOnScroll={!panOnScroll} minZoom={0.25} maxZoom={2.5} onNodesChange={changes => { if (currentContext.current !== cameraContext) return; const local = manualPositions(); for (const change of changes) { if (change.type !== 'position' || !change.position) continue; const node = nodes.find(n => n.id === change.id); const point: [number, number] = [change.position.x, change.position.y]; if (node?.type === 'island') local.islands[node.id.slice(7)] = point; else if (node?.type === 'code' && !node.parentId) local.main[node.id] = point; } setNodes(current => changes.some(change => change.type === 'dimensions') ? reflow(applyNodeChanges(changes, current)) : applyNodeChanges(changes, current)); }} onNodeClick={(_, node) => { if (node.type === 'code') onSelect(node.data.item, node.data.detailSource); }} onNodeDoubleClick={(_, node) => { if (node.type === 'code' && !node.data.detailSource) onDetail(node.data.item); }} onNodeDragStop={(_, node) => { if (currentContext.current !== cameraContext) return; const local = manualPositions(); const point: [number, number] = [node.position.x, node.position.y]; if (node.type === 'island') { local.islands[node.id.slice(7)] = point; onMove(node.id.slice(7), node.position, true); } else if (node.type === 'code' && !node.data.detailSource) { local.main[node.id] = point; onMove(node.id, node.position, false); } }} onMoveEnd={(_, viewport) => onViewport(graph.viewKind, viewport)} onInit={setInstance} proOptions={{ hideAttribution: true }}><Camera context={cameraContext} graph={graph} viewState={viewState} restoreViewport={restoreViewport} loadedIslandKey={loadedIslandKey} initialFit={initialFit}/><Background gap={24} size={1} color="#26323e"/><Controls showInteractive={false}/></ReactFlow><div className="graph-legend">{graph.legend.map(item => <span key={item.type} title={item.label}><i style={{ background: edgePresentation[item.type]?.color ?? edgeColors[item.type] ?? '#8192a8' }} className={(edgePresentation[item.type]?.dashed ?? item.style.includes('dash')) ? 'dashed' : ''}/>{edgePresentation[item.type]?.label ?? graphLabel(item.type, t)}</span>)}<span><i className="node-legend"/> {t('nodes')}</span></div>{graph.issues.length > 0 && <div className="graph-issues">{graph.issues.map(i => <p key={`${i.code}:${i.message}`}>{i.code}: {i.message}</p>)}</div>}</div></section>;
 }
 // Camera work belongs to semantic context, not query revisions or elapsed time.
-function Camera({ context, graph, viewState, restoreViewport, loadedIslandKey }: {
-  context: string; graph: Graph; viewState: ViewState | null; restoreViewport?: boolean; loadedIslandKey: string;
+function Camera({ context, graph, viewState, restoreViewport, loadedIslandKey, initialFit = 'all' }: {
+  context: string; graph: Graph; viewState: ViewState | null; restoreViewport?: boolean; loadedIslandKey: string; initialFit?: 'all' | 'width';
 }) {
   const flow = useReactFlow<CanvasNode>();
   const store = useStoreApi<CanvasNode>();
@@ -248,8 +263,14 @@ function Camera({ context, graph, viewState, restoreViewport, loadedIslandKey }:
       operation.started = true;
       camera.attempted.add(attempt);
       try {
-        const target = restoring ? viewport! : getViewportForBounds(
-          flow.getNodesBounds(measuredNodes), current.width, current.height, .25, 1, .16);
+        let target = viewport!;
+        if (!restoring) {
+          const bounds = flow.getNodesBounds(measuredNodes);
+          if (initialFit === 'width') {
+            const zoom = Math.min(1, Math.max(.25, current.width * .84 / Math.max(bounds.width, 1)));
+            target = { x: (current.width - bounds.width * zoom) / 2 - bounds.x * zoom, y: 32 - bounds.y * zoom, zoom };
+          } else target = getViewportForBounds(bounds, current.width, current.height, .25, 1, .16);
+        }
         // fitView queues work against a later node batch. A zero-duration viewport
         // write applies these measured bounds now, before a new context can render.
         if (!mounted.current || state.current !== camera || camera.inFlight !== operation) return;

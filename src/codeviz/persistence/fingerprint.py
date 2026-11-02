@@ -7,7 +7,7 @@ from pathlib import Path
 from codeviz.analysis.discovery import _normalize_ignore, discover_python_files
 from codeviz.source_handles import read_source_bytes
 
-ANALYSIS_VERSION = "4"
+ANALYSIS_VERSION = "7"
 PARSER_VERSION = f"python-{sys.version_info.major}.{sys.version_info.minor}"
 SEMANTIC_VERSION = "3"
 _MAX_SOURCE_BYTES = 50_000_000

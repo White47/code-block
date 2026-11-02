@@ -499,3 +499,39 @@ ProjectStructure 按请求根验证），`core_implementer` 正在仅修改控�
 - 前端125源码/测试及20资源哈希不变，复用653通过/2 todo和lint/typecheck/build；真实分页、input/source压力收缩及省略receipt负例保留。
 - 新包build/coverage-gap-diagnosis-20261029/frozen-final/CodeViz/CodeViz.exe；源码/资源/TLS及wheel5/frozen2假探针核验通过、外部尝试0；SHA256=ffec602e3ea8b605b9c6db171fe95966ef24f1a204ea09ddfd5cbb50579b56e8。
 - 断点同目录MAIN-checkpoint.json/phase-summary.json；原请求final校验原因与真实API质量未验收，不能宣称全部覆盖；无API/源码上传/读密钥/执行用户项目/Git提交推送。
+- 2026-10-30 可读性 H1 基础完成：有界作者说明/外部操作事实、来源校验和缓存版本5；总设计与 nanoGPT 专项验收已建立，UI/主流程/AI 改版未交付。
+- 一次独立复审4项已修复；75项定向通过，版本测试3项通过；最终后端1792项＝1686通过/106跳过，Ruff及Windows/Linux mypy通过。
+- 首轮受限环境9项失败已保留；原生环境复现模块18通过/1跳过后完成门禁；前端125文件及资源未变，复用653通过/2 todo证据。
+- nanoGPT 9条作者说明/62条操作、统计样例3条说明/8条操作，codec及CacheStore冷暖一致，原405/14条调用保留；未执行目标、调用API、打新包或提交推送。
+- 断点build/human-understanding-20261030/MAIN-checkpoint.json；下步H2概览职责卡/源码导航，再H3流程与nanoGPT、H4有效AI结果投影；当前完整可读性与原生界面未验收。
+- 2026-10-30 H2进行中：职责卡/源码与函数跳转/默认折叠已接入；前端655通过/2 todo及lint/typecheck/build通过，真实DTO离线组件检查通过，非原生应用验收。
+- 一次H2复审2项修复未收尾，必需core_implementer触发平台额度限制；部分代码已落地，H2不得记为完成，未跑最终后端全量门禁。
+- 最新44项定向43通过/1失败（混合置信度夹具需与来源一致）；另新增有效Guard中第二条语句入口回归失败，见h2-core-limit-check.log / h2-quota-red.log。
+- 断点同目录MAIN-checkpoint.json：恢复core后补Guard真分支CFG遍历及负例、等强测试修正，再定向/真实项目检查和原生后端门禁；前端与浏览器夹具哈希未变可复用。
+- H3 architect GO及精确合同已存docs/superpowers/plans/2026-10-30-human-understanding-task-graphs.md，须H2闭合后开始；H3/H4/新包/原生可读性均未交付，无API/执行目标/提交推送。
+- 2026-10-30 恢复核对：必需core代理仍返回usage limit，未换付费层级或绕过强制路由；H2核心修复继续受阻。
+- 已修正混合置信度夹具并补无来源升级拒绝负例，两项通过、Ruff/diffcheck通过；最新定向46项＝45通过/1失败（Guard前有准备语句时的入口定位），见h2-latest-targeted.log。
+- 断点同目录MAIN-checkpoint.json已更新：恢复core后只收尾Guard真分支CFG遍历/负例，再跑受影响项及H2原生后端门禁；不要重做已修好的夹具或未变前端验证。
+- 2026-10-31 H2完成：职责说明/源码跳转/默认折叠、词法归属与入口来源校验已接入；Guard真分支后续语句定位已修复，假分支/分支外负例保留。
+- 一次H2独立复审两项已收尾，定向48通过/0跳过；最终后端1816项＝1710通过/106跳过，Ruff、Windows/Linux mypy111通过。
+- 前端源码哈希未变，复用本阶段655通过/2 todo及lint/typecheck/build；真实DTO宽窄组件/真实锚点回调检查及夹具哈希一致，不等于原生应用验收。
+- 小样例3卡与nanoGPT12卡冷暖一致；原始调用/高级图不变，未执行目标、调用API、打包或提交推送；两种项目仍有明确说明范围缺口。
+- 断点build/human-understanding-20261030/MAIN-checkpoint.json；接H3A窄任务语义/产物事实与独立参数共享，再H3B摘要、H3C画布、H4有效AI增强；H3/H4未验收。
+
+- 2026-11-02 H3静态能力完成：任务/产物事实与独立参数共享、cache v7、职责/任务摘要、纵向画布和布局持久化已接入；真实实例名不作导航ID。
+- 一次H3独立复审5项已修复；单文件索引失败隔离、条件/循环父级、生成结果连接、名称推断边界及data目录源码覆盖均补回归，未执行目标代码或调用API。
+- 最终后端1857项＝1751通过/106跳过，Ruff与Windows/Linux mypy115通过；前端664通过/2 todo，lint/typecheck/build通过；失败记录保留，未更改逐动作断言。
+- 小样例3任务/2边，nanoGPT训练16/31、生成3/2及根目录准备脚本冷暖一致；宽窄浏览器/源码回调通过，实际dataset对应仍partial，非原生应用或完整项目理解验收。
+- 断点build/human-understanding-20261030/MAIN-checkpoint.json；下一任务为docs/superpowers/plans/2026-11-01-human-understanding-ai-enhancement.md Task1，随后Task2/3、H4门禁及打包/原生验收。
+
+- 2026-11-02 H4完成：有效AI结果只注释现有H3节点/关系；未匹配说明留在默认折叠区，不生成第二张图；保留静态布局、来源与实现导航。
+- 精确ID/唯一alias/category/方向及32/64上限、稀疏修订、跨会话追问和整轮失效已验证；旧回调复核当前artifact与显示上下文。
+- 唯一H4独立复审无可操作问题；前端668通过/2 todo，lint/typecheck/build通过；298个Python文件hash未变，复用H3的1751通过/106跳过及Ruff、Windows/Linux mypy。
+- 恢复fixture修正保留失效断言：同轮问答须一起stale并撤销reference；无API/目标执行/源码改写/提交推送，不宣称真实AI或最终可读性通过。
+- 断点build/human-understanding-20261030/MAIN-checkpoint.json；下一步离线打包与原生窗口检查，nanoGPT动态dataset对应仍partial。
+
+- 2026-11-02 H1–H4桌面交付完成：真实窗口发现并修复空api占位首连竞争，补齐三个摘要布局方法的原生固定参数暴露；未放宽守卫。
+- 修后门禁：后端1858＝1752通过/106跳过，Ruff及Windows/Linux mypy115通过；前端669通过/2 todo，lint/typecheck/build通过；唯一H4复审已完成，桥接修复未追加复审。
+- delivery-final/frozen/CodeViz/CodeViz.exe及wheel完成；115源码/110收录模块/20资源一致，包内固定离线SDK探针通过、0外部尝试。
+- 小型Python与nanoGPT真实窗口通过首次连接、任务/架构、Monaco及真实owner导航；3/2与16/31任务关系，目标源码hash未变；真实API和首次使用者理解效果未宣称通过，动态dataset仍partial。
+- docs/HUMAN_UNDERSTANDING_DELIVERY.md为交付入口；build/human-understanding-20261030/MAIN-checkpoint.json记录收尾，授权H1–H4队列无剩余实施；未提交推送。

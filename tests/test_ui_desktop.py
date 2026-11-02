@@ -67,6 +67,25 @@ class FakeWebview:
 
 
 class DesktopLauncherTests(unittest.TestCase):
+    def test_summary_layout_is_exposed_through_the_fixed_native_dispatch_contract(self) -> None:
+        from codeviz.persistence.store import CacheStore
+        from codeviz.ui.web_bridge import DesktopBridge
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            index = root / "frontend" / "dist" / "index.html"
+            index.parent.mkdir(parents=True)
+            index.write_text("desktop", encoding="utf-8")
+            webview = FakeWebview()
+            bridge = DesktopBridge(cache_store=CacheStore(root / "appdata"))
+            create_window(webview, bridge=bridge, index_path=index)
+            exposed = {method.__name__ for method in webview.window.expose.call_args.args}
+            for name, arity in (("get_summary_layout", 1), ("move_summary_node", 4),
+                                ("save_summary_viewport", 3)):
+                with self.subTest(method=name):
+                    self.assertIn(name, exposed)
+                    self.assertEqual(_API_ARITIES[name], (arity, arity))
+
     @unittest.skipUnless(find_spec("webview"), "pywebview is not installed")
     def test_real_dispatch_blocks_forged_names_and_retains_dto_validation(self) -> None:
         import webview

@@ -220,7 +220,8 @@ class MvpAcceptanceTests(unittest.TestCase):
         self.assertIn("trap.py", {file.relative_path for file in self.analysis.files})
         self.assertTrue(any(issue.code == "SYNTAX_ERROR" and issue.file_path == "broken.py"
                             for issue in self.analysis.issues))
-        self.assertNotIn("data/ignored.py", {file.relative_path for file in self.analysis.files})
+        # A data directory can contain preparation code; include it without execution.
+        self.assertIn("data/ignored.py", {file.relative_path for file in self.analysis.files})
         graph = self.analysis.flow.graph
         callback = next(edge for edge in graph.edges
                         if edge.type == EdgeType.CALLS and

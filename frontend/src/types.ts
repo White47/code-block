@@ -13,7 +13,19 @@ export interface Preferences { language: Language; issue: string | null }
 export interface AnalysisSettings { ignorePaths: string[]; issue: string | null }
 export interface CacheInfo { dataDir: string; analysisPath: string | null; exists: boolean; status: Session['status']; outdatedReasons: string[]; cacheIssue: string | null }
 export interface OverviewChoice { id: string; name: string; sourceAnchor: Anchor; viewKind?: ViewKind; confidence?: string; evidence?: string[]; detectionKind?: string | null; initialStructureDepth?: 1 | 2 }
-export interface Overview { projectName: string; projectPath: string; language: string; framework: string | null; models: OverviewChoice[]; entries: OverviewChoice[]; functions?: OverviewChoice[]; modules?: OverviewChoice[]; classes?: OverviewChoice[]; mainAreas: string[]; health: { filesParsed: number; filesTotal: number; symbolsResolved: number; exact: number; probable: number; unresolved: number; issueCount: number } }
+export type HumanOperationKind = 'return_value' | 'return_empty' | 'standard_output' | 'count' | 'sum' | 'conversion';
+export interface OperationFacet { kind: HumanOperationKind; confidence: string; sourceLocationCount: number; factIds: string[]; sourceAnchors: Anchor[] }
+export interface ResponsibilityCard { ownerSymbolId: string; codeName: string; ownerKind: 'Module' | 'Class' | 'Function' | 'Method'; responsibility: string | null; basis: 'source_author_statement' | 'unknown'; confidence: string; authorFactId: string | null; authorTruncated: boolean; operations: OperationFacet[]; sourceAnchor: Anchor }
+export interface SummaryStep { id: string; codeName?: string; kind: 'task' | 'decision' | 'loop' | 'result'; title: string; basis: string; confidence: string; ownerSymbolIds: string[]; evidenceIds: string[]; codeNodeIds: string[]; sourceAnchors: Anchor[]; sourceLocationCount: number }
+export type SummaryRelationKind = 'control_next' | 'branch_true' | 'branch_false' | 'loop_back' | 'contains' | 'data_artifact' | 'static_call' | 'model_use' | 'shared';
+export interface SummaryRelation { source: string; target: string; kind: SummaryRelationKind; confidence: string; evidenceIds: string[]; codeNodeIds: string[]; sourceAnchors: Anchor[]; sharingKind?: 'module_instance' | 'parameter' | null; sharingAttributes?: [string, string] | null }
+export interface SummaryTaskFlow { id: string; entrySymbolId: string; title: string; steps: SummaryStep[]; relations: SummaryRelation[]; incomplete: boolean; omittedCount: number }
+export interface FunctionalArchitectureData { id: string; areas: SummaryStep[]; relations: SummaryRelation[]; incomplete: boolean; omittedCount: number }
+export interface SummaryContext { kind: 'architecture' | 'task_flow'; id: string }
+export interface SummaryLayout { context: SummaryContext; layoutToken: string; viewportSaved?: boolean; positions: Record<string, Point>; viewport: { zoom: number; pan: Point } }
+export interface EdgePresentation { label: string; color?: string; dashed?: boolean }
+export interface HumanUnderstanding { status: 'source_backed' | 'partial' | 'unknown'; responsibilities: ResponsibilityCard[]; omittedResponsibilityCount: number; omittedFactCount: number; discardedFactCount: number; architecture?: FunctionalArchitectureData | null; flows?: SummaryTaskFlow[]; defaultFlowId?: string | null; omittedFlowCount?: number }
+export interface Overview { projectName: string; projectPath: string; language: string; framework: string | null; models: OverviewChoice[]; entries: OverviewChoice[]; functions?: OverviewChoice[]; modules?: OverviewChoice[]; classes?: OverviewChoice[]; understanding?: HumanUnderstanding | null; mainAreas: string[]; health: { filesParsed: number; filesTotal: number; symbolsResolved: number; exact: number; probable: number; unresolved: number; issueCount: number } }
 export interface InspectorData { id: string; displayName: string; codeName: string | null; role: string | null; confidence: string; evidence: string[]; children: string[]; relations: { type: string; otherId: string; direction: string; confidence: string }[]; data: [string, string][]; sourceAnchors: Anchor[]; memberIds: string[]; canOpenSource: boolean }
 export interface Problem { code: string; message: string; filePath: string | null; line: number | null; canOpenSource: boolean }
 export interface Source { filePath: string; text: string; startLine: number; endLine: number }
@@ -40,7 +52,12 @@ export interface ProjectBridgeMethods {
 }
 // Optional project browsing is an extension; legacy native bridge contracts
 // and typed adapters remain compatible without implementing the extension.
-export type AllBridgeMethods = BridgeMethods & ProjectBridgeMethods & AssistantBridgeMethods;
+export interface SummaryBridgeMethods {
+  get_summary_layout: { args: [SummaryContext]; data: SummaryLayout };
+  move_summary_node: { args: [SummaryContext, string, string, { x: number; y: number }]; data: SummaryLayout };
+  save_summary_viewport: { args: [SummaryContext, string, { zoom: number; pan: Point }]; data: SummaryLayout };
+}
+export type AllBridgeMethods = BridgeMethods & ProjectBridgeMethods & AssistantBridgeMethods & SummaryBridgeMethods;
 export interface BridgeMethods {
   open_source_document: { args: [string, Anchor]; data: EditableSource };
   save_source_document: { args: [SaveSourceRequest]; data: EditableSource };

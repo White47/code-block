@@ -14,6 +14,7 @@ from codeviz.core import (
 )
 from codeviz.navigation import RevealTarget
 from codeviz.search import SearchResponse, SearchResult
+from codeviz.views.human_summary import SummaryRelation, TaskStep
 from codeviz.views.state import ViewState
 
 from .controller import AnalysisStatus, SourceDocument
@@ -69,6 +70,10 @@ def _json_object(value: object) -> JsonObject:
     if type(cloned) is not dict:
         raise TypeError("JSON payload must be an object")
     return cloned
+
+
+def summary_layout_payload(value: dict[str, object]) -> JsonObject:
+    return _json_object(value)
 
 
 def _point_payload(value: object, field_name: str) -> list[int | float]:
@@ -301,7 +306,69 @@ def overview_payload(data: OverviewData) -> JsonObject:
             "issueCount": data.health.issue_count,
         },
     }
+    if data.understanding is not None:
+        understanding = data.understanding
+        summary: dict[str, object] = {
+            "status": understanding.status,
+            "omittedResponsibilityCount": understanding.omitted_responsibility_count,
+            "omittedFactCount": understanding.omitted_fact_count,
+            "discardedFactCount": understanding.discarded_fact_count,
+            "architecture": None if understanding.architecture is None else {
+                "id": understanding.architecture.id,
+                "areas": [_summary_step_payload(step) for step in understanding.architecture.areas],
+                "relations": [_summary_relation_payload(edge) for edge in understanding.architecture.relations],
+                "incomplete": understanding.architecture.incomplete,
+                "omittedCount": understanding.architecture.omitted_count,
+            },
+            "flows": [{
+                "id": flow.id, "entrySymbolId": flow.entry_symbol_id, "title": flow.title,
+                "steps": [_summary_step_payload(step) for step in flow.steps],
+                "relations": [_summary_relation_payload(edge) for edge in flow.relations],
+                "incomplete": flow.incomplete, "omittedCount": flow.omitted_count,
+            } for flow in understanding.flows],
+            "defaultFlowId": understanding.default_flow_id,
+            "omittedFlowCount": understanding.omitted_flow_count,
+            "responsibilities": [{
+                "ownerSymbolId": card.owner_symbol_id,
+                "codeName": card.code_name,
+                "ownerKind": card.owner_kind.value,
+                "responsibility": card.responsibility,
+                "basis": card.basis,
+                "confidence": card.confidence.value,
+                "authorFactId": card.author_fact_id,
+                "authorTruncated": card.author_truncated,
+                "sourceAnchor": _anchor_payload(card.source_anchor),
+                "operations": [{
+                    "kind": operation.kind.value,
+                    "confidence": operation.confidence.value,
+                    "sourceLocationCount": operation.source_location_count,
+                    "factIds": list(operation.fact_ids),
+                    "sourceAnchors": [_anchor_payload(anchor)
+                                      for anchor in operation.source_anchors],
+                } for operation in card.operations],
+            } for card in understanding.responsibilities],
+        }
+        payload["understanding"] = summary
     return _json_object(payload)
+
+
+def _summary_step_payload(step: TaskStep) -> dict[str, object]:
+    return {"id": step.id, "kind": step.kind, "title": step.title, "basis": step.basis,
+            **({"codeName": step.code_name} if step.code_name is not None else {}),
+            "confidence": step.confidence.value,
+            "ownerSymbolIds": list(step.owner_symbol_ids),
+            "evidenceIds": list(step.evidence_ids), "codeNodeIds": list(step.code_node_ids),
+            "sourceAnchors": [_anchor_payload(anchor) for anchor in step.source_anchors],
+            "sourceLocationCount": step.source_location_count}
+
+
+def _summary_relation_payload(edge: SummaryRelation) -> dict[str, object]:
+    return {"source": edge.source, "target": edge.target, "kind": edge.kind.value,
+            "confidence": edge.confidence.value, "evidenceIds": list(edge.evidence_ids),
+            "codeNodeIds": list(edge.code_node_ids),
+            "sourceAnchors": [_anchor_payload(anchor) for anchor in edge.source_anchors],
+            "sharingKind": edge.sharing_kind,
+            "sharingAttributes": None if edge.sharing_attributes is None else list(edge.sharing_attributes)}
 
 
 def inspector_payload(data: InspectorData) -> JsonObject:

@@ -8,19 +8,28 @@ const projectMutations: ReadonlySet<keyof BridgeMethods> = new Set<keyof BridgeM
   'move_detail_island', 'close_detail_island', 'set_analysis_settings',
   'save_source_document', 'approve_close', 'cancel_close',
   'create_project_entry', 'prepare_project_entry_operation', 'apply_project_entry_operation',
+  'move_summary_node', 'save_summary_viewport',
 ]);
 declare global { interface Window { pywebview?: { api?: Api }; __codevizCloseReady?: boolean } }
 export class BridgeError extends Error {
   constructor(public code: string, message: string) { super(message); this.name = 'BridgeError'; }
 }
+function populatedApi(): Api | undefined {
+  const api = window.pywebview?.api;
+  return api && Object.values(api).some(value => typeof value === 'function') ? api : undefined;
+}
 export function waitForBridge(timeout = 5000): Promise<Api> {
-  if (window.pywebview?.api) return Promise.resolve(window.pywebview.api);
+  const api = populatedApi();
+  if (api) return Promise.resolve(api);
   return new Promise((resolve, reject) => {
-    const check = () => { if (window.pywebview?.api) { cleanup(); resolve(window.pywebview.api); } };
-    const cleanup = () => { clearTimeout(timer); clearInterval(poll); window.removeEventListener('pywebviewready', check); };
+    // pywebview creates api:{} before installing exposed methods. That object
+    // alone is not readiness; the official event still supports an empty API.
+    const ready = () => { if (window.pywebview?.api) { cleanup(); resolve(window.pywebview.api); } };
+    const check = () => { const api = populatedApi(); if (api) { cleanup(); resolve(api); } };
+    const cleanup = () => { clearTimeout(timer); clearInterval(poll); window.removeEventListener('pywebviewready', ready); };
     const timer = setTimeout(() => { cleanup(); reject(new BridgeError('DESKTOP_UNAVAILABLE', 'Desktop bridge did not become ready. Open CodeViz in its native desktop window.')); }, timeout);
     const poll = setInterval(check, 50);
-    window.addEventListener('pywebviewready', check);
+    window.addEventListener('pywebviewready', ready);
     check();
   });
 }

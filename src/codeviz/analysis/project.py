@@ -1,6 +1,6 @@
 """One-shot project analysis: scan, parse, and merge lexical symbol facts."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from codeviz.core import SourceAnchor
@@ -9,6 +9,11 @@ from codeviz.semantic.components import SemanticAnalysis, build_semantic_analysi
 from .discovery import discover_python_files
 from .entries import GenericEntryCandidate, detect_generic_entries
 from .flow import FlowAnalysis, build_project_flow
+from .human_tasks import HumanTaskAnalysis, build_human_task_analysis
+from .human_understanding import (
+    HumanUnderstandingFacts,
+    build_human_understanding_facts,
+)
 from .model import ModelAnalysis, build_project_model
 from .python import AnalysisIssue, ParsedFile, parse_python_file
 from .resolution import ResolutionResult, resolve_project_symbols
@@ -27,6 +32,8 @@ class ProjectAnalysis:
     training: TrainingAnalysis | None = None
     semantic: SemanticAnalysis | None = None
     generic_entries: tuple[GenericEntryCandidate, ...] = ()
+    human_understanding: HumanUnderstandingFacts = field(default_factory=HumanUnderstandingFacts)
+    human_tasks: HumanTaskAnalysis = field(default_factory=HumanTaskAnalysis)
 
 
 def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> ProjectAnalysis:
@@ -56,6 +63,25 @@ def analyze_project(project_root: Path, ignore_paths: tuple[str, ...] = ()) -> P
     issues.extend(training.issues)
     semantic = build_semantic_analysis(tuple(files), model, training)
     issues.extend(semantic.issues)
+    human_understanding = build_human_understanding_facts(tuple(files), resolution, flow)
+    if human_understanding.omitted_fact_count:
+        anchor = SourceAnchor(files[0].relative_path, 1) if files else None
+        issues.append(AnalysisIssue(
+            "UNDERSTANDING_FACTS_TRUNCATED",
+            f"omitted {human_understanding.omitted_fact_count} human-understanding facts",
+            files[0].relative_path if files else "",
+            anchor,
+        ))
+    human_tasks = build_human_task_analysis(tuple(files), resolution, flow, model, training)
+    if human_tasks.omitted_fact_count:
+        anchor = SourceAnchor(files[0].relative_path, 1) if files else None
+        issues.append(AnalysisIssue(
+            "HUMAN_TASK_FACTS_TRUNCATED",
+            f"omitted {human_tasks.omitted_fact_count} human-task facts",
+            files[0].relative_path if files else "",
+            anchor,
+        ))
     return ProjectAnalysis(tuple(files), resolution.symbol_index, tuple(issues),
                            resolution, flow, model, training, semantic,
-                           detect_generic_entries(tuple(files), resolution.symbol_index))
+                           detect_generic_entries(tuple(files), resolution.symbol_index),
+                           human_understanding, human_tasks)

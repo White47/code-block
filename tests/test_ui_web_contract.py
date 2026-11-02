@@ -45,10 +45,46 @@ from codeviz.ui.web_contract import (
     success_payload,
     view_state_payload,
 )
+from codeviz.views.human_summary import TaskStep
 from codeviz.views.state import DetailIslandState, ViewportState, ViewState
 
 
 class WebContractTests(unittest.TestCase):
+    def test_summary_instance_name_is_optional_and_keeps_source_identities(self) -> None:
+        anchor = SourceAnchor("model.py", 3)
+        args = ("summary-node", "task", "Lookup", "model:Embedding", Confidence.PROBABLE,
+                ("real-owner",), ("fact",), ("real-code",), (anchor,), 1)
+        named = web_contract._summary_step_payload(TaskStep(*args, code_name="transformer.wte"))
+        unnamed = web_contract._summary_step_payload(TaskStep(*args))
+        self.assertEqual(named["codeName"], "transformer.wte")
+        self.assertNotIn("codeName", unnamed)
+        self.assertEqual(named["ownerSymbolIds"], ["real-owner"])
+        self.assertEqual(named["codeNodeIds"], ["real-code"])
+        self.assertEqual(named["sourceAnchors"], unnamed["sourceAnchors"])
+
+    def test_overview_includes_source_bound_human_responsibilities(self) -> None:
+        from tests.test_training import analyze_files
+
+        from codeviz.ui.presenter import build_overview
+
+        analysis = analyze_files({"report.py": (
+            'def summarize(values):\n    """统计数量和平均值。"""\n'
+            '    return sum(values) / len(values)\n'
+        )})
+        payload = overview_payload(build_overview(analysis, Path("example")))
+        self.assertIn("understanding", payload)
+        rendered = json.loads(json.dumps(payload))["understanding"]
+        owner = next(item for item in analysis.symbol_index.entries.values()
+                     if item.name == "summarize")
+        card = next(item for item in rendered["responsibilities"]
+                    if item["ownerSymbolId"] == owner.id)
+        self.assertEqual(card["responsibility"], "统计数量和平均值。")
+        self.assertEqual(card["basis"], "source_author_statement")
+        self.assertEqual(card["confidence"], "Probable")
+        self.assertNotEqual(card["ownerSymbolId"], card["authorFactId"])
+        self.assertEqual(card["sourceAnchor"]["startLine"], owner.source_anchor.start_line)
+        self.assertTrue(all(operation["sourceLocationCount"] > 0 for operation in card["operations"]))
+
     def test_assistant_failure_envelope_never_formats_raw_diagnostics(self) -> None:
         builder = getattr(web_contract, "assistant_error_payload", None)
         self.assertTrue(callable(builder), "Missing assistant error envelope")

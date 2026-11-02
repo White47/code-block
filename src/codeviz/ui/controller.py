@@ -1,8 +1,9 @@
 """UI-independent project session and safe, read-only source navigation."""
 
+import json
 import os
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
@@ -27,7 +28,13 @@ from codeviz.core import (
     VisibleGraph,
     VisibleNode,
 )
-from codeviz.persistence.fingerprint import fingerprint_project, outdated_reasons
+from codeviz.persistence.fingerprint import (
+    ANALYSIS_VERSION,
+    PARSER_VERSION,
+    SEMANTIC_VERSION,
+    fingerprint_project,
+    outdated_reasons,
+)
 from codeviz.persistence.store import CacheError, CacheStore, CacheVersionMismatch
 from codeviz.source_handles import opened_file_path
 from codeviz.views import (
@@ -39,6 +46,7 @@ from codeviz.views import (
 )
 from codeviz.views.architecture_structure import build_architecture_structure
 from codeviz.views.data import critical_data_slice
+from codeviz.views.human_understanding import build_human_understanding
 from codeviz.views.query import GraphQuery
 from codeviz.views.structure_identity import StructureResolver
 
@@ -52,6 +60,7 @@ from .assistant_context import (
     ViewNodeKey,
 )
 from .source_editing import EditableSource, SourceEditingService
+from .summary_layout import SummaryGeometry, SummaryLayoutIndex
 
 _DETAIL_UNAVAILABLE_ERRORS = frozenset({
     "requested root is not available in this view",
@@ -848,6 +857,10 @@ class AppController:
         if self.analysis is None:
             return
         state = self.view_state
+        summary_index = (self._summary_layout_index()
+                         if any(node.startswith("summary:v1:") for positions in
+                                state.positions_by_view.values() for node in positions)
+                         else None)
         roots = dict(state.graph_roots)
         for kind, root in roots.items():
             if root is not None:
@@ -890,7 +903,10 @@ class AppController:
             expanded_ids=tuple(node for node in state.expanded_ids if self.valid_identity(node)),
             positions={node: point for node, point in state.positions.items() if self.valid_identity(node)},
             positions_by_view={kind: {node: point for node, point in positions.items()
-                                      if self.valid_identity(node, ViewKind(kind))}
+                                      if self.valid_identity(node, ViewKind(kind))
+                                      or (kind == ViewKind.OVERVIEW.value
+                                          and summary_index is not None
+                                          and summary_index.valid_position_key(node))}
                                for kind, positions in state.positions_by_view.items()},
         )
         if self.view_state != state:
@@ -899,6 +915,44 @@ class AppController:
     def structure_namespace(self) -> str:
         return (sha256(os.path.normcase(str(self.project_root.resolve())).encode()).hexdigest()[:24]
                 if self.project_root is not None else "")
+
+    def _summary_layout_index(self) -> SummaryLayoutIndex:
+        if self.analysis is None or self.project_root is None:
+            raise ValueError("analyze a project before opening a summary layout")
+        understanding = build_human_understanding(self.analysis)
+        contexts: list[SummaryGeometry] = []
+        if understanding.architecture is not None:
+            architecture = understanding.architecture
+            contexts.append(SummaryGeometry(
+                "architecture", architecture.id,
+                tuple(node.id for node in architecture.areas),
+                json.dumps(asdict(architecture), sort_keys=True, ensure_ascii=False)))
+        for flow in understanding.flows:
+            contexts.append(SummaryGeometry(
+                "task_flow", flow.id, tuple(node.id for node in flow.steps),
+                json.dumps(asdict(flow), sort_keys=True, ensure_ascii=False)))
+        source_revision = json.dumps((ANALYSIS_VERSION, PARSER_VERSION, SEMANTIC_VERSION,
+                                     self.ignore_paths, [
+            (item.relative_path, item.content_hash) for item in self.analysis.files
+        ]), sort_keys=True)
+        return SummaryLayoutIndex(self.structure_namespace(), source_revision, tuple(contexts))
+
+    def get_summary_layout(self, context: object) -> dict[str, object]:
+        return self._summary_layout_index().payload(self.view_state, context)
+
+    def move_summary_node(self, context: object, token: object, node_id: object,
+                          position: object) -> dict[str, object]:
+        index = self._summary_layout_index()
+        self.view_state = index.move(self.view_state, context, token, node_id, position)
+        self._persist_view_state()
+        return index.payload(self.view_state, context)
+
+    def save_summary_viewport(self, context: object, token: object,
+                              viewport: object) -> dict[str, object]:
+        index = self._summary_layout_index()
+        self.view_state = index.save_viewport(self.view_state, context, token, viewport)
+        self._persist_view_state()
+        return index.payload(self.view_state, context)
 
     def current_structure_depth(self, kind: ViewKind, root_id: str | None) -> int:
         context = self._structure_depths.get(kind)

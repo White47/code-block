@@ -11,6 +11,22 @@ from codeviz.views import ViewRequest, build_visible_graph
 
 
 class PresenterTests(unittest.TestCase):
+    def test_overview_exposes_persisted_responsibility_and_current_source_owner(self):
+        analysis = analyze_files({"report.py": (
+            'def summarize(values):\n    """统计数量和平均值。"""\n'
+            '    return sum(values) / len(values)\n'
+        )})
+        overview = build_overview(analysis, Path("example-project"))
+        understanding = getattr(overview, "understanding", None)
+        self.assertIsNotNone(understanding, "Overview must expose the persisted human projection")
+        owner = next(item for item in analysis.symbol_index.entries.values()
+                     if item.name == "summarize")
+        card = next(item for item in understanding.responsibilities
+                    if item.owner_symbol_id == owner.id)
+        self.assertEqual(card.responsibility, "统计数量和平均值。")
+        self.assertEqual(card.basis, "source_author_statement")
+        self.assertEqual(card.source_anchor, owner.source_anchor)
+
     def test_overview_keeps_models_and_entries_separate_with_real_health(self):
         analysis = analyze_files({
             "model.py": (

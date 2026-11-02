@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 _IGNORED_DIRECTORIES = frozenset({
     ".git", ".venv", "venv", "env", "node_modules", "__pycache__",
     "build", "dist", ".tox", ".mypy_cache", ".pytest_cache",
-    ".ruff_cache", "site-packages", "data", "datasets", "weights",
+    ".ruff_cache", "site-packages", "weights",
     "checkpoints", "runs", "wandb", "work",
 })
 

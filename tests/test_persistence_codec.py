@@ -21,6 +21,105 @@ from codeviz.views import ViewRequest, build_visible_graph
 
 
 class AnalysisCodecTests(unittest.TestCase):
+    def test_human_tasks_and_parameter_sharing_round_trip_without_ast(self):
+        analysis = analyze_files({
+            "model.py": (
+                "import torch.nn as nn\n"
+                "class Net(nn.Module):\n"
+                "    def __init__(self):\n"
+                "        self.embedding = nn.Embedding(8, 4)\n"
+                "        self.head = nn.Linear(4, 8, bias=False)\n"
+                "        self.embedding.weight = self.head.weight\n"
+            ),
+            "train.py": (
+                "def step(loss, accumulation_steps):\n"
+                "    for _ in range(accumulation_steps):\n"
+                "        scaled = loss / accumulation_steps\n"
+                "        scaled.backward()\n"
+            ),
+        })
+
+        self.assertIn("HumanTaskAnalysis", codec._TYPES)
+        self.assertIn("ParameterSharingFact", codec._TYPES)
+        restored = decode_analysis(json.loads(json.dumps(encode_analysis(analysis))))
+
+        self.assertEqual(restored.human_tasks, analysis.human_tasks)
+        self.assertEqual(restored.model.parameter_sharings,
+                         analysis.model.parameter_sharings)
+        self.assertTrue(all(parsed.tree is None for parsed in restored.files))
+
+    def test_decoder_rejects_human_task_fact_budget_overflow(self):
+        analysis = analyze_files({
+            "train.py": (
+                "def step(loss, accumulation_steps):\n"
+                "    for _ in range(accumulation_steps):\n"
+                "        scaled = loss / accumulation_steps\n"
+                "        scaled.backward()\n"
+            ),
+        })
+        payload = encode_analysis(analysis)
+        tasks = payload["fields"]["human_tasks"]["fields"]["tasks"]["items"]
+        tasks[:] = [deepcopy(tasks[0]) for _ in range(513)]
+
+        with self.assertRaises(ValueError):
+            decode_analysis(payload)
+
+    def test_human_understanding_round_trip_is_equal_without_ast_or_full_docstring(self):
+        private_tail = "PRIVATE_DOCSTRING_TAIL"
+        source = (
+            "def summarize(values):\n"
+            "    \"\"\"统计数量。\n"
+            f"    {private_tail}\"\"\"\n"
+            "    print(len(values))\n"
+            "    return sum(values)\n"
+        )
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "summary.py").write_text(source, encoding="utf-8")
+            analysis = analyze_project(root)
+
+        self.assertIn("HumanUnderstandingFacts", codec._TYPES,
+                      "human-understanding facts require explicit codec registration")
+        payload = encode_analysis(analysis)
+        serialized = json.dumps(payload, ensure_ascii=False)
+        restored = decode_analysis(json.loads(serialized))
+        self.assertEqual(restored.human_understanding, analysis.human_understanding)
+        self.assertTrue(all(parsed.tree is None for parsed in restored.files))
+        self.assertNotIn(private_tail, serialized)
+
+    def test_decoder_rejects_overlong_author_statement(self):
+        analysis = analyze_files({"run.py": "def task():\n    \"\"\"说明。\"\"\"\n"})
+        payload = encode_analysis(analysis)
+        statement = payload["fields"]["human_understanding"]["fields"][
+            "author_statements"
+        ]["items"][0]
+        statement["fields"]["text"] = "读" * 81
+
+        with self.assertRaises(ValueError):
+            decode_analysis(payload)
+
+    def test_decoder_rejects_author_statement_upgraded_to_exact(self):
+        analysis = analyze_files({"run.py": "def task():\n    \"\"\"说明。\"\"\"\n"})
+        payload = encode_analysis(analysis)
+        statement = payload["fields"]["human_understanding"]["fields"][
+            "author_statements"
+        ]["items"][0]
+        statement["fields"]["confidence"]["value"] = "Exact"
+
+        with self.assertRaises(ValueError):
+            decode_analysis(payload)
+
+    def test_decoder_rejects_more_than_512_human_facts(self):
+        analysis = analyze_files({"run.py": "def task():\n    \"\"\"说明。\"\"\"\n"})
+        payload = encode_analysis(analysis)
+        statements = payload["fields"]["human_understanding"]["fields"][
+            "author_statements"
+        ]["items"]
+        statements[:] = [deepcopy(statements[0]) for _ in range(513)]
+
+        with self.assertRaises(ValueError):
+            decode_analysis(payload)
+
     def test_parsed_file_seven_keys_retain_actual_raw_hash_without_source(self):
         raw = "# PRIVATE_RAW_MARKER\r\nvalue = 'é'\r\n".encode("utf-8")
         with TemporaryDirectory() as temporary:

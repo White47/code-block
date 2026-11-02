@@ -42,6 +42,7 @@ from .web_contract import (
     session_payload,
     source_payload,
     success_payload,
+    summary_layout_payload,
     view_state_payload,
 )
 
@@ -757,6 +758,25 @@ class DesktopBridge:
 
         return self._call(operation,
                           invalid_message="The view state request is invalid.")
+
+    def get_summary_layout(self, context: object) -> JsonObject:
+        return self._call(
+            lambda: summary_layout_payload(self._controller.get_summary_layout(context)),
+            invalid_message="The summary layout request is invalid.")
+
+    def move_summary_node(self, context: object, layout_token: object,
+                          node_id: object, position: object) -> JsonObject:
+        return self._write_call(
+            lambda: summary_layout_payload(self._controller.move_summary_node(
+                context, layout_token, node_id, position)),
+            invalid_message="The summary node position request is invalid.")
+
+    def save_summary_viewport(self, context: object, layout_token: object,
+                              viewport: object) -> JsonObject:
+        return self._write_call(
+            lambda: summary_layout_payload(self._controller.save_summary_viewport(
+                context, layout_token, viewport)),
+            invalid_message="The summary viewport request is invalid.")
 
     def _sanitize_view_state(self) -> None:
         # Without analysis, defer identity checks until analyze/get_view_state.

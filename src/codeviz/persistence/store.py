@@ -9,8 +9,27 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import cast
 
+from codeviz.analysis.human_tasks import (
+    MAX_HUMAN_TASK_FACTS,
+    ArtifactAccessFact,
+    HumanTaskEntryFact,
+    StaticTaskFact,
+    has_valid_human_task_fact_id,
+)
+from codeviz.analysis.human_understanding import (
+    MAX_FACTS,
+    AuthorStatementFact,
+    HumanOperationKind,
+    OperationFact,
+    external_operation_kind,
+    has_valid_human_fact_id,
+)
+from codeviz.analysis.model_parameter_sharing import (
+    MAX_PARAMETER_SHARING_FACTS,
+    has_valid_parameter_sharing_id,
+)
 from codeviz.analysis.project import ProjectAnalysis
-from codeviz.core import SourceAnchor
+from codeviz.core import Confidence, EdgeType, NodeKind, NodeOrigin, SourceAnchor
 from codeviz.persistence.codec import decode_analysis, encode_analysis
 from codeviz.persistence.fingerprint import (
     ANALYSIS_VERSION,
@@ -67,6 +86,341 @@ def _validate_analysis_sources(analysis: ProjectAnalysis,
             raise CacheError("analysis cache source hash mismatch")
     if seen != expected.keys():
         raise CacheError("analysis cache source inventory mismatch")
+    _validate_human_understanding(analysis)
+    _validate_human_tasks(analysis)
+    _validate_parameter_sharings(analysis)
+
+
+def _anchor_contains(owner: SourceAnchor, fact: SourceAnchor) -> bool:
+    if owner.file_path != fact.file_path or owner.end_line is None or fact.end_line is None:
+        return False
+    if fact.start_line < owner.start_line or fact.end_line > owner.end_line:
+        return False
+    if (fact.start_line == owner.start_line and owner.start_column is not None
+            and (fact.start_column is None or fact.start_column < owner.start_column)):
+        return False
+    return not (
+        fact.end_line == owner.end_line and owner.end_column is not None
+        and (fact.end_column is None or fact.end_column > owner.end_column)
+    )
+
+
+def _return_kind_from_source_witness(anchor: SourceAnchor) -> HumanOperationKind | None:
+    if anchor.start_column is None or anchor.end_column is None or anchor.end_line is None:
+        return None
+    if anchor.end_line == anchor.start_line and anchor.end_column - anchor.start_column == 6:
+        return HumanOperationKind.RETURN_EMPTY
+    return HumanOperationKind.RETURN_VALUE
+
+
+def _validate_human_understanding(analysis: ProjectAnalysis) -> None:
+    """Cross-check derived fact references against this exact analysis snapshot."""
+    parsed_files = {parsed.relative_path: parsed for parsed in analysis.files}
+    owners = analysis.symbol_index.entries
+    allowed_owner_kinds = {
+        NodeKind.MODULE, NodeKind.CLASS, NodeKind.FUNCTION,
+        NodeKind.METHOD, NodeKind.LEXICAL_SCOPE,
+    }
+    facts = analysis.human_understanding
+    all_facts: tuple[AuthorStatementFact | OperationFact, ...] = (
+        *facts.author_statements, *facts.operations,
+    )
+    truncation_issues = [issue for issue in analysis.issues
+                         if issue.code == "UNDERSTANDING_FACTS_TRUNCATED"]
+    if facts.omitted_fact_count == 0:
+        truncation_consistent = not truncation_issues
+    else:
+        truncation_consistent = (
+            len(all_facts) == MAX_FACTS
+            and len(truncation_issues) == 1
+            and truncation_issues[0].message == (
+                f"omitted {facts.omitted_fact_count} human-understanding facts"
+            )
+            and truncation_issues[0].file_path in parsed_files
+            and truncation_issues[0].source_anchor
+            == SourceAnchor(truncation_issues[0].file_path, 1)
+        )
+    if not truncation_consistent:
+        raise CacheError("human-understanding provenance mismatch")
+    graph = analysis.flow.graph if analysis.flow is not None else None
+    external_ids = ({node.id for node in analysis.resolution.external_symbols}
+                    if analysis.resolution is not None else set())
+    for fact in all_facts:
+        owner = owners.get(fact.owner_symbol_id)
+        parsed = parsed_files.get(fact.source_anchor.file_path)
+        if (owner is None or owner.kind not in allowed_owner_kinds
+                or owner.file_path != fact.source_anchor.file_path
+                or parsed is None or not parsed.was_parsed
+                or fact.source_anchor.end_line is None
+                or fact.source_anchor.end_line > parsed.line_count
+                or not _anchor_contains(owner.source_anchor, fact.source_anchor)
+                or not has_valid_human_fact_id(fact)):
+            raise CacheError("human-understanding provenance mismatch")
+    if any(owners[fact.owner_symbol_id].kind is NodeKind.LEXICAL_SCOPE
+           for fact in facts.author_statements):
+        raise CacheError("human-understanding provenance mismatch")
+    for operation in facts.operations:
+        if operation.kind in (HumanOperationKind.RETURN_VALUE, HumanOperationKind.RETURN_EMPTY):
+            if (graph is None
+                    or owners[operation.owner_symbol_id].kind in (NodeKind.MODULE, NodeKind.CLASS)):
+                raise CacheError("human-understanding provenance mismatch")
+            return_steps = [
+                node for node in graph.nodes.values()
+                if node.kind is NodeKind.FLOW_STEP
+                and node.metadata.get("statement_type") == "Return"
+                and node.source_anchors == (operation.source_anchor,)
+            ]
+            if (_return_kind_from_source_witness(operation.source_anchor) is not operation.kind
+                    or not any(
+                        edge.source == operation.owner_symbol_id
+                        and edge.target == step.id
+                        and edge.type is EdgeType.CONTAINS
+                        and edge.source_anchor == operation.source_anchor
+                        for step in return_steps for edge in graph.edges
+                    )):
+                raise CacheError("human-understanding provenance mismatch")
+            continue
+        if graph is None or operation.callsite_id is None or operation.target_symbol_id is None:
+            raise CacheError("human-understanding provenance mismatch")
+        callsite = graph.nodes.get(operation.callsite_id)
+        target = graph.nodes.get(operation.target_symbol_id)
+        call_edges = [edge for edge in graph.edges
+                      if edge.source == operation.callsite_id
+                      and edge.target == operation.target_symbol_id
+                      and edge.type is EdgeType.CALLS]
+        references = [reference for reference in analysis.symbol_index.references
+                      if reference.scope_symbol_id == operation.owner_symbol_id
+                      and callsite is not None and reference.name == callsite.name
+                      and reference.source_anchor.start_line == operation.source_anchor.start_line
+                      and reference.source_anchor.start_column == operation.source_anchor.start_column
+                      and _anchor_contains(operation.source_anchor, reference.source_anchor)]
+        reference_targets: tuple[str, ...] = ()
+        if len(references) == 1:
+            reference_targets = ((references[0].resolved_definition_id,)
+                                 if references[0].resolved_definition_id is not None
+                                 else references[0].possible_target_ids)
+        if (callsite is None or callsite.kind is not NodeKind.CALL_SITE
+                or callsite.metadata.get("scope_symbol_id") != operation.owner_symbol_id
+                or callsite.source_anchors != (operation.source_anchor,)
+                or target is None or target.origin is not NodeOrigin.EXTERNAL
+                or target.id not in external_ids
+                or external_operation_kind(target.qualified_name) is not operation.kind
+                or len(call_edges) != 1 or call_edges[0].confidence is not operation.confidence
+                or len(references) != 1 or reference_targets != (target.id,)
+                or references[0].confidence is not operation.confidence):
+            raise CacheError("human-understanding provenance mismatch")
+
+
+def _validate_human_tasks(analysis: ProjectAnalysis) -> None:
+    facts = analysis.human_tasks
+    all_facts: tuple[HumanTaskEntryFact | StaticTaskFact | ArtifactAccessFact, ...] = (
+        *facts.entries, *facts.tasks, *facts.artifacts,
+    )
+    truncation_issues = [issue for issue in analysis.issues
+                         if issue.code == "HUMAN_TASK_FACTS_TRUNCATED"]
+    if facts.omitted_fact_count == 0:
+        truncation_consistent = not truncation_issues
+    else:
+        truncation_consistent = (
+            len(all_facts) == MAX_HUMAN_TASK_FACTS
+            and len(truncation_issues) == 1
+            and truncation_issues[0].message
+            == f"omitted {facts.omitted_fact_count} human-task facts"
+        )
+    if not truncation_consistent:
+        raise CacheError("human-task provenance mismatch")
+    owners = analysis.symbol_index.entries
+    parsed_files = {parsed.relative_path: parsed for parsed in analysis.files}
+    graph = analysis.flow.graph if analysis.flow is not None else None
+    if graph is None:
+        if all_facts:
+            raise CacheError("human-task provenance mismatch")
+        return
+    evidence: dict[str, StaticTaskFact | ArtifactAccessFact] = {
+        fact.id: fact for fact in facts.tasks
+    }
+    evidence.update({fact.id: fact for fact in facts.artifacts})
+    for fact in all_facts:
+        owner_id = (fact.root_symbol_id if isinstance(fact, HumanTaskEntryFact)
+                    else fact.owner_symbol_id)
+        owner = owners.get(owner_id)
+        parsed = parsed_files.get(fact.source_anchor.file_path)
+        if (owner is None
+                or owner.kind not in (NodeKind.MODULE, NodeKind.CLASS,
+                                      NodeKind.FUNCTION, NodeKind.METHOD)
+                or parsed is None or not parsed.was_parsed
+                or fact.source_anchor.end_line is None
+                or fact.source_anchor.end_line > parsed.line_count
+                or not _anchor_contains(owner.source_anchor, fact.source_anchor)
+                or not has_valid_human_task_fact_id(fact)):
+            raise CacheError("human-task provenance mismatch")
+        if isinstance(fact, HumanTaskEntryFact):
+            root_targets = {
+                target for item in evidence.values()
+                if getattr(item, "owner_symbol_id", None) == owner_id
+                and isinstance(item, StaticTaskFact)
+                for target in item.target_symbol_ids
+            }
+            if (fact.source_anchor != owner.source_anchor
+                    or any(item not in evidence for item in fact.evidence_fact_ids)
+                    or any(getattr(evidence[item], "owner_symbol_id", None) not in (
+                        owner_id, *root_targets,
+                    )
+                           for item in fact.evidence_fact_ids)):
+                raise CacheError("human-task provenance mismatch")
+            continue
+        control = graph.nodes.get(fact.control_node_id)
+        if (control is None
+                or control.kind not in (NodeKind.FLOW_STEP, NodeKind.CONTROL_BLOCK)
+                or len(control.source_anchors) != 1
+                or not (_anchor_contains(control.source_anchors[0], fact.source_anchor)
+                        or _anchor_contains(fact.source_anchor, control.source_anchors[0]))
+                or not any(edge.source == owner_id and edge.target == control.id
+                           and edge.type is EdgeType.CONTAINS for edge in graph.edges)):
+            raise CacheError("human-task provenance mismatch")
+        callsite_ids = ((fact.callsite_id,) if isinstance(fact, ArtifactAccessFact)
+                        and fact.callsite_id is not None
+                        else fact.callsite_ids if isinstance(fact, StaticTaskFact) else ())
+        for callsite_id in callsite_ids:
+            callsite = graph.nodes.get(callsite_id)
+            if (callsite is None or callsite.kind is not NodeKind.CALL_SITE
+                    or callsite.metadata.get("scope_symbol_id") != owner_id
+                    or len(callsite.source_anchors) != 1
+                    or not _anchor_contains(owner.source_anchor, callsite.source_anchors[0])):
+                raise CacheError("human-task provenance mismatch")
+        if isinstance(fact, ArtifactAccessFact):
+            if (fact.callsite_id is not None
+                    and graph.nodes[fact.callsite_id].source_anchors != (fact.source_anchor,)):
+                raise CacheError("human-task provenance mismatch")
+            continue
+        targets = tuple(dict.fromkeys(
+            edge.target for edge in graph.edges
+            if edge.source in fact.callsite_ids and edge.type is EdgeType.CALLS
+        ))[:8]
+        if targets != fact.target_symbol_ids:
+            raise CacheError("human-task provenance mismatch")
+
+
+def _instance_source_path(name: str) -> tuple[str, ...] | None:
+    normalized = name.replace("]", "").replace("[", ".")
+    parts = tuple(normalized.split("."))
+    return parts if parts and all(part.isidentifier() for part in parts) else None
+
+
+def _parameter_attributes(layer_type: str) -> frozenset[str]:
+    if layer_type == "torch.nn.Embedding":
+        return frozenset({"weight"})
+    if layer_type in ("torch.nn.Linear", "torch.nn.LayerNorm"):
+        return frozenset({"weight", "bias"})
+    if layer_type.rsplit(".", 1)[-1] == "LayerNorm":
+        return frozenset({"weight"})
+    return frozenset()
+
+
+def _validate_parameter_sharings(analysis: ProjectAnalysis) -> None:
+    model = analysis.model
+    if model is None:
+        return
+    facts = model.parameter_sharings
+    if len(facts) > MAX_PARAMETER_SHARING_FACTS:
+        raise CacheError("parameter-sharing provenance mismatch")
+    truncation = [issue for issue in model.issues
+                  if issue.code == "MODEL_PARAMETER_SHARING_TRUNCATED"]
+    if truncation and (len(facts) != MAX_PARAMETER_SHARING_FACTS or len(truncation) != 1):
+        raise CacheError("parameter-sharing provenance mismatch")
+    unresolved_anchors = {
+        issue.source_anchor for issue in model.issues
+        if issue.code == "MODEL_PARAMETER_SHARING_UNRESOLVED"
+        and issue.source_anchor is not None
+    }
+    definitions = {item.symbol_id: item for item in model.definitions}
+    instances = {item.id: item for item in model.instances}
+    owners = analysis.symbol_index.entries
+    parsed_files = {parsed.relative_path: parsed for parsed in analysis.files}
+    graph = analysis.flow.graph if analysis.flow is not None else None
+    confidence_strength = {
+        Confidence.UNRESOLVED: 0, Confidence.PROBABLE: 1, Confidence.EXACT: 2,
+    }
+    for fact in facts:
+        definition = definitions.get(fact.model_definition_id)
+        owner = owners.get(fact.owner_symbol_id)
+        assigned = instances.get(fact.assigned_instance_id)
+        source = instances.get(fact.source_instance_id)
+        parsed = parsed_files.get(fact.source_anchor.file_path)
+        if (definition is None or owner is None or assigned is None or source is None
+                or parsed is None or not parsed.was_parsed or graph is None
+                or owner.kind is not NodeKind.METHOD or owner.name != "__init__"
+                or owner.parent_symbol != definition.symbol_id
+                or assigned.owner_definition_id != definition.symbol_id
+                or source.owner_definition_id != definition.symbol_id
+                or assigned.id == source.id
+                or fact.assigned_attribute not in _parameter_attributes(assigned.layer_type)
+                or fact.source_attribute not in _parameter_attributes(source.layer_type)
+                or fact.source_anchor in unresolved_anchors
+                or not _anchor_contains(owner.source_anchor, fact.source_anchor)
+                or not has_valid_parameter_sharing_id(fact)
+                or confidence_strength[fact.confidence] > min(
+                    confidence_strength[assigned.confidence],
+                    confidence_strength[source.confidence],
+                )):
+            raise CacheError("parameter-sharing provenance mismatch")
+        step = next((node for node in graph.nodes.values()
+                     if node.kind is NodeKind.FLOW_STEP
+                     and node.metadata.get("statement_type") in ("Assign", "AnnAssign")
+                     and node.source_anchors == (fact.source_anchor,)), None)
+        if (step is None or not any(edge.source == owner.id and edge.target == step.id
+                                    and edge.type is EdgeType.CONTAINS
+                                    for edge in graph.edges)):
+            raise CacheError("parameter-sharing provenance mismatch")
+        if any(node.kind is NodeKind.CONTROL_BLOCK and len(node.source_anchors) == 1
+               and node.source_anchors[0] != fact.source_anchor
+               and _anchor_contains(node.source_anchors[0], fact.source_anchor)
+               for node in graph.nodes.values()):
+            raise CacheError("parameter-sharing provenance mismatch")
+        assigned_path = _instance_source_path(assigned.name)
+        source_path = _instance_source_path(source.name)
+        if assigned_path is None or source_path is None:
+            raise CacheError("parameter-sharing provenance mismatch")
+        target_name = assigned_path[-1]
+        target_qualifier = "self" + "".join(f".{item}" for item in assigned_path[:-1])
+        source_qualifier = "self" + "".join(f".{item}" for item in source_path)
+        references = [reference for reference in analysis.symbol_index.references
+                      if reference.scope_symbol_id == owner.id
+                      and _anchor_contains(fact.source_anchor, reference.source_anchor)]
+        target_refs = [reference for reference in references
+                       if reference.name == target_name
+                       and reference.qualifier == target_qualifier
+                       and reference.source_anchor.start_column == fact.source_anchor.start_column]
+        source_refs = [reference for reference in references
+                       if reference.name == fact.source_attribute
+                       and reference.qualifier == source_qualifier
+                       and reference.source_anchor.end_column == fact.source_anchor.end_column]
+        lhs_range_valid = False
+        if len(target_refs) == 1 and len(source_refs) == 1:
+            target_anchor = target_refs[0].source_anchor
+            source_anchor = source_refs[0].source_anchor
+            lhs_range_valid = (
+                fact.assigned_attribute == fact.source_attribute
+                and target_anchor.file_path == fact.source_anchor.file_path
+                and source_anchor.file_path == fact.source_anchor.file_path
+                and target_anchor.start_line == fact.source_anchor.start_line
+                and target_anchor.start_column == fact.source_anchor.start_column
+                and source_anchor.end_line == fact.source_anchor.end_line
+                and source_anchor.end_column == fact.source_anchor.end_column
+            )
+            if (lhs_range_valid and target_anchor.end_line == source_anchor.start_line
+                    and target_anchor.end_column is not None
+                    and source_anchor.start_column is not None):
+                lhs_range_valid = (
+                    target_anchor.end_column + len(fact.assigned_attribute) + 1
+                    < source_anchor.start_column
+                )
+        disabled_evidence = "".join((*assigned.evidence, *source.evidence)).replace(" ", "")
+        if (len(target_refs) != 1 or len(source_refs) != 1 or not lhs_range_valid
+                or (fact.assigned_attribute == "bias" or fact.source_attribute == "bias")
+                and "bias=False" in disabled_evidence
+                or "elementwise_affine=False" in disabled_evidence):
+            raise CacheError("parameter-sharing provenance mismatch")
 
 
 @dataclass(frozen=True, slots=True)

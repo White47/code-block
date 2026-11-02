@@ -10,6 +10,7 @@ const flow = vi.hoisted(() => ({
   getViewport: vi.fn(), getInternalNode: vi.fn(),
   initialized: true, width: 800, height: 600, epoch: 0, nodes: [] as Node[],
   listeners: new Set<() => void>(), viewportInitialized: true,
+  navigation: { panOnScroll: false, zoomOnScroll: true },
 }));
 function subscribe(listener: () => void) { flow.listeners.add(listener); return () => { flow.listeners.delete(listener); }; }
 function snapshot() { return flow.epoch; }
@@ -45,8 +46,9 @@ vi.mock('@xyflow/react', async importOriginal => {
       useSyncExternalStore(subscribe, snapshot); return selector(storeState());
     },
     useStoreApi: () => ({ getState: storeState, subscribe }),
-    ReactFlow: function Canvas({ nodes, edges, onInit, edgeTypes, children }: { nodes: Node[]; edges: Edge[]; onInit: (instance: ReactFlowInstance) => void; children?: ReactNode; edgeTypes: Record<string, (props: Record<string, unknown>) => ReactNode> }) {
+    ReactFlow: function Canvas({ nodes, edges, onInit, edgeTypes, children, panOnScroll = false, zoomOnScroll = true }: { nodes: Node[]; edges: Edge[]; onInit: (instance: ReactFlowInstance) => void; children?: ReactNode; edgeTypes: Record<string, (props: Record<string, unknown>) => ReactNode>; panOnScroll?: boolean; zoomOnScroll?: boolean }) {
       flow.nodes = nodes;
+      flow.navigation = { panOnScroll, zoomOnScroll };
       useEffect(() => { onInit(flow as unknown as ReactFlowInstance); }, []);
       return <div>{children}{nodes.map(n => <div key={n.id} data-testid={n.id} data-x={n.position.x} data-y={n.position.y} className={n.className}/>)}{edges.map(e => { const EdgeComponent = edgeTypes[e.type!]; return <EdgeComponent key={e.id} {...e} sourceX={0} sourceY={0} targetX={0} targetY={100} sourcePosition={original.Position.Bottom} targetPosition={original.Position.Top}/>; })}</div>;
     },
@@ -90,6 +92,20 @@ const siblingGraph = {
   nodes: ['left', 'middle', 'right'].map(id => ({ ...selectedNode, id })),
   layoutHints: { left: [-210, 155], middle: [0, 155], right: [210, 155] } as Record<string, [number, number]>,
 };
+it('starts long summary flows at a readable width and allows wheel panning', async () => {
+  const nodes = ['one', 'two', 'three', 'four', 'five'].map(id => ({ ...selectedNode, id }));
+  const tall = { ...graph, viewKind: 'Overview' as const, nodes, rootIds: ['one'],
+    layoutHints: Object.fromEntries(nodes.map((node, index) => [node.id, [0, index * 300] as [number, number]])) };
+  render(<GraphEditor {...props} graph={tall} viewState={null} selectedId={null}
+    cameraContext="summary:long" title="Readable task flow" initialFit="width" panOnScroll/>);
+  await waitFor(() => expect(flow.setViewport).toHaveBeenCalled());
+  const viewport = flow.setViewport.mock.calls.at(-1)![0];
+  const bounds = flow.getNodesBounds();
+  expect(viewport.zoom).toBeGreaterThanOrEqual(.8);
+  expect(viewport.y + bounds.y * viewport.zoom).toBeGreaterThanOrEqual(0);
+  expect(viewport.y + bounds.y * viewport.zoom).toBeLessThan(100);
+  expect(flow.navigation).toEqual({ panOnScroll: true, zoomOnScroll: false });
+});
 it('keeps automatic sibling cards apart while preserving their hinted vertical layer', () => {
   const positions = verticalPositions(siblingGraph);
   // Cards may be up to 230px wide; the 210px backend pitch used to overlap.

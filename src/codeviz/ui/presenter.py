@@ -14,6 +14,10 @@ from codeviz.core import (
     ViewKind,
     VisibleGraph,
 )
+from codeviz.views.human_understanding import (
+    HumanUnderstanding,
+    build_human_understanding,
+)
 from codeviz.views.structure_identity import StructureResolver
 
 
@@ -53,6 +57,7 @@ class OverviewData:
     functions: tuple[OverviewChoice, ...] = ()
     modules: tuple[OverviewChoice, ...] = ()
     classes: tuple[OverviewChoice, ...] = ()
+    understanding: HumanUnderstanding | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +143,7 @@ def build_overview(analysis: ProjectAnalysis, project_root: Path) -> OverviewDat
                    counts[Confidence.UNRESOLVED], len(analysis.issues)),
         catalog((NodeKind.FUNCTION, NodeKind.METHOD)), catalog((NodeKind.MODULE,)),
         catalog((NodeKind.CLASS,)),
+        build_human_understanding(analysis),
     )
 
 

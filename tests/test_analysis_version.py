@@ -21,8 +21,8 @@ from codeviz.views import ViewState
 
 
 class AnalysisVersionTests(unittest.TestCase):
-    def test_provenance_analysis_version_four_keeps_semantic_and_parser_versions(self):
-        self.assertEqual(ANALYSIS_VERSION, "4")
+    def test_human_tasks_version_seven_keeps_semantic_and_parser_versions(self):
+        self.assertEqual(ANALYSIS_VERSION, "7")
         self.assertEqual(SEMANTIC_VERSION, "3")
         self.assertEqual(PARSER_VERSION, f"python-{sys.version_info.major}.{sys.version_info.minor}")
 

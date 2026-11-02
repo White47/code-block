@@ -2,6 +2,7 @@ import type { Graph, VisibleNode } from '../types';
 import type { Translate } from './i18n';
 
 const labels: Record<string, [string, string]> = {
+  Task: ['任务', 'Task'],
   Project: ['项目', 'Project'], Module: ['模块', 'Module'], Class: ['类', 'Class'], Function: ['函数', 'Function'], Method: ['方法', 'Method'], Symbol: ['符号', 'Symbol'],
   Model: ['模型', 'Model'], ModelDefinition: ['模型定义', 'Model definition'], ModelInstance: ['模型实例', 'Model instance'], Layer: ['层', 'Layer'], LayerGroup: ['层组', 'Layer group'], Container: ['容器', 'Container'],
   ModuleInstance: ['模块实例', 'Module instance'], ModuleInvocation: ['调用', 'Module invocation'], RepeatedMember: ['重复成员', 'Repeated member'],

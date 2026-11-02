@@ -28,6 +28,21 @@ const mutationCases = [
 ] as const;
 afterEach(() => { delete window.pywebview; vi.useRealTimers(); });
 describe('desktop bridge contract', () => {
+  it('waits through the native empty API placeholder before the first application call', async () => {
+    vi.useFakeTimers();
+    window.pywebview = { api: {} };
+    let settled = false;
+    const pending = call('get_session');
+    void pending.then(() => { settled = true; }, () => { settled = true; });
+    await vi.advanceTimersByTimeAsync(50);
+    expect(settled).toBe(false);
+    const getSession = vi.fn(async () => ({ ok: true as const, schemaVersion: 1, data: session }));
+    window.pywebview.api!.get_session = getSession;
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(pending).resolves.toEqual(session);
+    expect(getSession).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it.each(mutationCases.flatMap(testCase => (['resolve', 'Python error', 'promise rejection'] as const)
     .map(outcome => ({ ...testCase, outcome }))))('keeps $method pending until native completion: $outcome', async ({ method, invoke, data, outcome }) => {
     vi.useFakeTimers();
@@ -66,7 +81,7 @@ describe('desktop bridge contract', () => {
   it('calls snake_case methods and unwraps camelCase DTO', async () => { const open = vi.fn().mockResolvedValue({ ok: true, schemaVersion: 1, data: session }); window.pywebview = { api: { open_project: open } }; expect(await call('open_project', 'E:\\project')).toEqual(session); expect(open).toHaveBeenCalledWith('E:\\project'); });
   it('sends the actual inspector arguments including island context', async () => { const get = vi.fn().mockResolvedValue({ ok: true, schemaVersion: 1, data: null }); window.pywebview = { api: { get_inspector: get } }; await call('get_inspector', 'Architecture', 'root', 'child', 'island-source'); expect(get).toHaveBeenCalledWith('Architecture', 'root', 'child', 'island-source'); });
   it('preserves all five anchor keys, including null columns', async () => { const anchor: Anchor = { filePath: 'model.py', startLine: 20, endLine: 23, startColumn: null, endColumn: null }; const read = vi.fn().mockResolvedValue({ ok: true, schemaVersion: 1, data: { filePath: 'model.py', text: '', startLine: 20, endLine: 23 } }); window.pywebview = { api: { read_source: read } }; await call('read_source', anchor); expect(read).toHaveBeenCalledWith(anchor); });
-  it('rejects missing methods explicitly', async () => { window.pywebview = { api: {} }; await expect(call('get_session')).rejects.toMatchObject({ code: 'METHOD_UNAVAILABLE' }); });
+  it('rejects missing methods explicitly after official readiness', async () => { window.pywebview = { api: {} }; const pending = call('get_session'); window.dispatchEvent(new Event('pywebviewready')); await expect(pending).rejects.toMatchObject({ code: 'METHOD_UNAVAILABLE' }); });
   it('preserves Python errors', async () => { window.pywebview = { api: { get_session: vi.fn().mockResolvedValue({ ok: false, schemaVersion: 1, error: { code: 'NOT_READY', message: 'Waiting for analysis' } }) } }; await expect(call('get_session')).rejects.toMatchObject({ code: 'NOT_READY', message: 'Waiting for analysis' }); });
   it('rejects unsupported envelopes', async () => { window.pywebview = { api: { get_session: vi.fn().mockResolvedValue({ ok: true, schemaVersion: 2, data: session }) } }; await expect(call('get_session')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' }); });
   it('bounds hanging calls and clears timers', async () => { vi.useFakeTimers(); window.pywebview = { api: { get_session: () => new Promise(() => {}) } }; const pending = expect(call('get_session')).rejects.toBeInstanceOf(BridgeError); await vi.advanceTimersByTimeAsync(15001); await pending; expect(vi.getTimerCount()).toBe(0); });
