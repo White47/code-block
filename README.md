@@ -1,120 +1,109 @@
-# 代码模块可视化
+# 代码块 · CodeViz
 
-[下载 Windows x64 桌面包（2026-11-02）](https://github.com/White47/code-block/raw/refs/heads/main/releases/CodeViz-Windows-x64-20261102.zip)：解压运行 `CodeViz/CodeViz.exe`，保留整个文件夹。校验及验收范围见 [下载说明](releases/README.md)。
+一个帮你读懂 Python 项目的桌面工具。
 
-2026-11-02 面向人的概览更新：默认任务流程与功能架构分开，原始调用细节按需查看；AI 说明附着同一张图，完整说明默认折叠。已修复桌面首次连接与摘要布局暴露，最终后端1752通过/106跳过，前端669通过/2待实现；两个真实项目的原生交互及当前包位置见[本轮交付记录](docs/HUMAN_UNDERSTANDING_DELIVERY.md)。真实AI覆盖与用户理解效果仍不等同于自动检查通过。
+拿到一个陌生项目，常常要先翻目录、找入口，再在几个文件之间来回跳，才能大概拼出它在做什么。函数名和调用关系都看到了，主线却不一定清楚。
 
-2026-10-30 当前版本包含源码编辑、项目文件树、静态调用概览及聚焦上下游、项目级 AI 理解，以及精确搜索误报和项目预取过早截断修复。后端阶段门禁为1659通过/106跳过；前端未变，复用653通过/2待办的验证。真实 API 回答质量及完整原生交互的验收范围见[交付记录](docs/PROJECT_UNDERSTANDING_DELIVERY.md)；简略修复的原请求原因仍未确定，不能据此宣称完整项目覆盖。
+我想用代码块解决的，就是这一步：先把项目里能确认的结构和流程整理出来，让你知道从哪里看起、哪些模块在配合、某一步对应哪段代码。图中的节点可以继续展开，也可以直接打开源码，边看整体，边核对细节。
 
-2026-10-29 项目级理解：先生成本地静态初稿，再由显式 AI 分析更新原项目概述、结构和架构；可切回静态结果，从模块准备细节问题并通过可信引用查看源码。AI 只分析与解释，不修改或执行目标源码；配置、授权和打开侧栏不自动发送，个人密钥仅内存保存。当前阶段验收、独立桌面产物及未完成的真实 API / 原生验证，以[项目理解交付记录](docs/PROJECT_UNDERSTANDING_DELIVERY.md)为准；操作见[助手指南](docs/CODE_AGENT_GUIDE.md)，历史包结论不自动继承到本轮。
+目前主要支持 Python，也针对 PyTorch 的模型组件和训练流程做了额外处理。普通脚本、自己的小项目，同样可以拿来分析。
 
-Python-first 的代码模块可视化与程序理解项目。目标是从源码构建可追溯的代码图、语义组件图和局部可见图，首版重点面向 Python / PyTorch。
+## 下载和运行
 
-2026-10-08 源码编辑增量：React PC 源码标签与侧边源码已接入离线 Monaco，支持 Python 彩色语法、行号、查找替换、撤销、折叠和显式保存。修改后标签显示 `●`，点击“保存”或按 `Ctrl+S`；关闭最后一个源码视图、切换项目、重新分析或退出时提供保存／放弃／取消。外部文件变化拒绝覆盖并保留草稿；保存后旧图标为过期，需手动重新分析。混合换行、CR-only、链接、只读或不可安全往返的编码目标不可编辑。源码不会自动运行或上传，未保存草稿不在强制退出后恢复。下方只读描述属于早期／Tk 基线，React 编辑合同以 [SOURCE_EDITING.md](docs/SOURCE_EDITING.md) 为准。
+[查看 Releases](https://github.com/White47/code-block/releases) · [直接下载 Windows x64 桌面包](https://github.com/White47/code-block/raw/refs/heads/main/releases/CodeViz-Windows-x64-20261102.zip)
 
-普通 Python 项目也可使用：打开目录 → 分析 → 项目概览的“函数 / 方法”目录 → 选择函数 → **函数流程** → 单击节点查看检查器 → 打开源码或侧边源码。无需模型、PyTorch 或自动入口。搜索普通变量可进入局部数据关系；main guard 等入口只代表静态候选，不等于真实运行轨迹。支持范围、限制与本轮验收见 [Python 支持矩阵](docs/PYTHON_SUPPORT_MATRIX.md) 和 [通用 Python 验证记录](docs/GENERAL_PYTHON_VALIDATION.md)。
+下载 ZIP 后完整解压，运行 `CodeViz/CodeViz.exe`。请保留整个 `CodeViz` 文件夹，不要只拿出 exe，也不要在压缩包里直接运行。
 
-当前已有本地桌面阅读、搜索与 Phase 10 本地缓存：首次显式点击 Analyze Project 后，重新打开未变化的项目会直接加载分析结果；源码、Ignore Paths 或版本变化时旧图标为 Outdated，并可 Re-analyze。Recent Projects、图布局、标签与选中节点保存在应用数据目录，Annotations 独立保存。Overview 中可选择模型或入口，浏览 Architecture / Training Flow 局部图；Search / Symbols 可查定义与语义节点，再 Reveal 到局部图、Inspector、只读源码或 Open to Side。Analysis Issues 有独立标签页。自动布局按各视图关系方向从上到下分层，同层分支并列；Symbol / Data Flow 上游允许位于查询焦点上方，环稳定处理，不代表真实执行顺序，详见 `docs/UX_SPEC.md`。关系范围可用“更少层 / 更多层”在 1–5 层间调整；新图自动定位，正常用户视角和手动节点位置保留，详见 [画布恢复](docs/CANVAS_RECOVERY.md)。长图可继续平移、缩放和适应，不保证一屏全部容纳；除概览外的图、源码和问题标签都可通过右侧 `×` 或 `Ctrl+W` 关闭。底层 `analyze_project(Path(...))` 返回 `flow.graph`、`model`、`training` 和 `semantic.graph`；`build_visible_graph(...)` 只生成有预算的 Architecture / Execution / FunctionFlow / Symbol / Data Flow 局部图。Q/K/V → 矩阵得分 → softmax 只给出 Attention-like 候选；梯度关系是 Probable 静态模式，不是真实 autograd 图。源码只读，不导入或执行被分析代码。
+桌面包已经包含 Python 和界面资源，使用时不用另外安装 Python 或 Node.js。Windows 需要有 Microsoft Edge WebView2 Runtime。校验文件和具体版本说明见 [下载说明](releases/README.md)。
 
-桌面主入口采用 React Flow + pywebview 原生窗口。Windows 需要预先安装系统原生 **Microsoft Edge WebView2 Runtime**，打包目录不内置该系统运行时。生产前端 JS、CSS 等资源全部随应用分发，可离线使用，无 CDN。静态服务只绑定随机 loopback 端口、只提供 frontend 资源根；项目源码和应用 API 不通过 HTTP 暴露，应用操作经 pywebview bridge 完成。浏览器打开 Vite 页面仅用于前端开发，不能替代原生窗口。
+## 可以用它做什么
 
-本轮资源管理器 PC 包：关闭旧应用，运行 `dist/project-explorer/CodeViz/CodeViz.exe`，保留整个 CodeViz 目录，不要只复制 exe。包含彩色源码编辑、真实文件树、新建／改名／回收站删除和树内拖拽／菜单移动；沿用架构详情与普通 Python 能力。该历史资源管理器包的源码、隔离 wheel 和 EXE 已通过当时的原生验收；当前版本状态以顶部交付记录为准。此前 `dist/monaco-source-editing/CodeViz/CodeViz.exe`、`dist/architecture-detail-routing/CodeViz/CodeViz.exe` 等体验包作为历史产物保留。复杂图仍可能连线交叉，详见 [架构详情验收](docs/ARCHITECTURE_DETAIL_ROUTING.md)。
+- **先找主线。** 从项目概览查看入口、主要职责、任务流程和功能架构，先建立整体印象。
+- **顺着图往下看。** 按需展开组件和内部流程，查看调用、数据或控制关系。图默认纵向布局，同级分支并列。
+- **回到真实代码。** 选中节点查看它来自哪个文件、函数和代码范围，再打开源码或放到侧边对照。
+- **找一个具体东西。** 搜索类、函数、方法或变量，区分同名符号，查看它附近的关系。
+- **直接整理和修改文件。** 左侧文件树支持展开、新建、改名、删除和项目内移动；源码页支持语法高亮、查找替换、编辑与显式保存。
+- **借助 AI 继续理解。** 在你授权的范围内生成项目说明，再围绕其中的模块、步骤和引用追问。
 
-从仓库根目录准备并启动（Python 3.11+、Node.js 22，首次安装与构建需获取依赖）：
+## 第一次使用
+
+1. 点击“打开项目”，选择本地 Python 项目文件夹。
+2. 点击“分析项目”，等待本地静态分析完成。
+3. 从“项目概览”开始，切换“任务流程”和“功能架构”，有多个入口时可以分别选择。
+4. 单击节点看说明和来源，双击或按 Enter 查看实现；需要对照代码时，选择“打开源码”或“在侧边打开”。
+5. 想查某个函数或变量时，用左侧搜索定位，再沿着局部关系继续看。
+
+第一次可以挑一个自己熟悉的小项目，先对照源码看看图表达了什么。看长图时用滚轮上下浏览，也可以平移、缩放或适应画布。标签页上的 `×` 和 `Ctrl+W` 可以关闭当前页面。
+
+界面默认简体中文，在“设置 → 界面语言”里可以切换英文。手动修改源码并保存后，已有分析会标为过期，需要重新分析才能更新图。
+
+## AI 怎么用
+
+本地分析和浏览源码不需要 API。想要更详细的项目解释时，可以在“设置 → AI 设置”里填写服务商地址、模型和自己的 API 密钥，再核对并授权可发送的文件范围。
+
+之后主动点击“AI 分析项目”。有效说明会和已有任务图配合展示，完整解释及覆盖范围放在可折叠区域；你也可以围绕某个条目继续提问。能对应到可信源码的引用可以打开查看，无法确认的内容会保留为推断或未知。
+
+AI 请求会把授权范围内的必要上下文发送给你配置的服务商，并可能产生费用。密钥只保存在当前进程内存中，退出后需要重新输入。AI 负责分析和解释，源码修改仍由你在编辑器里主动完成。具体操作见 [助手使用指南](docs/CODE_AGENT_GUIDE.md)。
+
+## 目前的边界
+
+项目还在迭代。我更关心的是，第一次看到代码的人能不能沿着图找到主线，知道每一步在做什么，再准确回到源码。现在的图和说明还不能保证每个项目都能讲清楚，也欢迎直接反馈看不懂的地方。
+
+本地分析只读取源码，不会运行你的项目。Python 的动态调用、反射、复杂配置和运行时行为，有些只能给出候选或留下缺口；图中的置信度需要结合源码一起看。实际张量形状、完整梯度图和复杂分布式训练，目前也不属于完整支持范围。
+
+AI 的回答受授权文件、检索范围和预算影响，生成了项目说明并不代表模型读过全部文件。比如 nanoGPT 中由配置动态选择的数据集，准备脚本与训练入口之间没有证据的对应关系，仍会保留为不确定项。
+
+当前桌面发布以 Windows x64 为主，Linux 和 macOS 的原生桌面界面尚未完成。更具体的范围见 [Python 支持说明](docs/PYTHON_SUPPORT_MATRIX.md)、[已知限制](docs/KNOWN_LIMITATIONS.md) 和 [本轮交付记录](docs/HUMAN_UNDERSTANDING_DELIVERY.md)。
+
+## 从源码运行与参与开发
+
+<details>
+<summary>展开开发环境、检查命令和相关文档</summary>
+
+需要 Windows、Python 3.11+、Node.js 22 和 WebView2 Runtime。下面的基础环境用于本地界面和静态分析开发，首次安装需要下载依赖。
+
+在仓库根目录执行：
 
 ```powershell
 py -m venv .desktop-venv
-.\.desktop-venv\Scripts\python.exe -m pip install -e ".[desktop,packaging,dev]"
+.\.desktop-venv\Scripts\python.exe -m pip install -e ".[desktop,dev]"
 npm --prefix frontend ci
 npm --prefix frontend run build
 .\.desktop-venv\Scripts\python.exe -m codeviz.ui.desktop
 ```
 
-安装后的主命令是 `.\.desktop-venv\Scripts\codeviz.exe`；旧 Tk 入口保留为 `.\.desktop-venv\Scripts\codeviz-tk.exe`，需要 Python 提供 Tk 8.6 与图形桌面。以下原有阅读流程作为既有能力基线，React 桌面逐项验收见 `docs/MVP_ACCEPTANCE.md`。
+AI 开发与完整打包还需要已有的可选 AI、packaging 依赖。实际 SDK 检查使用指定隔离环境，安装方式和环境要求见 [测试策略](docs/TEST_STRATEGY.md)；桌面构建入口是 [build-desktop.ps1](scripts/build-desktop.ps1)。
 
-## 桌面打包与前端开发
+后端检查：
 
 ```powershell
-.\scripts\build-desktop.ps1 -CheckOnly
-.\scripts\build-desktop.ps1
-.\dist\CodeViz\CodeViz.exe
+.\.desktop-venv\Scripts\python.exe -m ruff check src tests
+.\.desktop-venv\Scripts\python.exe -m mypy
+.\.desktop-venv\Scripts\python.exe -m mypy --platform linux
+.\.desktop-venv\Scripts\python.exe -B -m unittest discover -s tests -v
 ```
 
-CheckOnly 检查 Python、Node/npm、固定版本打包依赖、前端清单与 lockfile、已安装前端依赖和 `frontend/dist/index.html`；不安装、不构建、不启动 GUI。完整构建执行 `npm ci`、前端 build 和 PyInstaller onedir；分发必须包含整个 `dist/CodeViz` 目录。`-Python 'C:\path\python.exe'` 可指定解释器，默认依次探测可用的 `.desktop-venv`、`.venv` 和系统 Python 3.11+。Windows CI 只验证打包产物，原生窗口 / WebView2 必须另做人工验收。
-
-### 从 GitHub Actions 下载 Windows 包
-
-1. 登录 GitHub，打开仓库的 **Actions → Quality checks**，选择对应当前提交 SHA 的运行，确认 **Windows desktop packaging (no GUI)** 作业成功。
-2. 在该次运行的 **Artifacts** 中下载 **CodeViz-Windows-x64**；产物保留 14 天，上传时若找不到打包文件会报错。
-3. 将 ZIP **完整解压到一个目录**，保留 `CodeViz.exe`、`_internal` 及全部子目录的相对位置；不要只取出 exe，也不要直接在 ZIP 内运行。
-4. 在 Windows x64 系统预先安装 **Microsoft Edge WebView2 Runtime**，然后运行解压目录中的 `CodeViz.exe`。该包包含 Python 和本地前端资源，使用时无需另装 Python 或 Node.js。
-
-这些下载是对应提交的 Actions 构建产物，不是 GitHub Release；新增上传配置不代表当前提交已在远端通过检查或完成原生 GUI 验收，须以对应运行结果及实际验证为准。Python 矩阵作业还会分别提供 `CodeViz-wheel-Python-3.11` / `CodeViz-wheel-Python-3.12`，同样保留 14 天；wheel 不是可直接运行的 Windows 桌面包。
-
-wheel 构建须先生成 `frontend/dist`；构建命令把资源复制至 wheel 内 `codeviz/ui/assets`，不写入 Python 源码目录。冻结包资源位于 `dist/CodeViz/_internal/frontend/dist`。
+前端检查：
 
 ```powershell
-.\.desktop-venv\Scripts\python.exe -m pip wheel . --no-deps -w dist
 npm --prefix frontend run lint
 npm --prefix frontend run typecheck
 npm --prefix frontend test
-npm --prefix frontend run dev
+npm --prefix frontend run build
 ```
 
-分析核心安装无需 `[desktop]`，基础依赖为空，不强制安装 Linux GTK / Qt GUI 系统库。desktop 固定 pywebview 6.2.1，packaging 固定 PyInstaller 6.22.3 与 setuptools 84.0.0；这是直接工具版本锁定，不是传递依赖的完整哈希锁。当前原生入口显式使用 Windows Edge Chromium，Linux / macOS 桌面后端尚未实现；分析核心仍可独立跨平台使用。
+浏览器中的 Vite 开发页面用于前端调试，完整项目操作通过原生桌面窗口进行。日常修改优先验证受影响模块，阶段结束再执行完整门禁；环境跳过与实际通过分别记录。
 
-默认使用简体中文，可在左侧 **设置 → 界面语言** 中切换“简体中文”或“English”，选择保存在应用数据目录，不会修改被分析项目。点击 **打开项目** 使用原生文件夹选择器；首次点击 **分析项目 / 重新分析** 才解析 `.py` 文件，之后若有效缓存存在则自动加载，不执行用户代码。发现变更时仍可查看带 Outdated 警告的旧图，并点 **重新分析** 更新。
+- [产品目标](docs/PRD.md)：项目想解决什么，以及功能边界。
+- [系统架构](docs/ARCHITECTURE.md) · [目录职责](docs/PROJECT_STRUCTURE.md)：代码如何组织。
+- [源码编辑](docs/SOURCE_EDITING.md) · [项目文件树](docs/PROJECT_EXPLORER.md)：编辑、保存与文件操作规则。
+- [测试策略](docs/TEST_STRATEGY.md) · [质量检查](docs/QUALITY_GATES.md)：怎样验证改动。
+- [MVP 验收](docs/MVP_ACCEPTANCE.md)：需要打通的使用路径。
 
-资源管理器扩展在现有左侧展示真实文件树，无需先分析即可展开目录、打开安全文本及侧边查看；提供新建文件/目录、重命名、回收站删除、刷新及树内拖拽／“移动到…”菜单。移动仅限同项目同卷，不覆盖目标、不自动修复 import。未保存内容使用保存/放弃/取消保护；保护路径可只读查看，不可修改。功能及最终验收见 [项目资源管理器](docs/PROJECT_EXPLORER.md) 和 [验收记录](docs/PROJECT_EXPLORER_VALIDATION.md)。回收站恢复在系统中进行，不提供永久删除回退。
+GitHub Actions 会检查 Python 3.11 / 3.12、前端质量、wheel 和 Windows 打包；实际 SDK 检查在隔离环境中运行。云端打包产物可在对应成功运行的 Artifacts 中下载，按当前设置保留 14 天。
 
-版本不兼容的缓存可能只保留布局、没有可用分析；此时需重新分析，不能查询旧图。文件夹选择等待选择或取消；项目写入和分析等待后台真实完成后才允许切换，避免晚到写入影响其他项目。布局保存的真实失败会提示，不应阻断显式打开或重新分析。异常停滞尚无后台取消协议，可正常关闭后重启应用；勿将单纯前端超时当作后台取消。修复与验证记录见 [项目操作恢复](docs/PROJECT_ACTION_RECOVERY.md)。
+</details>
 
-从概览点击模型进入架构、点击训练入口进入训练执行流程；普通入口或具名函数进入独立函数流程。单击节点显示检查器，双击或 Enter 在同一画布展开细节岛；源码可打开为独立标签或在侧边并排查看。标签的 `×` 或 `Ctrl+W` 只关闭当前标签，不退出整个应用。搜索名称或“反向传播”等语义词会自动返回结果，点击 **在图中定位** 或 **源码** 完成跳转。设置同时提供缓存状态和每行一项的项目相对 **忽略路径**；修改忽略路径后旧分析会标为过期，需重新分析。
+## 反馈
 
-本次结构探索修复采用分视图操作：**架构／项目结构**的“更多层／更少层”展开或收起真实组件层级，**符号／数据关系**的关系范围控制上游、下游及最多五跳；函数流程不再提供不起作用的层数按钮。普通 Python 项目可从项目结构查看模块、类、函数，不要求先识别出 PyTorch 模型。定义展开不是运行实例观测，节点仍链接真实源码。合同、开发状态及最终验证记录见 [结构探索修复](docs/STRUCTURE_EXPLORATION.md)；文档说明不替代该记录中的交付门禁。
-
-最小查询示例：
-
-```python
-from pathlib import Path
-
-from codeviz.analysis.project import analyze_project
-from codeviz.core import ViewKind
-from codeviz.search import search_project
-from codeviz.views import ViewRequest, build_visible_graph
-
-analysis = analyze_project(Path("your-python-project"))
-architecture = build_visible_graph(analysis, ViewRequest(ViewKind.ARCHITECTURE))
-training = build_visible_graph(analysis, ViewRequest(ViewKind.EXECUTION))
-matches = search_project(analysis, "反向传播").results
-```
-
-默认最多 100 个可见节点、300 条边；展开和手动位置可通过 `ViewState` 传入。桌面 UI 的位置和标签保存在应用数据目录，不写入被分析项目；不保存 AST 或完整源码副本。
-
-## 本地验证
-
-需要 Python 3.11 或更新版本。分析核心运行时只使用 Python 标准库，原生桌面另需 `[desktop]` 可选依赖。分析目标仅支持 `.py`；默认跳过依赖、构建、缓存、权重和数据目录，可传入项目相对的 `ignore_paths`。
-
-在仓库根目录首次设置开发环境（PowerShell）：
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-```
-
-之后运行全部质量检查：
-
-```powershell
-.\.venv\Scripts\python.exe -m ruff check src tests
-.\.venv\Scripts\python.exe -m mypy
-.\.venv\Scripts\python.exe -m mypy --platform linux
-.\.venv\Scripts\python.exe -B -m unittest discover -s tests -v
-```
-
-Ruff 检查源码与测试；mypy 严格检查产品源码。开发工具只在 `dev` 可选依赖中，不会成为运行时依赖。配置与阶段基线见 `docs/QUALITY_GATES.md`。产品与技术边界见 `docs/PRD.md`、`docs/ARCHITECTURE.md` 和 `docs/DATA_MODEL.md`。
-
-推送到 `main` 或提交拉取请求时，GitHub Actions 在 Python 3.11 / 3.12 下运行 core lint / mypy / unittest 和含前端资源的 wheel 构建，另执行前端 lint / typecheck / test / build 与 Windows 无 GUI 打包检查；Linux core job 不安装桌面 GUI 依赖。工作流见 `.github/workflows/quality.yml`。合并保护规则需另行在 GitHub 设置，自动检查本身不会禁止合并。
-
-固定的 MVP 样例与三条黄金路径自动验收在 `tests/fixtures/mvp_project/`、`tests/test_mvp_acceptance.py` 和 Tk 界面测试中；`docs/MVP_ACCEPTANCE.md` 区分自动验证与仍需人工观察的理解度验收。在已激活的虚拟环境中运行 `python -B tests/benchmark_mvp.py`，或运行 `python -B tests/benchmark_scale.py 50` / `200` 对比简单多文件项目。基线解释见 `docs/PERFORMANCE.md`，不构成所有项目的性能保证。
-
-三份公开 PyTorch 仓库的只读交叉验证、固定提交和已知问题见 `docs/REAL_REPOSITORY_VALIDATION.md`；第三方源码不在本仓库，也不参与 CI。
+如果图里只剩一堆名字，或者某个节点点开后仍然不知道它在做什么，可以直接在 Issues 里反馈。项目类型、操作步骤、报错，以及一个便于复现的小例子，都会很有帮助。这也是代码块接下来想继续改好的地方。
