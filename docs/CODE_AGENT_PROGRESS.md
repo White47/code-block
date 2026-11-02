@@ -535,3 +535,7 @@ ProjectStructure 按请求根验证），`core_implementer` 正在仅修改控�
 - delivery-final/frozen/CodeViz/CodeViz.exe及wheel完成；115源码/110收录模块/20资源一致，包内固定离线SDK探针通过、0外部尝试。
 - 小型Python与nanoGPT真实窗口通过首次连接、任务/架构、Monaco及真实owner导航；3/2与16/31任务关系，目标源码hash未变；真实API和首次使用者理解效果未宣称通过，动态dataset仍partial。
 - docs/HUMAN_UNDERSTANDING_DELIVERY.md为交付入口；build/human-understanding-20261030/MAIN-checkpoint.json记录收尾，授权H1–H4队列无剩余实施；未提交推送。
+
+- 2026-11-02 发布：源码9b79712已快进推送main；GitHub接口限流，云端检查未记为通过，本地既有门禁及原生验收复用。
+- main的releases/保存已验收完整Windows包及SHA-256，268文件/28,511,942字节；仅分发文件与文档提交使用skip-ci，应用代码不变。
+- README与docs/HUMAN_UNDERSTANDING_DELIVERY.md提供直接下载、解压方式及验收范围；Git/包校验和发布结果另存build/human-understanding-20261030/publish/。

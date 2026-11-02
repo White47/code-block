@@ -6,7 +6,9 @@
 
 关闭旧窗口，运行 `<workspace>\build\human-understanding-20261030\delivery-final\frozen\CodeViz\CodeViz.exe`。分发时保留完整 `CodeViz` 目录，不能只复制 exe。
 
-GitHub 下载：在 [Quality checks](https://github.com/White47/code-block/actions/workflows/quality.yml) 中选择本轮 main 的成功运行，下载 `CodeViz-Windows-x64` artifact，解压后运行根目录的 `CodeViz.exe`。工作流还提供 Python wheel，artifact 按现有设置保留14天。云端会从同一提交重新构建，因此云端二进制哈希不承诺与本地冻结包相同；原生交互验收对应下述本地冻结包，云端打包成功不等于重新完成原生验收。
+GitHub 直接下载：[完整 Windows x64 包](https://github.com/White47/code-block/raw/refs/heads/main/releases/CodeViz-Windows-x64-20261102.zip)，解压运行 `CodeViz/CodeViz.exe`。此包与本地验收的冻结目录逐文件一致，共268文件，压缩包 SHA-256 为 `0f3c210c4a6da658105e044e7a2f0e5614078efa3a40d873c237769766a3230f`，校验文件在 `releases/` 同目录；应用代码对应提交 `9b79712`。本轮 GitHub 状态接口限流，未把云端检查记为通过。
+
+另可在 [Quality checks](https://github.com/White47/code-block/actions/workflows/quality.yml) 中选择本轮 main 的成功运行，下载 `CodeViz-Windows-x64` artifact，解压后运行根目录的 `CodeViz.exe`。工作流还提供 Python wheel，artifact 按现有设置保留14天。云端会从同一提交重新构建，因此云端二进制哈希不承诺与本地冻结包相同；原生交互验收对应下述本地冻结包，云端打包成功不等于重新完成原生验收。
 
 打开项目并分析，进入项目概览。在“任务流程”中选择入口，或切换“功能架构”；单击任务查看来源和关系，打开源码，或查看该任务的真实实现。滚轮纵向浏览，同级分支并列。底层调用/符号图保留作按需实现检查，不再作为默认项目说明。
 
