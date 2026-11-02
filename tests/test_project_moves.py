@@ -289,9 +289,9 @@ class ProjectMoveTests(unittest.TestCase):
                 try:
                     path.chmod(stat.S_IREAD)
                     self.rejected(self.prepare())
-                    self.assert_unmoved()
                 finally:
                     path.chmod(mode)
+                self.assert_unmoved()
 
     def test_hardlinked_source_and_descendant_rejected(self):
         self.supported()

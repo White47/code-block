@@ -582,11 +582,25 @@ class SDKBoundaryContractTests(AdapterAssertions, unittest.IsolatedAsyncioTestCa
         await adapter.aclose()
 
 
+class SDKEnvironmentAdmissionTests(unittest.TestCase):
+    def test_absent_optional_sdk_skips_but_ambient_installation_remains_rejected(self):
+        case = ActualSDKCaptureTests("test_actual_capture_same_request_single_handoff_and_owned_closure")
+        for prefix in (ROOT / "ci-base-without-sdk", ROOT / ".desktop-venv"):
+            with self.subTest(prefix=prefix.name), patch.object(sys, "prefix", str(prefix)), \
+                    patch.object(importlib.util, "find_spec", return_value=None):
+                with self.assertRaises(unittest.SkipTest):
+                    asyncio.run(case.asyncSetUp())
+        with patch.object(sys, "prefix", str(ROOT / "unapproved-sdk-environment")), \
+                patch.object(importlib.util, "find_spec", return_value=object()):
+            with self.assertRaisesRegex(AssertionError, "Actual SDK tests require"):
+                asyncio.run(case.asyncSetUp())
+
+
 class ActualSDKCaptureTests(AdapterAssertions, unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         if Path(sys.prefix).resolve() != SDK_ENV.resolve():
             absent = all(importlib.util.find_spec(name) is None for name in ("pydantic_ai", "openai", "httpx2"))
-            if absent and Path(sys.prefix).resolve() == (ROOT / ".desktop-venv").resolve():
+            if absent:
                 self.skipTest("SDK absent in base: actual SDK checks require explicit isolated interpreter; not acceptance")
             self.fail("Actual SDK tests require build/assistant-sdk-probe-20261012/Scripts/python.exe")
         self.guard = offline_guard()

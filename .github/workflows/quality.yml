@@ -116,6 +116,18 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install optional AI, desktop and pinned packaging tools
         run: python -m pip install -e ".[ai,desktop,packaging]"
+      - name: Create isolated SDK contract environment
+        shell: pwsh
+        run: |
+          python -m venv build/assistant-sdk-probe-20261012
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./build/assistant-sdk-probe-20261012/Scripts/python.exe -m pip install -e ".[ai]"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test actual SDK adapter offline
+        shell: pwsh
+        run: |
+          & ./build/assistant-sdk-probe-20261012/Scripts/python.exe -B -m unittest discover -s tests -p test_assistant_sdk_provider.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build onedir bundle without launching GUI
         shell: pwsh
         run: ./scripts/build-desktop.ps1 -Python (Get-Command python).Source

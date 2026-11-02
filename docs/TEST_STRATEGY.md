@@ -1,5 +1,15 @@
 # 测试策略
 
+## CI #19 跨环境测试修正（2026-11-02）
+
+真实报错证明两处测试前提不适用于 Linux 基础 CI：`ActualSDKCaptureTests.asyncSetUp` 只允许名为 `.desktop-venv` 的无 SDK 环境跳过，导致同样未安装可选 SDK 的 runner 在17项用例 setup 失败；只读目录被 chmod 为0400后，POSIX不能穿越该目录，测试的未移动检查先抛 PermissionError。
+
+基础 CI 未安装三个可选 SDK 模块时明确 skipped，绝不记作实际 SDK 验收；装有 SDK 却不在指定隔离解释器时仍失败，已安装 SDK 的版本断言和离线网络守卫保留。Windows 打包任务另建 `build/assistant-sdk-probe-20261012` 虚拟环境安装已有固定 AI 依赖，实际执行完整 `test_assistant_sdk_provider.py`，不删除这17项覆盖、不接入真实服务。
+
+只读移动用例仍在权限受限期间断言拒绝准备操作，随后恢复原权限，再以原来的内容及目标不存在断言检查未移动。不能跳过权限用例、把 PermissionError 当作成功或放松文件操作权限。
+
+修正后本地：基础 SDK 模块13通过/17跳过，指定隔离 SDK 环境30通过/0跳过（包含原17项实际 SDK 检查），移动模块46通过/2跳过；全量1859项＝1753通过/106跳过，Ruff 与 Windows/Linux mypy115通过。一次独立复审无可操作问题；前端与应用源码未变，复用前端669通过/2待实现及既有原生/包验收。Linux 运行结果以修正提交的新 CI 为准，不把本地 Windows 通过当作 Linux 通过。
+
 ## Agent 开工前目标与测试审计（2026-10-11）
 
 产品目标仍是源码可追溯的 Python PC 程序理解；本轮扩展为只读代码理解 Agent、可开关侧栏、详细功能路径与可信引用，不做自动编程或运行用户代码。见 [正式设计](superpowers/specs/2026-10-11-code-understanding-agent-design.md)。

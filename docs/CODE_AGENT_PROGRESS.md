@@ -539,3 +539,11 @@ ProjectStructure 按请求根验证），`core_implementer` 正在仅修改控�
 - 2026-11-02 发布：源码9b79712已快进推送main；GitHub接口限流，云端检查未记为通过，本地既有门禁及原生验收复用。
 - main的releases/保存已验收完整Windows包及SHA-256，268文件/28,511,942字节；仅分发文件与文档提交使用skip-ci，应用代码不变。
 - README与docs/HUMAN_UNDERSTANDING_DELIVERY.md提供直接下载、解压方式及验收范围；Git/包校验和发布结果另存build/human-understanding-20261030/publish/。
+
+- 2026-11-02 CI #19诊断断点：Python3.11汇总17失败/1异常/135跳过；现有粘贴只有日志开头与汇总，未含失败用例/堆栈。
+- GitHub连接器429、公开API额度0，暂无可用本地Linux/Python3.11；等待至少一段完整FAIL/ERROR与Traceback后定位；未改产品/测试/工作流或重复全量。
+
+- 2026-11-02 CI #19修复：无SDK的普通runner按可选环境skipped；有SDK的非指定环境仍失败，Windows CI新增指定隔离环境实际执行SDK模块，保留17项原覆盖。
+- 只读目录用例在受限权限下仍断言拒绝，恢复权限后检查原内容及未移动；产品权限逻辑、应用源码与已发布包未改动。
+- 本地隔离SDK30通过/0跳过，基础SDK13通过/17跳过，移动46通过/2跳过；全量1753通过/106跳过，Ruff及Windows/Linux mypy115通过；一次独立复审无问题。
+- 前端669通过/2 todo及原生包验收复用；修正推送main后以新CI确认Linux运行，尚未宣称云端通过。
